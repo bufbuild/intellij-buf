@@ -23,5 +23,6 @@ class BufCacheLibrary(private val bufCacheFolder: VirtualFile) : SyntheticLibrar
 
     override fun hashCode(): Int = bufCacheFolder.hashCode()
 
-    override fun getSourceRoots(): Collection<VirtualFile> = bufCacheFolder.children.toList()
+    override fun getSourceRoots(): Collection<VirtualFile> =
+        if (bufCacheFolder.isValid) bufCacheFolder.children.toList() else emptyList()
 }
