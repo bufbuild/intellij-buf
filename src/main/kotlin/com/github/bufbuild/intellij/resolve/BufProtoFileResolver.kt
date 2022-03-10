@@ -6,23 +6,32 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.protobuf.lang.resolve.FileResolveProvider
 import com.intellij.protobuf.lang.resolve.FileResolveProvider.ChildEntry
+import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScopesCore
+import com.intellij.psi.search.ProjectScope
 
 class BufProtoFileResolver : FileResolveProvider {
     override fun getChildEntries(path: String, project: Project): Collection<ChildEntry> {
-        val file = findFile(path, project) ?: return emptyList()
-        if (!file.isDirectory) return emptyList()
-        return VfsUtil.getChildren(file, FileResolveProvider.PROTO_AND_DIRECTORY_FILTER)
+        return findFiles(path, project)
+            .filter { it.isDirectory }
+            .map { VfsUtil.getChildren(it, FileResolveProvider.PROTO_AND_DIRECTORY_FILTER) }
+            .flatten()
             .map { ChildEntry(it.name, it.isDirectory) }
+            .toSet()
     }
 
-    override fun findFile(path: String, project: Project): VirtualFile? {
+    override fun findFile(path: String, project: Project): VirtualFile? = findFiles(path, project).firstOrNull()
+
+    private fun findFiles(path: String, project: Project): Sequence<VirtualFile> = sequence {
+        for (bufConfig in FilenameIndex.getFilesByName(project, "buf.yaml", ProjectScope.getProjectScope(project))) {
+            val bufRoot = bufConfig.virtualFile.parent
+            yield(bufRoot.findFileByRelativePath(path) ?: continue)
+        }
         for (mod in BufModuleIndex.getAllProjectModules(project)) {
             val modFolder = BufRootsProvider.findModuleCacheFolder(mod) ?: continue
-            return modFolder.findFileByRelativePath(path) ?: continue
+            yield(modFolder.findFileByRelativePath(path) ?: continue)
         }
-        return null
     }
 
     override fun getDescriptorFile(project: Project): VirtualFile? = null
