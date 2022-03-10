@@ -6,4 +6,14 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>idea.plugin.protoeditor</depends>
+    <depends>org.jetbrains.plugins.yaml</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileTypeOverrider implementation="com.github.bufbuild.intellij.BufLockFileTypeOverrider"/>
+        <fileBasedIndex implementation="com.github.bufbuild.intellij.index.BufModuleIndex"/>
+        <additionalLibraryRootsProvider implementation="com.github.bufbuild.intellij.resolve.BufRootsProvider"/>
+    </extensions>
+    <extensions defaultExtensionNs="com.intellij.protobuf">
+        <fileResolveProvider implementation="com.github.bufbuild.intellij.resolve.BufProtoFileResolver"/>
+    </extensions>
 </idea-plugin>
