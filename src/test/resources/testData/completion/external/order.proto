@@ -1,0 +1,3 @@
+syntax = "proto3";
+
+import "<error descr="Cannot resolve import 'google/type/'">google/type/<caret></error>";
