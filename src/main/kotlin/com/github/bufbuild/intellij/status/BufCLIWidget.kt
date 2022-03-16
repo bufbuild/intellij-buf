@@ -1,7 +1,10 @@
 package com.github.bufbuild.intellij.status
 
 import com.github.bufbuild.intellij.BufBundle
+import com.github.bufbuild.intellij.configurable.BufConfigurable
 import com.github.bufbuild.intellij.icons.BufIcons
+import com.github.bufbuild.intellij.settings.bufSettings
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.CustomStatusBarWidget
@@ -9,7 +12,9 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.openapi.wm.impl.status.TextPanel
+import com.intellij.ui.ClickListener
 import com.intellij.util.ui.UIUtil
+import java.awt.event.MouseEvent
 import javax.swing.JComponent
 
 class BufCLIWidgetFactory : StatusBarWidgetFactory {
@@ -39,6 +44,16 @@ class BufCLIWidget(private val project: Project) : TextPanel.WithIconAndArrows()
 
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar
+        if (!project.isDisposed) {
+            object : ClickListener() {
+                override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
+                    if (!project.isDisposed) {
+                        ShowSettingsUtil.getInstance().showSettingsDialog(project, BufConfigurable::class.java)
+                    }
+                    return true
+                }
+            }.installOn(this, true)
+        }
         update()
         statusBar.updateWidget(ID())
     }
@@ -55,8 +70,14 @@ class BufCLIWidget(private val project: Project) : TextPanel.WithIconAndArrows()
         UIUtil.invokeLaterIfNeeded {
             if (project.isDisposed) return@invokeLaterIfNeeded
             text = BufBundle.message("name")
-            toolTipText = if (inProgress) BufBundle.message("linter.in.progress") else BufBundle.message("linter.done")
+            val lintingEnabled = project.bufSettings.state.backgroundLintingEnabled
+            toolTipText = when {
+                !lintingEnabled -> BufBundle.message("linter.disabled")
+                inProgress -> BufBundle.message("linter.in.progress")
+                else -> BufBundle.message("linter.done")
+            }
             icon = when {
+                !lintingEnabled -> BufIcons.LogoGrayscale
                 inProgress -> BufIcons.LogoAnimated
                 else -> BufIcons.Logo
             }

@@ -2,6 +2,7 @@ package com.github.bufbuild.intellij.annotator
 
 import com.github.bufbuild.intellij.icons.BufLintGutterIconRenderer
 import com.github.bufbuild.intellij.model.BufLintIssue
+import com.github.bufbuild.intellij.settings.bufSettings
 import com.intellij.codeHighlighting.DirtyScopeTrackingHighlightingPassFactory
 import com.intellij.codeHighlighting.TextEditorHighlightingPass
 import com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar
@@ -54,6 +55,7 @@ class BufLintPass(
     override fun doCollectInformation(progress: ProgressIndicator) {
         annotationHolder.clear()
         if (file !is PbFile) return
+        if (!myProject.bufSettings.state.backgroundLintingEnabled) return
 
         val contentRootForFile = ProjectFileIndex.getInstance(myProject)
             .getContentRootForFile(file.virtualFile) ?: return
@@ -220,6 +222,7 @@ fun BufLintIssue.toTextRange(document: Document): TextRange? {
         null
     }
 }
+
 @Suppress("NAME_SHADOWING")
 fun toOffset(document: Document, line: Int, column: Int): Int? {
     val line = line - 1

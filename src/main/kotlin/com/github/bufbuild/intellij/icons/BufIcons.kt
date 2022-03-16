@@ -9,6 +9,9 @@ object BufIcons {
     val Logo = IconLoader.getIcon("/icons/logo.png", javaClass)
 
     @JvmField
+    val LogoGrayscale = IconUtil.desaturate(Logo)
+
+    @JvmField
     val LogoAnimated = AnimatedIcon(
         AnimatedIcon.Default.DELAY,
         IconUtil.brighter(Logo, 3),
