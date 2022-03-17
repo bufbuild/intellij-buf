@@ -6,11 +6,17 @@ import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import java.nio.file.Path
 
 class BufRootsProvider : AdditionalLibraryRootsProvider() {
     companion object {
+        private val bufCacheFolderBase: VirtualFile? by lazy {
+            System.getenv()["XDG_CACHE_HOME"]?.let {
+                VfsUtil.findFile(Path.of(it), true)
+            } ?: VfsUtil.getUserHomeDir()?.findFileByRelativePath(".cache")
+        }
         public val bufCacheFolder: VirtualFile? by lazy {
-            VfsUtil.getUserHomeDir()?.findFileByRelativePath(".cache/buf/v1/module/data")
+            bufCacheFolderBase?.findFileByRelativePath("buf/v1/module/data")
         }
 
         public fun findModuleCacheFolder(mod: BufModuleCoordinates): VirtualFile? = bufCacheFolder
