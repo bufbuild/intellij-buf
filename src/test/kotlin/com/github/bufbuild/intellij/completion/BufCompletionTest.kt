@@ -2,6 +2,7 @@ package com.github.bufbuild.intellij.completion
 
 import com.github.bufbuild.intellij.base.BufTestBase
 import com.github.bufbuild.intellij.index.BufModuleIndex
+import com.github.bufbuild.intellij.resolve.BufRootsProvider
 import kotlin.test.assertContains
 
 class BufCompletionTest : BufTestBase() {
@@ -10,6 +11,9 @@ class BufCompletionTest : BufTestBase() {
     fun testExternalBufModule() {
         configureByFolder("external", "order.proto")
         assertNotEmpty(BufModuleIndex.getAllProjectModules(project))
+        assertNotEmpty(BufModuleIndex.getAllProjectModules(project).mapNotNull {
+            BufRootsProvider.findModuleCacheFolder(it)
+        })
         val suggestions = myFixture.completeBasic().map { it.lookupString }
         assertContains(suggestions, "google/type/money.proto")
     }
