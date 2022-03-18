@@ -3,5 +3,5 @@ syntax = "proto3";
 import "google/type/money.proto";
 
 message Order {
-google.type.Mo<caret>ney amount = 1;
+  google.type.Mo<caret>ney amount = 1;
 }
