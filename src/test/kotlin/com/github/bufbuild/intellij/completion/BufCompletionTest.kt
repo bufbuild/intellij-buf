@@ -10,10 +10,6 @@ class BufCompletionTest : BufTestBase() {
 
     fun testExternalBufModule() {
         configureByFolder("external", "order.proto")
-        assertNotEmpty(BufModuleIndex.getAllProjectModules(project))
-        assertNotEmpty(BufModuleIndex.getAllProjectModules(project).mapNotNull {
-            BufRootsProvider.findModuleCacheFolder(it)
-        })
         val suggestions = myFixture.completeBasic().map { it.lookupString }
         assertContains(suggestions, "google/type/money.proto")
     }

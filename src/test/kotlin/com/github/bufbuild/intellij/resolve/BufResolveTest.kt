@@ -7,10 +7,6 @@ class BufResolveTest : BufTestBase() {
     override fun getBasePath(): String = "resolve"
     fun testExternalBufModule() {
         configureByFolder("external", "order.proto")
-        assertNotEmpty(BufModuleIndex.getAllProjectModules(project))
-        assertNotEmpty(BufModuleIndex.getAllProjectModules(project).mapNotNull {
-            BufRootsProvider.findModuleCacheFolder(it)
-        })
         val reference = myFixture.getReferenceAtCaretPositionWithAssertion("order.proto")
         assertNotNull(reference.resolve())
     }

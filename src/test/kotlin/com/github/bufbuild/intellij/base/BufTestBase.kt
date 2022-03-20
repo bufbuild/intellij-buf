@@ -1,6 +1,8 @@
 package com.github.bufbuild.intellij.base
 
 import com.github.bufbuild.intellij.annotator.BufLintUtils
+import com.github.bufbuild.intellij.index.BufModuleIndex
+import com.github.bufbuild.intellij.resolve.BufRootsProvider
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
@@ -22,6 +24,23 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
         runReadAction {
             BufLintUtils.checkLazily(project, project, Path(myFixture.tempDirPath))
         }.value // this will make "buf lint" to execute which will populate cache
+        val projectModules = BufModuleIndex.getAllProjectModules(project)
+        assertNotEmpty(projectModules)
+        val resolvedModuleRoots = projectModules.mapNotNull {
+            BufRootsProvider.findModuleCacheFolder(it)
+        }
+        if (projectModules.size != resolvedModuleRoots.size) {
+            val cache = BufRootsProvider.bufCacheFolder
+            fail("""
+                Failed to resolve ${projectModules.size} modules inside ${cache?.canonicalPath}
+                
+                Debug info:
+                    - Found ${resolvedModuleRoots.size} modules
+                    - Exists: (${cache?.exists()})
+                    - Valid: (${cache?.isValid})
+                    - Children: ${cache?.children?.map { it.name }}
+            """.trimIndent())
+        }
     }
 
     private fun addChildrenRecursively(root: File, file: File) {
