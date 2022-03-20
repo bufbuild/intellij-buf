@@ -108,7 +108,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: buf-cache-result
-          path: ${{ env.HOME }}/.cache
+          path: /home/runner/.cache
 
       # Run Qodana inspections
       - name: Qodana - Code Inspection
