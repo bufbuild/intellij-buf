@@ -7,6 +7,7 @@ import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
+import com.intellij.util.SystemProperties
 import org.junit.internal.runners.JUnit38ClassRunner
 import org.junit.runner.RunWith
 import java.io.File
@@ -36,6 +37,11 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
                 
                 Debug info:
                     - Cache base path ${BufRootsProvider.bufCacheFolderBase} modules
+                    - Env vars count: ${System.getenv().size}
+                    - BUF_CACHE_DIR: ${System.getenv()["BUF_CACHE_DIR"]}
+                    - XDG_CACHE_HOME: ${System.getenv()["XDG_CACHE_HOME"]}
+                    - HOME: ${System.getenv()["HOME"]}
+                    - System Home: ${SystemProperties.getUserHome()}
                     - Found ${resolvedModuleRoots.size} modules
                     - Exists: (${cache?.exists()})
                     - Valid: (${cache?.isValid})
