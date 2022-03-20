@@ -1,8 +1,6 @@
 package com.github.bufbuild.intellij.completion
 
 import com.github.bufbuild.intellij.base.BufTestBase
-import com.github.bufbuild.intellij.index.BufModuleIndex
-import com.github.bufbuild.intellij.resolve.BufRootsProvider
 import kotlin.test.assertContains
 
 class BufCompletionTest : BufTestBase() {

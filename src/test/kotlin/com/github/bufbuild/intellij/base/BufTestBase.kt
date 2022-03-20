@@ -35,6 +35,7 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
                 Failed to resolve ${projectModules.size} modules inside ${cache?.canonicalPath}
                 
                 Debug info:
+                    - Cache base path ${BufRootsProvider.bufCacheFolderBase} modules
                     - Found ${resolvedModuleRoots.size} modules
                     - Exists: (${cache?.exists()})
                     - Valid: (${cache?.isValid})
