@@ -15,8 +15,6 @@ jobs:
 
   testUI:
     runs-on: ${{ matrix.os }}
-    env:
-      BUF_CACHE_DIR: ${{ env.RUNNER_TEMP }}
     strategy:
       fail-fast: false
       matrix:
@@ -62,4 +60,6 @@ jobs:
 
       # Run tests
       - name: Tests
+        env:
+          BUF_CACHE_DIR: ${{ env.RUNNER_TEMP }}
         run: ./gradlew test
