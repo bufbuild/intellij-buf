@@ -73,8 +73,6 @@ jobs:
 
       # Run tests
       - name: Run Tests
-        env:
-          BUF_CACHE_DIR: ${{ env.RUNNER_TEMP }}
         run: ./gradlew test --info
 
       # Collect Tests Result of failed tests
