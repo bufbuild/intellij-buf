@@ -28,6 +28,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    env:
+      BUF_CACHE_DIR: ${{ env.RUNNER_TEMP }}
     outputs:
       version: ${{ steps.properties.outputs.version }}
       changelog: ${{ steps.properties.outputs.changelog }}
