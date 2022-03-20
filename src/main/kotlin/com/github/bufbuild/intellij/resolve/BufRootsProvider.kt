@@ -11,7 +11,7 @@ import java.nio.file.Path
 class BufRootsProvider : AdditionalLibraryRootsProvider() {
     companion object {
         private val bufCacheFolderBase: VirtualFile? by lazy {
-            System.getenv()["XDG_CACHE_HOME"]?.let {
+            (System.getenv()["BUF_CACHE_DIR"] ?: System.getenv()["XDG_CACHE_HOME"])?.let {
                 VfsUtil.findFile(Path.of(it), true)
             } ?: VfsUtil.getUserHomeDir()?.findFileByRelativePath(".cache")
         }
