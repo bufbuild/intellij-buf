@@ -102,6 +102,14 @@ jobs:
           name: pluginVerifier-result
           path: ${{ github.workspace }}/build/reports/pluginVerifier
 
+      # Collect Buf Cache
+      - name: Collect Cache
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: buf-cache-result
+          path: ${{ env.HOME }}/.cache
+
       # Run Qodana inspections
       - name: Qodana - Code Inspection
         uses: JetBrains/qodana-action@v4.2.5
