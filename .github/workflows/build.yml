@@ -68,6 +68,9 @@ jobs:
       # Install Buf for tests
       - uses: bufbuild/buf-setup-action@v0.6.0
 
+      - name: Print Environment
+        run: printenv
+
       # Run tests
       - name: Run Tests
         env:
