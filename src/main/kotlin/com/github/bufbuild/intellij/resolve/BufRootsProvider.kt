@@ -10,14 +10,15 @@ import java.nio.file.Path
 
 class BufRootsProvider : AdditionalLibraryRootsProvider() {
     companion object {
-        private val bufCacheFolderBase: VirtualFile? by lazy {
-            (System.getenv()["BUF_CACHE_DIR"] ?: System.getenv()["XDG_CACHE_HOME"])?.let {
-                VfsUtil.findFile(Path.of(it), true)
-            } ?: VfsUtil.getUserHomeDir()?.findFileByRelativePath(".cache")
-        }
-        public val bufCacheFolder: VirtualFile? by lazy {
-            bufCacheFolderBase?.findFileByRelativePath("buf/v1/module/data")
-        }
+        private val bufCacheFolderBase: VirtualFile?
+            get() {
+                return (System.getenv()["BUF_CACHE_DIR"] ?: System.getenv()["XDG_CACHE_HOME"])?.let {
+                    VfsUtil.findFile(Path.of(it), true)
+                } ?: VfsUtil.getUserHomeDir()?.findFileByRelativePath(".cache")
+            }
+
+        public val bufCacheFolder: VirtualFile?
+            get() = bufCacheFolderBase?.findFileByRelativePath("buf/v1/module/data")
 
         public fun findModuleCacheFolder(mod: BufModuleCoordinates): VirtualFile? = bufCacheFolder
             ?.findChild(mod.remote)
