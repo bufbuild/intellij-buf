@@ -55,6 +55,11 @@ jobs:
           max-attempts: 15
           retry-delay: 30s
 
+      # Install Buf for tests
+      - uses: bufbuild/buf-setup-action@v1.1.0
+
       # Run tests
       - name: Tests
-        run: ./gradlew test
+        run: |
+          mkdir -p ~/.cache
+          ./gradlew test
