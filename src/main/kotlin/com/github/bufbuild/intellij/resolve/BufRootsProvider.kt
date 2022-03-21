@@ -4,7 +4,7 @@ import com.github.bufbuild.intellij.model.BufModuleCoordinates
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
-import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.SystemProperties
 import java.nio.file.Path
@@ -20,7 +20,7 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             }
 
         public val bufCacheFolder: VirtualFile?
-            get() = VfsUtil.findFile(bufCacheFolderBase, true)?.findFileByRelativePath("buf/v1/module/data")
+            get() = LocalFileSystem.getInstance().findFileByNioFile(bufCacheFolderBase)?.findFileByRelativePath("buf/v1/module/data")
 
         public fun findModuleCacheFolder(mod: BufModuleCoordinates): VirtualFile? = bufCacheFolder
             ?.findChild(mod.remote)
