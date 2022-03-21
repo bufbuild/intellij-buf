@@ -5,6 +5,7 @@ import com.github.bufbuild.intellij.index.BufModuleIndex
 import com.github.bufbuild.intellij.resolve.BufRootsProvider
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
 import com.intellij.util.SystemProperties
@@ -25,6 +26,14 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
         runReadAction {
             BufLintUtils.checkLazily(project, project, Path(myFixture.tempDirPath))
         }.value // this will make "buf lint" to execute which will populate cache
+        // just to make sure the root is added
+        LocalFileSystem.getInstance().apply {
+            addRootToWatch(
+                BufRootsProvider.bufCacheFolderBase.toString(),
+                true
+            )
+            refresh(false)
+        }
         val projectModules = BufModuleIndex.getAllProjectModules(project)
         assertNotEmpty(projectModules)
         val resolvedModuleRoots = projectModules.mapNotNull {
