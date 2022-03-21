@@ -73,7 +73,9 @@ jobs:
 
       # Run tests
       - name: Run Tests
-        run: ./gradlew test --info
+        run: |
+          mkdir -p ~/.cache
+          ./gradlew test --info
 
       # Collect Tests Result of failed tests
       - name: Collect Tests Result
@@ -101,14 +103,6 @@ jobs:
         with:
           name: pluginVerifier-result
           path: ${{ github.workspace }}/build/reports/pluginVerifier
-
-      # Collect Buf Cache
-      - name: Collect Cache
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: buf-cache-result
-          path: /home/runner/.cache
 
       # Run Qodana inspections
       - name: Qodana - Code Inspection

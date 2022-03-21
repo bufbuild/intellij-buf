@@ -60,4 +60,6 @@ jobs:
 
       # Run tests
       - name: Tests
-        run: ./gradlew test
+        run: |
+          mkdir -p ~/.cache
+          ./gradlew test

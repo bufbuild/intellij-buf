@@ -20,7 +20,8 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             }
 
         public val bufCacheFolder: VirtualFile?
-            get() = LocalFileSystem.getInstance().findFileByNioFile(bufCacheFolderBase)?.findFileByRelativePath("buf/v1/module/data")
+            get() = LocalFileSystem.getInstance().findFileByNioFile(bufCacheFolderBase)
+                ?.findFileByRelativePath("buf/v1/module/data")
 
         public fun findModuleCacheFolder(mod: BufModuleCoordinates): VirtualFile? = bufCacheFolder
             ?.findChild(mod.remote)
@@ -33,7 +34,9 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
      * Let's index all Buf modules
      * */
     override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
-        return listOfNotNull(bufCacheFolder)
+        return listOfNotNull(
+            bufCacheFolder ?: LocalFileSystem.getInstance().findFileByNioFile(bufCacheFolderBase)
+        )
     }
 
     override fun getAdditionalProjectLibraries(project: Project): Collection<SyntheticLibrary> {
