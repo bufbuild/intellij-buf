@@ -25,6 +25,11 @@
         <projectConfigurable instance="com.github.bufbuild.intellij.configurable.BufConfigurable"
                              groupId="tools"
                              id="tools.buf"/>
+
+        <localInspection language="protobuf" shortName="BufCLINotInstalled" bundle="messages.BufBundle"
+                         key="buf.inspection.cli.not.installed"
+                         groupKey="buf.inspections.group.name" enabledByDefault="true"
+                         implementationClass="com.github.bufbuild.intellij.inspections.BufNotInstalledInspection"/>
     </extensions>
     <extensions defaultExtensionNs="com.intellij.protobuf">
         <fileResolveProvider implementation="com.github.bufbuild.intellij.resolve.BufProtoFileResolver"/>

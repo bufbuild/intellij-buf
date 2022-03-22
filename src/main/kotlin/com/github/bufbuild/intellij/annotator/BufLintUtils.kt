@@ -4,10 +4,10 @@ import com.github.bufbuild.intellij.BufBundle
 import com.github.bufbuild.intellij.cache.ProjectCache
 import com.github.bufbuild.intellij.model.BufLintIssue
 import com.github.bufbuild.intellij.status.BufCLIWidget
-import com.intellij.execution.CommandLineUtil
-import com.intellij.execution.process.BaseOSProcessHandler
+import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -26,7 +26,7 @@ import com.intellij.psi.util.PsiModificationTracker
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.LinkedList
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture
 object BufLintUtils {
     private val LOG: Logger = logger<BufLintUtils>()
     const val TEST_MESSAGE: String = "RsExternalLint"
+    public fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
 
     fun checkLazily(
         project: Project,
@@ -87,7 +88,8 @@ object BufLintUtils {
     ): BufLintResult? {
         ProgressManager.checkCanceled()
         val started = Instant.now()
-        val issues = runCommand(owner, workingDirectory, listOf("buf", "lint", "--error-format=json"))
+
+        val issues = runBufCommand(owner, workingDirectory, listOf("lint", "--error-format=json"))
             .mapNotNull { BufLintIssue.fromJSON(it) }
         val finish = Instant.now()
         thisLogger().info("Ran buf lint in ${Duration.between(started, finish).toMillis()}ms")
@@ -95,12 +97,15 @@ object BufLintUtils {
         return BufLintResult(workingDirectory, issues)
     }
 
-    private fun runCommand(owner: Disposable, workingDirectory: Path, cmd: List<String>) : Iterable<String> {
+    private fun runBufCommand(owner: Disposable, workingDirectory: Path, arguments: List<String>): Iterable<String> {
+        val bufExecutable = findBufExecutable() ?: return emptyList()
         val result = LinkedList<String>()
-        val process = ProcessBuilder(CommandLineUtil.toCommandLine(cmd))
-            .directory(workingDirectory.toFile())
-            .start()
-        val handler = BaseOSProcessHandler(process, cmd.toString(), null)
+        val handler = ScriptRunnerUtil.execute(
+            bufExecutable.absolutePath,
+            workingDirectory.toString(),
+            null,
+            arguments.toTypedArray()
+        )
         handler.addProcessListener(object : ProcessAdapter() {
             override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
                 result.add(event.text)
