@@ -1,1 +1,1 @@
-rootProject.name = "IntelliJ Buf Plugin"
+rootProject.name = "intellij-buf"
