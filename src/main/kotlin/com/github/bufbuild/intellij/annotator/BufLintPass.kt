@@ -1,5 +1,6 @@
 package com.github.bufbuild.intellij.annotator
 
+import com.github.bufbuild.intellij.fixes.IgnoreBufIssueQuickFix
 import com.github.bufbuild.intellij.icons.BufLintGutterIconRenderer
 import com.github.bufbuild.intellij.model.BufLintIssue
 import com.github.bufbuild.intellij.settings.bufSettings
@@ -208,6 +209,7 @@ fun AnnotationHolder.createAnnotationsForFile(
             .problemGroup { issue.type }
             .gutterIconRenderer(BufLintGutterIconRenderer)
             .needsUpdateOnTyping(true)
+            .withFix(IgnoreBufIssueQuickFix(issue.type))
 
         annotationBuilder.create()
     }
