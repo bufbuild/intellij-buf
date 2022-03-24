@@ -11,6 +11,9 @@ data class BufLintIssue(
     val type: String,
     val message: String,
 ) {
+    val isCompileError: Boolean
+        get() = type == "COMPILE"
+
     companion object {
         fun fromJSON(text: String): BufLintIssue? {
             return try {

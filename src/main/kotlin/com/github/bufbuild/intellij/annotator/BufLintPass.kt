@@ -204,7 +204,8 @@ fun AnnotationHolder.createAnnotationsForFile(
     val filteredIssues = annotationResult.issue
         .filter { it.path == file.virtualFile.toNioPath().relativeToOrNull(wd)?.toString() }
     for (issue in filteredIssues) {
-        val annotationBuilder = newAnnotation(HighlightSeverity.WARNING, issue.message)
+        val severity = if (issue.isCompileError) HighlightSeverity.ERROR else HighlightSeverity.WARNING
+        val annotationBuilder = newAnnotation(severity, issue.message)
             .range(issue.toTextRange(doc) ?: continue)
             .problemGroup { issue.type }
             .gutterIconRenderer(BufLintGutterIconRenderer)
