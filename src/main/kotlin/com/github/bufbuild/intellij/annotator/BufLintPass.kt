@@ -5,6 +5,7 @@ import com.github.bufbuild.intellij.icons.BufLintGutterIconRenderer
 import com.github.bufbuild.intellij.model.BufLintIssue
 import com.github.bufbuild.intellij.settings.bufSettings
 import com.intellij.codeHighlighting.DirtyScopeTrackingHighlightingPassFactory
+import com.intellij.codeHighlighting.MainHighlightingPassFactory
 import com.intellij.codeHighlighting.TextEditorHighlightingPass
 import com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar
 import com.intellij.codeInsight.daemon.impl.*
@@ -13,6 +14,7 @@ import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.AnnotationSession
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.application.runReadAction
@@ -41,8 +43,9 @@ import kotlin.io.path.relativeToOrNull
 class BufLintPass(
     private val factory: BufLintPassFactory,
     private val file: PsiFile,
-    private val editor: Editor
-) : TextEditorHighlightingPass(file.project, editor.document), DumbAware {
+    document: Document,
+    private val withWidget: Boolean = true
+) : TextEditorHighlightingPass(file.project, document), DumbAware {
     @Suppress("UnstableApiUsage", "DEPRECATION")
     private val annotationHolder: AnnotationHolderImpl = AnnotationHolderImpl(AnnotationSession(file), false)
 
@@ -64,7 +67,20 @@ class BufLintPass(
         disposable = myProject.messageBus.createDisposableOnAnyPsiChange()
             .also { Disposer.register(myProject, it) }
 
-        annotationInfo = BufLintUtils.checkLazily(myProject, disposable, contentRootForFile.toNioPath())
+        annotationInfo = BufLintUtils.checkLazily(myProject, disposable, contentRootForFile.toNioPath(), withWidget)
+    }
+
+    override fun getInfos(): List<HighlightInfo> {
+        if (myProject.isDisposed) {
+            return emptyList()
+        }
+        val bufLintResult = ApplicationManager.getApplication().executeOnPooledThread<BufLintResult?> {
+            annotationResult
+        }.get() ?: return emptyList()
+        doApply(bufLintResult)
+        return annotationHolder.map {
+            HighlightInfo.fromAnnotation(it)
+        }
     }
 
     override fun doApplyInformationToEditor() {
@@ -118,7 +134,7 @@ class BufLintPass(
     }
 
     private fun doFinish(highlights: List<HighlightInfo>) {
-        invokeLater(ModalityState.stateForComponent(editor.component)) {
+        invokeLater(ModalityState.defaultModalityState()) {
             if (Disposer.isDisposed(disposable)) return@invokeLater
             UpdateHighlightersUtil.setHighlightersToEditor(
                 myProject,
@@ -144,7 +160,7 @@ class BufLintPass(
 class BufLintPassFactory(
     project: Project,
     registrar: TextEditorHighlightingPassRegistrar
-) : DirtyScopeTrackingHighlightingPassFactory {
+) : DirtyScopeTrackingHighlightingPassFactory, MainHighlightingPassFactory {
     private val myPassId: Int = registrar.registerTextEditorHighlightingPass(
         this,
         null,
@@ -162,10 +178,17 @@ class BufLintPassFactory(
         null,
         false
     )
+    override fun createMainHighlightingPass(
+        file: PsiFile,
+        document: Document,
+        highlightInfoProcessor: HighlightInfoProcessor
+    ): TextEditorHighlightingPass {
+        return BufLintPass(this, file, document, false)
+    }
 
     override fun createHighlightingPass(file: PsiFile, editor: Editor): TextEditorHighlightingPass? {
         FileStatusMap.getDirtyTextRange(editor, passId) ?: return null
-        return BufLintPass(this, file, editor)
+        return BufLintPass(this, file, editor.document)
     }
 
     override fun getPassId(): Int = myPassId
