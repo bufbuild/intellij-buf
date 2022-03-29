@@ -42,14 +42,19 @@ object BufLintUtils {
     fun checkLazily(
         project: Project,
         owner: Disposable,
-        workingDirectory: Path
+        workingDirectory: Path,
+        withWidget: Boolean = true
     ): Lazy<BufLintResult?> {
         check(ApplicationManager.getApplication().isReadAccessAllowed)
         return externalLinterLazyResultCache.getOrPut(project, workingDirectory) {
             lazy {
                 // This code will be executed out of read action in background thread
                 if (!isUnitTestMode) check(!ApplicationManager.getApplication().isReadAccessAllowed)
-                checkWrapped(project, owner, workingDirectory)
+                if (withWidget) {
+                    checkWrapped(project, owner, workingDirectory)
+                } else {
+                    check(project, owner, workingDirectory)
+                }
             }
         }
     }
