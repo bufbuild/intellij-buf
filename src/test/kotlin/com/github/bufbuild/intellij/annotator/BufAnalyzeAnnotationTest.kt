@@ -2,7 +2,7 @@ package com.github.bufbuild.intellij.annotator
 
 import com.github.bufbuild.intellij.base.BufTestBase
 
-class BufLintAnnotationTest : BufTestBase() {
+class BufAnalyzeAnnotationTest : BufTestBase() {
     fun testSnakeCase() {
         myFixture.configureByText(
             "snake_case.proto", """

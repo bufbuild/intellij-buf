@@ -2,7 +2,7 @@ package com.github.bufbuild.intellij.annotator
 
 import com.github.bufbuild.intellij.BufBundle
 import com.github.bufbuild.intellij.cache.ProjectCache
-import com.github.bufbuild.intellij.model.BufLintIssue
+import com.github.bufbuild.intellij.model.BufIssue
 import com.github.bufbuild.intellij.status.BufCLIWidget
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.execution.process.ProcessAdapter
@@ -12,8 +12,6 @@ import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.EmptyProgressIndicator
@@ -34,9 +32,7 @@ import java.util.concurrent.CompletableFuture
  *
  * @see https://github.com/intellij-rust/intellij-rust
  */
-object BufLintUtils {
-    private val LOG: Logger = logger<BufLintUtils>()
-    const val TEST_MESSAGE: String = "RsExternalLint"
+object BufAnalyzeUtils {
     public fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
 
     fun checkLazily(
@@ -44,7 +40,7 @@ object BufLintUtils {
         owner: Disposable,
         workingDirectory: Path,
         withWidget: Boolean = true
-    ): Lazy<BufLintResult?> {
+    ): Lazy<BufAnalyzeResult?> {
         check(ApplicationManager.getApplication().isReadAccessAllowed)
         return externalLinterLazyResultCache.getOrPut(project, workingDirectory) {
             lazy {
@@ -63,14 +59,14 @@ object BufLintUtils {
         project: Project,
         owner: Disposable,
         workingDirectory: Path
-    ): BufLintResult? {
+    ): BufAnalyzeResult? {
         val widget = WriteAction.computeAndWait<BufCLIWidget?, Throwable> {
             FileDocumentManager.getInstance().saveAllDocuments()
             val statusBar = WindowManager.getInstance().getStatusBar(project)
             statusBar?.getWidget(BufCLIWidget.ID) as? BufCLIWidget
         }
 
-        val future = CompletableFuture<BufLintResult?>()
+        val future = CompletableFuture<BufAnalyzeResult?>()
         val task = object : Task.Backgroundable(project, BufBundle.message("linter.in.progress"), false) {
 
             override fun run(indicator: ProgressIndicator) {
@@ -90,16 +86,16 @@ object BufLintUtils {
         project: Project,
         owner: Disposable,
         workingDirectory: Path
-    ): BufLintResult? {
+    ): BufAnalyzeResult? {
         ProgressManager.checkCanceled()
         val started = Instant.now()
 
         val issues = runBufCommand(owner, workingDirectory, listOf("lint", "--error-format=json"))
-            .mapNotNull { BufLintIssue.fromJSON(it) }
+            .mapNotNull { BufIssue.fromJSON(it) }
         val finish = Instant.now()
         thisLogger().info("Ran buf lint in ${Duration.between(started, finish).toMillis()}ms")
         ProgressManager.checkCanceled()
-        return BufLintResult(workingDirectory, issues)
+        return BufAnalyzeResult(workingDirectory, issues)
     }
 
     private fun runBufCommand(owner: Disposable, workingDirectory: Path, arguments: List<String>): Iterable<String> {
@@ -122,10 +118,10 @@ object BufLintUtils {
     }
 
     private val externalLinterLazyResultCache =
-        ProjectCache<Path, Lazy<BufLintResult?>>("externalLinterLazyResultCache") {
+        ProjectCache<Path, Lazy<BufAnalyzeResult?>>("externalLinterLazyResultCache") {
             PsiModificationTracker.MODIFICATION_COUNT
         }
 
 }
 
-data class BufLintResult(val workingDirectory: Path, val issue: List<BufLintIssue>)
+data class BufAnalyzeResult(val workingDirectory: Path, val issue: List<BufIssue>)

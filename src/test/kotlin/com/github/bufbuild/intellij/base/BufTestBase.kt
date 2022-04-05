@@ -1,6 +1,6 @@
 package com.github.bufbuild.intellij.base
 
-import com.github.bufbuild.intellij.annotator.BufLintUtils
+import com.github.bufbuild.intellij.annotator.BufAnalyzeUtils
 import com.github.bufbuild.intellij.index.BufModuleIndex
 import com.github.bufbuild.intellij.resolve.BufRootsProvider
 import com.intellij.openapi.application.runReadAction
@@ -24,7 +24,7 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
         addChildrenRecursively(folderPath.toFile(), folderPath.toFile())
         myFixture.configureByFiles(*filePathsToConfigureFrom)
         runReadAction {
-            BufLintUtils.checkLazily(project, project, Path(myFixture.tempDirPath))
+            BufAnalyzeUtils.checkLazily(project, project, Path(myFixture.tempDirPath))
         }.value // this will make "buf lint" to execute which will populate cache
         // just to make sure the root is added
         LocalFileSystem.getInstance().apply {

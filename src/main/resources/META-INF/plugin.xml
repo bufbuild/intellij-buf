@@ -14,7 +14,7 @@
         <additionalLibraryRootsProvider implementation="com.github.bufbuild.intellij.resolve.BufRootsProvider"/>
 
 
-        <highlightingPassFactory implementation="com.github.bufbuild.intellij.annotator.BufLintPassFactoryRegistrar"/>
+        <highlightingPassFactory implementation="com.github.bufbuild.intellij.annotator.BufAnalyzePassFactoryRegistrar"/>
         <statusBarWidgetFactory id="bufLintWidget"
                                 implementation="com.github.bufbuild.intellij.status.BufCLIWidgetFactory"
                                 order="first"/>
@@ -33,9 +33,9 @@
 
 
         <globalInspection language="protobuf" groupBundle="messages.BufBundle"  groupKey="buf.inspections.group.name"
-                          shortName="BufLint" displayName="Buf Lint"
+                          shortName="BufAnalyze" displayName="Buf Analyze"
                           enabledByDefault="true" level="ERROR"
-                          implementationClass="com.github.bufbuild.intellij.inspections.BufLintInspection"/>
+                          implementationClass="com.github.bufbuild.intellij.inspections.BufAnalyzeInspection"/>
 
         <!-- Auto-discovery of the plugin via features extractor https://github.com/JetBrains/intellij-plugin-verifier/tree/master/intellij-feature-extractor -->
         <dependencySupport kind="java" coordinate="com.google.protobuf:protobuf-java"/>

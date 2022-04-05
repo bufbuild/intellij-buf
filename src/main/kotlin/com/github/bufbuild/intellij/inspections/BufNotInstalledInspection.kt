@@ -1,7 +1,7 @@
 package com.github.bufbuild.intellij.inspections
 
 import com.github.bufbuild.intellij.BufBundle
-import com.github.bufbuild.intellij.annotator.BufLintUtils
+import com.github.bufbuild.intellij.annotator.BufAnalyzeUtils
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.ProblemDescriptor
@@ -24,7 +24,7 @@ class BufNotInstalledInspection : LocalInspectionTool() {
 
     override fun checkFile(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor>? {
         if (file !is PbFile) return null
-        if (BufLintUtils.findBufExecutable() != null) return null
+        if (BufAnalyzeUtils.findBufExecutable() != null) return null
         return arrayOf(
             manager.createProblemDescriptor(file, displayName, isOnTheFly, arrayOf(NavigateToDocumentationLinkQuickFix("https://buf.build/")), ProblemHighlightType.WARNING)
         )
