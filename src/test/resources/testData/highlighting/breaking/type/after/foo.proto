@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message Foo {
+    <warning descr="Field \"1\" on message \"Foo\" changed type from \"int64\" to \"string\".">string</warning> bar = 1;
+}

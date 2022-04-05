@@ -59,7 +59,7 @@ class BufAnalyzePass(
     override fun doCollectInformation(progress: ProgressIndicator) {
         annotationHolder.clear()
         if (file !is PbFile) return
-        if (!myProject.bufSettings.state.backgroundLintingEnabled) return
+        if (!myProject.bufSettings.state.backgroundLintingEnabled && !myProject.bufSettings.state.backgroundBreakingEnabled) return
 
         val contentRootForFile = ProjectFileIndex.getInstance(myProject)
             .getContentRootForFile(file.virtualFile) ?: return

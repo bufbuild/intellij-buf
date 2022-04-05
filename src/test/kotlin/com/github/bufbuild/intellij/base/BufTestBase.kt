@@ -9,6 +9,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
 import com.intellij.util.SystemProperties
+import junit.framework.TestCase
 import org.junit.internal.runners.JUnit38ClassRunner
 import org.junit.runner.RunWith
 import java.io.File
@@ -18,9 +19,7 @@ import kotlin.io.path.Path
 @RunWith(JUnit38ClassRunner::class) // todo: remove once Gradle will pick up tests without it
 abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>() {
     fun configureByFolder(pathWithinTestData: String, vararg filePathsToConfigureFrom: String) {
-        val folderPath = Path.of(ClassLoader.getSystemResource("testData").toURI())
-            .resolve(basePath)
-            .resolve(pathWithinTestData)
+        val folderPath = findTestDataFolder().resolve(pathWithinTestData)
         addChildrenRecursively(folderPath.toFile(), folderPath.toFile())
         myFixture.configureByFiles(*filePathsToConfigureFrom)
         runReadAction {
@@ -57,6 +56,13 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
                     - Children: ${cache?.children?.map { it.name }}
             """.trimIndent())
         }
+    }
+
+    protected fun findTestDataFolder(): Path {
+        val result = Path.of(ClassLoader.getSystemResource("testData").toURI())
+            .resolve(basePath)
+        TestCase.assertNotNull(result)
+        return result
     }
 
     private fun addChildrenRecursively(root: File, file: File) {

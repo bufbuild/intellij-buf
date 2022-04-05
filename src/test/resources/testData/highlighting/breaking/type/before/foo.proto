@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message Foo {
+  int64 bar = 1;
+}

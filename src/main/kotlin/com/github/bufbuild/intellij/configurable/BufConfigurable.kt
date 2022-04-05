@@ -17,10 +17,14 @@ class BufConfigurable(
         row {
             checkBox(BufBundle.message("settings.buf.background.linting.enabled"), state::backgroundLintingEnabled)
         }
+        row {
+            checkBox(BufBundle.message("settings.buf.background.breaking.enabled"), state::backgroundBreakingEnabled)
+        }
     }
 
     override fun reset() {
         state.backgroundLintingEnabled = project.bufSettings.state.backgroundLintingEnabled
+        state.backgroundBreakingEnabled = project.bufSettings.state.backgroundBreakingEnabled
         super.reset()
     }
 
@@ -31,6 +35,6 @@ class BufConfigurable(
 
     override fun isModified(): Boolean {
         if (super.isModified()) return true
-        return project.bufSettings.state.backgroundLintingEnabled != state.backgroundLintingEnabled
+        return project.bufSettings.state != state
     }
 }

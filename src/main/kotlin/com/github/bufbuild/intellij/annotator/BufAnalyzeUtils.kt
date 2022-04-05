@@ -3,6 +3,7 @@ package com.github.bufbuild.intellij.annotator
 import com.github.bufbuild.intellij.BufBundle
 import com.github.bufbuild.intellij.cache.ProjectCache
 import com.github.bufbuild.intellij.model.BufIssue
+import com.github.bufbuild.intellij.settings.bufSettings
 import com.github.bufbuild.intellij.status.BufCLIWidget
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.execution.process.ProcessAdapter
@@ -21,6 +22,10 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.WindowManager
 import com.intellij.psi.util.PsiModificationTracker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
@@ -67,7 +72,7 @@ object BufAnalyzeUtils {
         }
 
         val future = CompletableFuture<BufAnalyzeResult?>()
-        val task = object : Task.Backgroundable(project, BufBundle.message("linter.in.progress"), false) {
+        val task = object : Task.Backgroundable(project, BufBundle.message("analyzing.in.progress"), false) {
 
             override fun run(indicator: ProgressIndicator) {
                 widget?.inProgress = true
@@ -90,16 +95,48 @@ object BufAnalyzeUtils {
         ProgressManager.checkCanceled()
         val started = Instant.now()
 
-        val issues = runBufCommand(owner, workingDirectory, listOf("lint", "--error-format=json"))
-            .mapNotNull { BufIssue.fromJSON(it) }
+        val issues = runBlocking {
+            val lintIssues = async {
+                if (project.bufSettings.state.backgroundLintingEnabled) {
+                    runBufCommand(owner, workingDirectory, listOf("lint", "--error-format=json"))
+                        .mapNotNull { BufIssue.fromJSON(it) }
+                } else {
+                    emptyList()
+                }
+            }
+            val breakingIssues = async {
+                if (project.bufSettings.state.backgroundBreakingEnabled) {
+                    runBufCommand(
+                        owner,
+                        workingDirectory,
+                        listOf("breaking", "--error-format=json") + findBreakingArguments(project, workingDirectory)
+                    ).mapNotNull { BufIssue.fromJSON(it) }
+                } else {
+                    emptyList()
+                }
+            }
+            lintIssues.await() + breakingIssues.await()
+        }
         val finish = Instant.now()
         thisLogger().info("Ran buf lint in ${Duration.between(started, finish).toMillis()}ms")
         ProgressManager.checkCanceled()
         return BufAnalyzeResult(workingDirectory, issues)
     }
 
-    private fun runBufCommand(owner: Disposable, workingDirectory: Path, arguments: List<String>): Iterable<String> {
-        val bufExecutable = findBufExecutable() ?: return emptyList()
+    private fun findBreakingArguments(project: Project, workingDirectory: Path): List<String> {
+        val argumentsOverride = project.bufSettings.state.breakingArgumentsOverride
+        if (argumentsOverride.isNotEmpty()) {
+            return argumentsOverride
+        }
+        return listOf("--against", ".git")
+    }
+
+    private suspend fun runBufCommand(
+        owner: Disposable,
+        workingDirectory: Path,
+        arguments: List<String>
+    ): Iterable<String> = withContext(Dispatchers.IO) {
+        val bufExecutable = findBufExecutable() ?: return@withContext emptyList()
         val result = LinkedList<String>()
         val handler = ScriptRunnerUtil.execute(
             bufExecutable.absolutePath,
@@ -114,7 +151,7 @@ object BufAnalyzeUtils {
         }, owner)
         handler.startNotify()
         handler.waitFor()
-        return result
+        result
     }
 
     private val externalLinterLazyResultCache =

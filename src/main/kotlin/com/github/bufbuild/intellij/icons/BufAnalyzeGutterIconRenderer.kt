@@ -9,7 +9,7 @@ import javax.swing.Icon
 object BufAnalyzeGutterIconRenderer : GutterIconRenderer() {
     override fun getIcon(): Icon = BufIcons.Logo
 
-    override fun getTooltipText(): String = BufBundle.getMessage("linter.icon.tooltip")
+    override fun getTooltipText(): String = BufBundle.getMessage("analyzing.icon.tooltip")
 
     override fun equals(other: Any?): Boolean = this === other
 
