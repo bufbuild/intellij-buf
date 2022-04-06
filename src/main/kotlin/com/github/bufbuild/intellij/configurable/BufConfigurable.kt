@@ -1,5 +1,6 @@
 package com.github.bufbuild.intellij.configurable
 
+import ai.grazie.nlp.utils.tokenizeByWhitespace
 import com.github.bufbuild.intellij.BufBundle
 import com.github.bufbuild.intellij.settings.BufProjectSettingsService
 import com.github.bufbuild.intellij.settings.bufSettings
@@ -19,6 +20,17 @@ class BufConfigurable(
         }
         row {
             checkBox(BufBundle.message("settings.buf.background.breaking.enabled"), state::backgroundBreakingEnabled)
+            subRowIndent = 1
+            row("buf breaking") {
+                textField(
+                    { state.breakingArgumentsOverride.joinToString(separator = " ") },
+                    { text -> state.breakingArgumentsOverride = text.tokenizeByWhitespace() }
+                ).comment("For example, --against .git#tag=v1.0.0. By default, breaking changes will be verified against uncommitted changes.")
+                    .apply {
+                        visible(state.backgroundBreakingEnabled)
+                        enabled(state.backgroundBreakingEnabled)
+                    }
+            }
         }
     }
 
