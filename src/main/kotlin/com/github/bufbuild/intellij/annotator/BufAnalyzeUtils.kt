@@ -22,6 +22,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.WindowManager
 import com.intellij.psi.util.PsiModificationTracker
+import com.intellij.util.io.exists
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -31,6 +32,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import kotlin.io.path.relativeTo
 
 /**
  * Inspired by Rust's RsExternalLinterUtils
@@ -128,7 +130,17 @@ object BufAnalyzeUtils {
         if (argumentsOverride.isNotEmpty()) {
             return argumentsOverride
         }
-        return listOf("--against", ".git")
+        var gitParent = workingDirectory
+        while (!gitParent.resolve(".git").exists()) {
+            gitParent = gitParent.parent
+        }
+        if (gitParent == workingDirectory) {
+            return listOf("--against", ".git")
+        }
+        val relativePart = workingDirectory.relativeTo(gitParent)
+        val relativePartReversed = gitParent.relativeTo(workingDirectory).resolve(".git")
+        val againstArgument = "$relativePartReversed#subdir=$relativePart"
+        return listOf("--against", againstArgument)
     }
 
     private suspend fun runBufCommand(
