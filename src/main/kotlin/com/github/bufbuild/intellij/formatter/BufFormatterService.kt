@@ -43,7 +43,11 @@ class BufFormatterService: AsyncDocumentFormattingService() {
                         listOf("format", relativePath)
                     )
                 }
-                request.onTextReady(output.joinToString(separator = "\n"))
+                if (output.firstOrNull()?.startsWith("unknown command") == true) {
+                    request.onError(BufBundle.message("formatter.title"), BufBundle.message("formatter.cli.version.not.supported"))
+                } else {
+                    request.onTextReady(output.joinToString(separator = "\n"))
+                }
             }
 
             override fun cancel(): Boolean {
