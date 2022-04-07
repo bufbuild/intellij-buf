@@ -24,7 +24,6 @@ import com.intellij.openapi.wm.WindowManager
 import com.intellij.psi.util.PsiModificationTracker
 import com.intellij.util.io.exists
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.nio.file.Path
@@ -40,6 +39,7 @@ import kotlin.io.path.relativeTo
  * @see https://github.com/intellij-rust/intellij-rust
  */
 object BufAnalyzeUtils {
+    private val BUF_COMMAND_EXECUTION_TIMEOUT = Duration.ofMinutes(1)
     public fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
 
     fun checkLazily(
@@ -98,15 +98,14 @@ object BufAnalyzeUtils {
         val started = Instant.now()
 
         val issues = runBlocking {
-            val lintIssues = async {
+            val lintIssues =
                 if (project.bufSettings.state.backgroundLintingEnabled) {
                     runBufCommand(owner, workingDirectory, listOf("lint", "--error-format=json"))
                         .mapNotNull { BufIssue.fromJSON(it) }
                 } else {
                     emptyList()
                 }
-            }
-            val breakingIssues = async {
+            val breakingIssues =
                 if (project.bufSettings.state.backgroundBreakingEnabled) {
                     runBufCommand(
                         owner,
@@ -116,8 +115,7 @@ object BufAnalyzeUtils {
                 } else {
                     emptyList()
                 }
-            }
-            lintIssues.await() + breakingIssues.await()
+            lintIssues + breakingIssues
         }
         val finish = Instant.now()
         thisLogger().info("Ran buf lint in ${Duration.between(started, finish).toMillis()}ms")
@@ -162,7 +160,7 @@ object BufAnalyzeUtils {
             }
         }, owner)
         handler.startNotify()
-        handler.waitFor()
+        handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())
         result
     }
 
