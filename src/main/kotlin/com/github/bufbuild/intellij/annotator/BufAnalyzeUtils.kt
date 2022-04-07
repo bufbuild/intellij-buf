@@ -81,7 +81,7 @@ object BufAnalyzeUtils {
                 try {
                     future.complete(check(project, owner, workingDirectory))
                 } catch (th: Throwable) {
-                    future.completeExceptionally(null)
+                    future.complete(null)
                 }
             }
 
