@@ -78,7 +78,11 @@ object BufAnalyzeUtils {
 
             override fun run(indicator: ProgressIndicator) {
                 widget?.inProgress = true
-                future.complete(check(project, owner, workingDirectory))
+                try {
+                    future.complete(check(project, owner, workingDirectory))
+                } catch (th: Throwable) {
+                    future.completeExceptionally(th)
+                }
             }
 
             override fun onFinished() {
@@ -105,12 +109,13 @@ object BufAnalyzeUtils {
                 } else {
                     emptyList()
                 }
+            val gitRepoRoot = findGitRepositoryRoot(workingDirectory)
             val breakingIssues =
-                if (project.bufSettings.state.backgroundBreakingEnabled) {
+                if (project.bufSettings.state.backgroundBreakingEnabled && gitRepoRoot != null) {
                     runBufCommand(
                         owner,
                         workingDirectory,
-                        listOf("breaking", "--error-format=json") + findBreakingArguments(project, workingDirectory)
+                        listOf("breaking", "--error-format=json") + findBreakingArguments(project, gitRepoRoot, workingDirectory)
                     ).mapNotNull { BufIssue.fromJSON(it) }
                 } else {
                     emptyList()
@@ -123,22 +128,26 @@ object BufAnalyzeUtils {
         return BufAnalyzeResult(workingDirectory, issues)
     }
 
-    private fun findBreakingArguments(project: Project, workingDirectory: Path): List<String> {
+    private fun findBreakingArguments(project: Project, gitRepoRoot: Path, workingDirectory: Path): List<String> {
         val argumentsOverride = project.bufSettings.state.breakingArgumentsOverride
         if (argumentsOverride.isNotEmpty()) {
             return argumentsOverride
         }
-        var gitParent = workingDirectory
-        while (!gitParent.resolve(".git").exists()) {
-            gitParent = gitParent.parent
-        }
-        if (gitParent == workingDirectory) {
+        if (gitRepoRoot == workingDirectory) {
             return listOf("--against", ".git")
         }
-        val relativePart = workingDirectory.relativeTo(gitParent)
-        val relativePartReversed = gitParent.relativeTo(workingDirectory).resolve(".git")
+        val relativePart = workingDirectory.relativeTo(gitRepoRoot)
+        val relativePartReversed = gitRepoRoot.relativeTo(workingDirectory).resolve(".git")
         val againstArgument = "$relativePartReversed#subdir=$relativePart"
         return listOf("--against", againstArgument)
+    }
+
+    private fun findGitRepositoryRoot(workingDirectory: Path): Path? {
+        var gitParent = workingDirectory
+        while (!gitParent.resolve(".git").exists() && gitParent != gitParent.root) {
+            gitParent = gitParent.parent
+        }
+        return if (gitParent != gitParent.root) null else gitParent
     }
 
     private suspend fun runBufCommand(
