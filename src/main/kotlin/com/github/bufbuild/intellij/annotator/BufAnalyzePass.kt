@@ -221,7 +221,7 @@ fun AnnotationHolder.createAnnotationsForFile(
     annotationResult: BufAnalyzeResult
 ) {
     val doc = file.viewProvider.document
-        ?: error("Can't find document for $file in external linter")
+        ?: error("Can't find document for $file")
 
     val wd = annotationResult.workingDirectory
     val filteredIssues = annotationResult.issue
