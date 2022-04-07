@@ -81,7 +81,7 @@ object BufAnalyzeUtils {
                 try {
                     future.complete(check(project, owner, workingDirectory))
                 } catch (th: Throwable) {
-                    future.completeExceptionally(th)
+                    future.completeExceptionally(null)
                 }
             }
 
@@ -150,7 +150,7 @@ object BufAnalyzeUtils {
         return if (gitParent != gitParent.root) null else gitParent
     }
 
-    private suspend fun runBufCommand(
+    public suspend fun runBufCommand(
         owner: Disposable,
         workingDirectory: Path,
         arguments: List<String>
@@ -165,12 +165,12 @@ object BufAnalyzeUtils {
         )
         handler.addProcessListener(object : ProcessAdapter() {
             override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
-                result.add(event.text)
+                result.add(event.text.trimEnd())
             }
         }, owner)
         handler.startNotify()
         handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())
-        result
+        result.drop(1) // first line is always the CMD executed
     }
 
     private val externalLinterLazyResultCache =

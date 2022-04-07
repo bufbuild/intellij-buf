@@ -19,6 +19,8 @@
                                 implementation="com.github.bufbuild.intellij.status.BufCLIWidgetFactory"
                                 order="first"/>
 
+        <formattingService implementation="com.github.bufbuild.intellij.formatter.BufFormatterService"/>
+
 
         <projectService serviceInterface="com.github.bufbuild.intellij.settings.BufProjectSettingsService"
                         serviceImplementation="com.github.bufbuild.intellij.settings.impl.BufProjectSettingsServiceImpl"/>

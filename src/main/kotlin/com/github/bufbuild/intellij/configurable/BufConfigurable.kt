@@ -16,6 +16,9 @@ class BufConfigurable(
 
     override fun createPanel(): DialogPanel = panel {
         row {
+            checkBox(BufBundle.message("settings.buf.use.formatter"), state::useBufFormatter)
+        }
+        row {
             checkBox(BufBundle.message("settings.buf.background.linting.enabled"), state::backgroundLintingEnabled)
         }
         row {
@@ -35,6 +38,7 @@ class BufConfigurable(
     }
 
     override fun reset() {
+        state.useBufFormatter = project.bufSettings.state.useBufFormatter
         state.backgroundLintingEnabled = project.bufSettings.state.backgroundLintingEnabled
         state.backgroundBreakingEnabled = project.bufSettings.state.backgroundBreakingEnabled
         super.reset()
