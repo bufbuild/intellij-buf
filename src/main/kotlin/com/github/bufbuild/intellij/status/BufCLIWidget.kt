@@ -72,9 +72,9 @@ class BufCLIWidget(private val project: Project) : TextPanel.WithIconAndArrows()
             text = BufBundle.message("name")
             val lintingEnabled = project.bufSettings.state.backgroundLintingEnabled
             toolTipText = when {
-                !lintingEnabled -> BufBundle.message("linter.disabled")
-                inProgress -> BufBundle.message("linter.in.progress")
-                else -> BufBundle.message("linter.done")
+                !lintingEnabled -> BufBundle.message("analyzing.disabled")
+                inProgress -> BufBundle.message("analyzing.in.progress")
+                else -> BufBundle.message("analyzing.done")
             }
             icon = when {
                 !lintingEnabled -> BufIcons.LogoGrayscale

@@ -2,7 +2,7 @@ package com.github.bufbuild.intellij.model
 
 import com.google.gson.Gson
 
-data class BufLintIssue(
+data class BufIssue(
     val path: String,
     val start_line: Int,
     val end_line: Int,
@@ -15,9 +15,9 @@ data class BufLintIssue(
         get() = type == "COMPILE"
 
     companion object {
-        fun fromJSON(text: String): BufLintIssue? {
+        fun fromJSON(text: String): BufIssue? {
             return try {
-                Gson().fromJson(text, BufLintIssue::class.java)
+                Gson().fromJson(text, BufIssue::class.java)
             } catch (th: Throwable) {
                 null
             }

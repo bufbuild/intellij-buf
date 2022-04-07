@@ -4,7 +4,9 @@ import com.intellij.openapi.project.Project
 
 interface BufProjectSettingsService {
     data class State(
-        var backgroundLintingEnabled: Boolean = true
+        var backgroundLintingEnabled: Boolean = true,
+        var backgroundBreakingEnabled: Boolean = true,
+        var breakingArgumentsOverride: List<String> = emptyList(),
     )
 
     var state: State

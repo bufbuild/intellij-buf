@@ -1,8 +1,8 @@
 package com.github.bufbuild.intellij.annotator
 
 import com.github.bufbuild.intellij.fixes.IgnoreBufIssueQuickFix
-import com.github.bufbuild.intellij.icons.BufLintGutterIconRenderer
-import com.github.bufbuild.intellij.model.BufLintIssue
+import com.github.bufbuild.intellij.icons.BufAnalyzeGutterIconRenderer
+import com.github.bufbuild.intellij.model.BufIssue
 import com.github.bufbuild.intellij.settings.bufSettings
 import com.intellij.codeHighlighting.DirtyScopeTrackingHighlightingPassFactory
 import com.intellij.codeHighlighting.MainHighlightingPassFactory
@@ -40,8 +40,8 @@ import com.intellij.util.ui.update.MergingUpdateQueue
 import com.intellij.util.ui.update.Update
 import kotlin.io.path.relativeToOrNull
 
-class BufLintPass(
-    private val factory: BufLintPassFactory,
+class BufAnalyzePass(
+    private val factory: BufAnalyzePassFactory,
     private val file: PsiFile,
     document: Document,
     private val withWidget: Boolean = true
@@ -50,8 +50,8 @@ class BufLintPass(
     private val annotationHolder: AnnotationHolderImpl = AnnotationHolderImpl(AnnotationSession(file), false)
 
     @Volatile
-    private var annotationInfo: Lazy<BufLintResult?>? = null
-    private val annotationResult: BufLintResult? get() = annotationInfo?.value
+    private var annotationInfo: Lazy<BufAnalyzeResult?>? = null
+    private val annotationResult: BufAnalyzeResult? get() = annotationInfo?.value
 
     @Volatile
     private var disposable: Disposable = myProject
@@ -59,7 +59,7 @@ class BufLintPass(
     override fun doCollectInformation(progress: ProgressIndicator) {
         annotationHolder.clear()
         if (file !is PbFile) return
-        if (!myProject.bufSettings.state.backgroundLintingEnabled) return
+        if (!myProject.bufSettings.state.backgroundLintingEnabled && !myProject.bufSettings.state.backgroundBreakingEnabled) return
 
         val contentRootForFile = ProjectFileIndex.getInstance(myProject)
             .getContentRootForFile(file.virtualFile) ?: return
@@ -67,17 +67,17 @@ class BufLintPass(
         disposable = myProject.messageBus.createDisposableOnAnyPsiChange()
             .also { Disposer.register(myProject, it) }
 
-        annotationInfo = BufLintUtils.checkLazily(myProject, disposable, contentRootForFile.toNioPath(), withWidget)
+        annotationInfo = BufAnalyzeUtils.checkLazily(myProject, disposable, contentRootForFile.toNioPath(), withWidget)
     }
 
     override fun getInfos(): List<HighlightInfo> {
         if (myProject.isDisposed) {
             return emptyList()
         }
-        val bufLintResult = ApplicationManager.getApplication().executeOnPooledThread<BufLintResult?> {
+        val bufAnalyzeResult = ApplicationManager.getApplication().executeOnPooledThread<BufAnalyzeResult?> {
             annotationResult
         }.get() ?: return emptyList()
-        doApply(bufLintResult)
+        doApply(bufAnalyzeResult)
         return annotationHolder.map {
             HighlightInfo.fromAnnotation(it)
         }
@@ -120,7 +120,7 @@ class BufLintPass(
         }
     }
 
-    private fun doApply(annotationResult: BufLintResult) {
+    private fun doApply(annotationResult: BufAnalyzeResult) {
         if (file !is PbFile || !file.isValid) return
         try {
             @Suppress("UnstableApiUsage")
@@ -153,11 +153,11 @@ class BufLintPass(
         get() = annotationHolder.map(HighlightInfo::fromAnnotation)
 
     companion object {
-        private val LOG: Logger = logger<BufLintPass>()
+        private val LOG: Logger = logger<BufAnalyzePass>()
     }
 }
 
-class BufLintPassFactory(
+class BufAnalyzePassFactory(
     project: Project,
     registrar: TextEditorHighlightingPassRegistrar
 ) : DirtyScopeTrackingHighlightingPassFactory, MainHighlightingPassFactory {
@@ -170,7 +170,7 @@ class BufLintPassFactory(
     )
 
     private val externalLinterQueue = MergingUpdateQueue(
-        "BufLintQueue",
+        "BufAnalyzeQueue",
         TIME_SPAN,
         true,
         MergingUpdateQueue.ANY_COMPONENT,
@@ -183,12 +183,12 @@ class BufLintPassFactory(
         document: Document,
         highlightInfoProcessor: HighlightInfoProcessor
     ): TextEditorHighlightingPass {
-        return BufLintPass(this, file, document, false)
+        return BufAnalyzePass(this, file, document, false)
     }
 
     override fun createHighlightingPass(file: PsiFile, editor: Editor): TextEditorHighlightingPass? {
         FileStatusMap.getDirtyTextRange(editor, passId) ?: return null
-        return BufLintPass(this, file, editor.document)
+        return BufAnalyzePass(this, file, editor.document)
     }
 
     override fun getPassId(): Int = myPassId
@@ -218,10 +218,10 @@ fun MessageBus.createDisposableOnAnyPsiChange(): Disposable {
 
 fun AnnotationHolder.createAnnotationsForFile(
     file: PbFile,
-    annotationResult: BufLintResult
+    annotationResult: BufAnalyzeResult
 ) {
     val doc = file.viewProvider.document
-        ?: error("Can't find document for $file in external linter")
+        ?: error("Can't find document for $file")
 
     val wd = annotationResult.workingDirectory
     val filteredIssues = annotationResult.issue
@@ -231,7 +231,7 @@ fun AnnotationHolder.createAnnotationsForFile(
         val annotationBuilder = newAnnotation(severity, issue.message)
             .range(issue.toTextRange(doc) ?: continue)
             .problemGroup { issue.type }
-            .gutterIconRenderer(BufLintGutterIconRenderer)
+            .gutterIconRenderer(BufAnalyzeGutterIconRenderer)
             .needsUpdateOnTyping(true)
             .withFix(IgnoreBufIssueQuickFix(issue.type))
 
@@ -239,7 +239,7 @@ fun AnnotationHolder.createAnnotationsForFile(
     }
 }
 
-fun BufLintIssue.toTextRange(document: Document): TextRange? {
+fun BufIssue.toTextRange(document: Document): TextRange? {
     val startOffset = toOffset(document, this.start_line, this.start_column)
     val endOffset = toOffset(document, this.end_line, this.end_column)
     return if (startOffset != null && endOffset != null && startOffset < endOffset) {
