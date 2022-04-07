@@ -4,7 +4,7 @@
 
 ## [Unreleased]
 
-## [1.0.0]
+## [0.1.0]
 ### Changed
 - Import resolution of Buf modules
 - Continuous linting of Protocol Buffers
