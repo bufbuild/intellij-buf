@@ -147,7 +147,7 @@ object BufAnalyzeUtils {
         while (!gitParent.resolve(".git").exists() && gitParent != gitParent.root) {
             gitParent = gitParent.parent
         }
-        return if (gitParent != gitParent.root) null else gitParent
+        return if (gitParent == gitParent.root) null else gitParent
     }
 
     public suspend fun runBufCommand(
