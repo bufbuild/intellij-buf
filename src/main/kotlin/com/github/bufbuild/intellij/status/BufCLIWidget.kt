@@ -70,14 +70,15 @@ class BufCLIWidget(private val project: Project) : TextPanel.WithIconAndArrows()
         UIUtil.invokeLaterIfNeeded {
             if (project.isDisposed) return@invokeLaterIfNeeded
             text = BufBundle.message("name")
-            val lintingEnabled = project.bufSettings.state.backgroundLintingEnabled
+            val analyzingEnabled = project.bufSettings.state.backgroundLintingEnabled
+                    || project.bufSettings.state.backgroundBreakingEnabled
             toolTipText = when {
-                !lintingEnabled -> BufBundle.message("analyzing.disabled")
+                !analyzingEnabled -> BufBundle.message("analyzing.disabled")
                 inProgress -> BufBundle.message("analyzing.in.progress")
                 else -> BufBundle.message("analyzing.done")
             }
             icon = when {
-                !lintingEnabled -> BufIcons.LogoGrayscale
+                !analyzingEnabled -> BufIcons.LogoGrayscale
                 inProgress -> BufIcons.LogoAnimated
                 else -> BufIcons.Logo
             }
