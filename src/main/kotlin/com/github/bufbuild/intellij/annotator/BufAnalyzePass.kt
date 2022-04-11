@@ -1,7 +1,6 @@
 package com.github.bufbuild.intellij.annotator
 
 import com.github.bufbuild.intellij.fixes.IgnoreBufIssueQuickFix
-import com.github.bufbuild.intellij.icons.BufAnalyzeGutterIconRenderer
 import com.github.bufbuild.intellij.model.BufIssue
 import com.github.bufbuild.intellij.settings.bufSettings
 import com.intellij.codeHighlighting.DirtyScopeTrackingHighlightingPassFactory
@@ -231,7 +230,6 @@ fun AnnotationHolder.createAnnotationsForFile(
         val annotationBuilder = newAnnotation(severity, issue.message)
             .range(issue.toTextRange(doc) ?: continue)
             .problemGroup { issue.type }
-            .gutterIconRenderer(BufAnalyzeGutterIconRenderer)
             .needsUpdateOnTyping(true)
             .withFix(IgnoreBufIssueQuickFix(issue.type))
 
