@@ -110,12 +110,19 @@ object BufAnalyzeUtils {
                     emptyList()
                 }
             val gitRepoRoot = findGitRepositoryRoot(workingDirectory)
+            val breakingArguments = when {
+                project.bufSettings.state.breakingArgumentsOverride.isNotEmpty() ->
+                    project.bufSettings.state.breakingArgumentsOverride
+                gitRepoRoot != null ->
+                    findBreakingArguments(project, workingDirectory, gitRepoRoot)
+                else -> emptyList()
+            }
             val breakingIssues =
-                if (project.bufSettings.state.backgroundBreakingEnabled && gitRepoRoot != null) {
+                if (project.bufSettings.state.backgroundBreakingEnabled && breakingArguments.isNotEmpty()) {
                     runBufCommand(
                         owner,
                         workingDirectory,
-                        listOf("breaking", "--error-format=json") + findBreakingArguments(project, gitRepoRoot, workingDirectory)
+                        listOf("breaking", "--error-format=json") + breakingArguments
                     ).mapNotNull { BufIssue.fromJSON(it) }
                 } else {
                     emptyList()
@@ -128,11 +135,7 @@ object BufAnalyzeUtils {
         return BufAnalyzeResult(workingDirectory, issues)
     }
 
-    private fun findBreakingArguments(project: Project, gitRepoRoot: Path, workingDirectory: Path): List<String> {
-        val argumentsOverride = project.bufSettings.state.breakingArgumentsOverride
-        if (argumentsOverride.isNotEmpty()) {
-            return argumentsOverride
-        }
+    private fun findBreakingArguments(project: Project, workingDirectory: Path, gitRepoRoot: Path): List<String> {
         if (gitRepoRoot == workingDirectory) {
             return listOf("--against", ".git")
         }
