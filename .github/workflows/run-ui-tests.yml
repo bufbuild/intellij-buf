@@ -56,7 +56,7 @@ jobs:
           retry-delay: 30s
 
       # Install Buf for tests
-      - uses: bufbuild/buf-setup-action@v1.3.1
+      - uses: bufbuild/buf-setup-action@v1.4.0
 
       # Run tests
       - name: Tests
