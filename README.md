@@ -7,3 +7,31 @@
 <!-- Plugin description -->
 Plugin to simplify your Protobuf workflows via integration with [Buf](https://buf.build).
 <!-- Plugin description end -->
+
+## Development Guide
+
+Please submit bug reports and feature requests via GitHub Issues and don't hesitate to contribute via PRs.
+
+## Running tests
+
+Once you have Buf CLI installed locally just run `./gredlew test` in your terminal or open the project in IntelliJ
+and use *Run Tests* run configuration.
+
+## Running the plugin
+
+In order to run the plugin from sources either run `./gradlew runIde` in your terminal or open the project in IntelliJ
+and use *Run Plugin* run configuration.
+
+## Distributing the plugin
+
+To build a local distribution of the plugin which can be shared run `./gradlew buildPlugin` from your terminal and
+use `build/distributions/intellij-buf-*.zip` for sharing and [installing from disk](https://www.jetbrains.com/help/idea/managing-plugins.html#install_plugin_from_disk).
+
+## Publishing the plugin
+
+Process of publishing the plugin to JetBrains Marketplace is automated via GitHub Releases:
+    
+* Update `pluginVersion` in `gradle.properties`.
+* Add a new entry to `CHANGELOG.md` for the new version.
+* Create a GitHub Release which will automatically submit the plugin for a review.
+* After the review, which can take a day or two, the plugin will be available on JetBrains Marketplace.
