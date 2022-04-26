@@ -1,12 +1,11 @@
-<!-- Keep a Changelog guide -> https://keepachangelog.com -->
-
-# IntelliJ Platform Plugin Template Changelog
+# Changelog
 
 ## [Unreleased]
 
-## [0.1.0]
-### Changed
-- Import resolution of Buf modules
-- Continuous linting of Protocol Buffers
-- Checking for breaking changes
-- Formatter for Protocol Buffers
+- No changes yet.
+
+## 0.1.0
+
+Initial beta release.
+
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v1.1.0...HEAD
