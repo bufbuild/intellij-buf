@@ -5,7 +5,10 @@
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/com.github.bufbuild.intellij.svg)](https://plugins.jetbrains.com/plugin/com.github.bufbuild.intellij)
 
 <!-- Plugin description -->
-Plugin to simplify your Protobuf workflows via integration with [Buf](https://buf.build).
+This plugin extends Protocol Buffer support in the IDE by integrating with [Buf](https://buf.build).
+
+Buf CLI provides advanced linting and detection of potentially breaking changes in your Proto messages and services.
+Integration with Buf Schema Registry helps manage, discover and share API definitions.
 <!-- Plugin description end -->
 
 ## Development Guide
