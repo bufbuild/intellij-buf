@@ -13,7 +13,7 @@ import com.intellij.protobuf.lang.PbFileType
 class FakeFileTypeFactoryForDiscoverability : FileTypeFactory() {
     override fun createFileTypes(consumer: FileTypeConsumer) {
         // make sure it's not affecting production
-        if (true) {
+        if (System.currentTimeMillis() > 0) {
             return
         }
         consumer.consume(PbFileType.INSTANCE, "proto")
