@@ -67,7 +67,7 @@ jobs:
           ./gradlew listProductsReleases # prepare list of IDEs for Plugin Verifier
 
       # Install Buf for tests
-      - uses: bufbuild/buf-setup-action@v1.3.1
+      - uses: bufbuild/buf-setup-action@v1.7.0
 
       - name: Print Environment
         run: printenv
