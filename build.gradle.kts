@@ -43,14 +43,6 @@ qodana {
 }
 
 tasks {
-//    compileKotlin {
-//        kotlinOptions.jvmTarget = "11"
-//    }
-//
-//    compileTestKotlin {
-//        kotlinOptions.jvmTarget = "11"
-//    }
-
     // Set the JVM compatibility versions
     properties("javaVersion").let {
         withType<JavaCompile> {
