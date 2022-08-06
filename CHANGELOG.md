@@ -8,4 +8,8 @@
 
 Initial beta release.
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.1.0...HEAD
+## 0.1.1
+Update to support IntelliJ Platform 221.*
+
+## 0.1.2
+Update to support IntelliJ Platform 222.*
