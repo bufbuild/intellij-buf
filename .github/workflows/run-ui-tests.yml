@@ -58,8 +58,8 @@ jobs:
       # Install Buf for tests
       - uses: bufbuild/buf-setup-action@v1.3.1
 
-      # Run tests
-      - name: Tests
+      # Run validation tests for IntelliJ
+      - name: IntelliJ version validation
         run: |
           mkdir -p ~/.cache
           ./gradlew test
