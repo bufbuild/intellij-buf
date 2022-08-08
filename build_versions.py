@@ -19,7 +19,7 @@ BUILD_LIST_URL="https://jb.gg/intellij-platform-builds-list"
 
 # This is a very crude script to just get us all the versions of IntelliJ CE.
 # The use cases for getting all the versions:
-# 1. Regression testing with the `runPluginVerifier` gradle task defined in build.gradle.kts`.
+# 1. Regression testing with the `runPluginVerifier` gradle task defined in `build.gradle.kts`.
 # 2. Getting an exhaustive list of IntelliJ versions.
 if __name__ == "__main__":
     request = Request(BUILD_LIST_URL)
@@ -37,6 +37,7 @@ if __name__ == "__main__":
                 split = build.split(".")
                 if len(split) < 1:
                     continue
-                if int(split[0]) >= 220:
+                # This is the `pluginSinceBuild` value in `build.gradle.kts`
+                if int(split[0]) >= 221:
                     build_list.append("\"{}-{}\"".format("IIC", build))
     print(", ".join(build_list))
