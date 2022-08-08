@@ -63,3 +63,7 @@ jobs:
         run: |
           mkdir -p ~/.cache
           ./gradlew test
+      # Run tests
+      - name: Tests
+        run: |
+          ./gradlew runPluginVerifier
