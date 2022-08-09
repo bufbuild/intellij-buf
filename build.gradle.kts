@@ -113,6 +113,6 @@ tasks {
     }
 
     runPluginVerifier {
-        ideVersions.set(listOf("IIC-222.3739.24", "IIC-221.6008.8", "IIU-222.3345.118", "IIU-222.3739.24"))
+        ideVersions.set(listOf("IIU-222.3345.118", "IIU-222.3739.24"))
     }
 }
