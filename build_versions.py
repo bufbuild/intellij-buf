@@ -48,6 +48,10 @@ def parse_json(response):
 # The use cases for getting all the versions:
 # 1. Regression testing with the `runPluginVerifier` gradle task defined in `build.gradle.kts`.
 # 2. Getting an exhaustive list of IntelliJ versions.
+#
+# This does override the existing gradle/test-intellij.versions.toml file since that is what
+# gradle uses as the source of truth for the verification plugin. This would ideally only be
+# run and checked in on CI.
 if __name__ == "__main__":
     request = Request(BUILD_LIST_URL)
     request.get_method = lambda: "GET"
