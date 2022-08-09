@@ -38,12 +38,12 @@ jobs:
       - name: Fetch Sources
         uses: actions/checkout@v2.4.0
 
-      # Setup Java 17 environment for the next steps
+      # Setup Java 11 environment for the next steps
       - name: Setup Java
         uses: actions/setup-java@v2
         with:
           distribution: zulu
-          java-version: 17
+          java-version: 11
           cache: gradle
 
       # Set environment variables
