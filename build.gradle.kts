@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
+    `version-catalog`
+
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.7.10"
     id("org.jetbrains.intellij") version "1.8.0"
@@ -113,6 +115,6 @@ tasks {
     }
 
     runPluginVerifier {
-        ideVersions.set(listOf("IIU-222.3345.118", "IIU-222.3739.24"))
+        ideVersions.set(testIntellij.versions.versionList.get().split(',').map(String::trim).filter(String::isNotEmpty))
     }
 }

@@ -46,6 +46,11 @@ jobs:
 
           echo "::set-output name=changelog::$CHANGELOG"
 
+      # Run version compatibility tests
+      - name: Run version compatibility tests
+        run: |
+          ./gradlew runPluginVerifier 
+
       # Update Unreleased section with the current release note
       - name: Patch Changelog
         if: ${{ steps.properties.outputs.changelog != '' }}
