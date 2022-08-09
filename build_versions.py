@@ -64,8 +64,6 @@ if __name__ == "__main__":
             continue
         latest_version = list[-1]
         test_versions.append(latest_version)
-    versions_toml_content = ""
-    previous_versions_toml_content = ""
     with open("./gradle/test-intellij.versions.toml", 'r') as f:
         previous_versions_toml_content = f.read()
         versions_string = ", ".join(test_versions)
