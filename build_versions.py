@@ -14,6 +14,7 @@ from urllib.request import urlopen, Request, HTTPError
 
 # Build list URL. From: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html#runpluginverifier-task
 BUILD_LIST_URL="https://jb.gg/intellij-platform-builds-list"
+# IIC is IntelliJ IDEA Community Edition, IIU is IntelliJ IDEA Ultimate Edition
 SUPPORTED_TEST_CODES = ["IIC", "IIU"]
 MIN_MAJOR_VERSION = 213
 
@@ -21,7 +22,6 @@ def parse_json(response):
     results = json.load(response)
     version_map = {}
     for result in results:
-        # IIC is IntelliJ IDEA Community Edition
         if "code" not in result or result["code"] not in SUPPORTED_TEST_CODES:
             continue
         for release in result["releases"]:
