@@ -5,6 +5,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import time
@@ -13,6 +14,7 @@ from urllib.request import urlopen, Request, HTTPError
 
 # Build list URL. From: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html#runpluginverifier-task
 BUILD_LIST_URL="https://jb.gg/intellij-platform-builds-list"
+SUPPORTED_TEST_CODES = ["IIC", "IIU"]
 MIN_MAJOR_VERSION = 213
 
 def parse_json(response):
@@ -20,7 +22,7 @@ def parse_json(response):
     version_map = {}
     for result in results:
         # IIC is IntelliJ IDEA Community Edition
-        if "code" not in result or result["code"] not in ["IIC"]:
+        if "code" not in result or result["code"] not in SUPPORTED_TEST_CODES:
             continue
         for release in result["releases"]:
             if "build" not in release:
@@ -33,7 +35,7 @@ def parse_json(response):
             # This is the `pluginSinceBuild` value in `build.gradle.kts`
             if major_version < MIN_MAJOR_VERSION:
                 continue
-            id = "{}-{}".format("IIC", build)
+            id = "{}-{}".format(result["code"], build)
             if major_version not in version_map:
                 version_map[major_version] = [id]
             version_map[major_version].append(id)
@@ -42,7 +44,7 @@ def parse_json(response):
         version_map[key].sort()
     return version_map
 
-# This is a very crude script to just get us all the versions of IntelliJ CE.
+# This is a very crude script to just get us the most recent versions of IntelliJ.
 # The use cases for getting all the versions:
 # 1. Regression testing with the `runPluginVerifier` gradle task defined in `build.gradle.kts`.
 # 2. Getting an exhaustive list of IntelliJ versions.
@@ -58,4 +60,20 @@ if __name__ == "__main__":
             continue
         latest_version = list[-1]
         test_versions.append(latest_version)
-    print(",".join(test_versions))
+    versions_toml_content = ""
+    previous_versions_toml_content = ""
+    with open("./gradle/test-intellij.versions.toml", 'r') as f:
+        previous_versions_toml_content = f.read()
+        versions_string = ", ".join(test_versions)
+        versions_toml_content = re.sub('versionList = \"(.*)\"\n', 'versionList = "{}"'.format(versions_string), previous_versions_toml_content)
+        f.close()
+    with open("./gradle/test-intellij.versions.toml", 'w') as f:
+        f.write(versions_toml_content)
+        f.close()
+
+    if versions_toml_content != previous_versions_toml_content:
+        print("Overwrote test-intellij.versions.toml.")
+        print("Previous version:")
+        print(previous_versions_toml_content)
+        print("Testing version:")
+        print(versions_toml_content)
