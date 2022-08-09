@@ -51,7 +51,7 @@ def parse_json(response):
 #
 # This does override the existing gradle/test-intellij.versions.toml file since that is what
 # gradle uses as the source of truth for the verification plugin. This would ideally only be
-# run and checked in on CI.
+# run on CI.
 if __name__ == "__main__":
     request = Request(BUILD_LIST_URL)
     request.get_method = lambda: "GET"
