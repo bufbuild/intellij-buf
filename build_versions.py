@@ -12,7 +12,7 @@ import time
 
 from urllib.request import urlopen, Request, HTTPError
 
-# Build list URL. From: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html#runpluginverifier-task
+# Build list URL. From: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html#runpluginverifier-task-ideversions
 BUILD_LIST_URL="https://jb.gg/intellij-platform-builds-list"
 # IIC is IntelliJ IDEA Community Edition, IIU is IntelliJ IDEA Ultimate Edition
 SUPPORTED_TEST_CODES = ["IIC", "IIU"]
