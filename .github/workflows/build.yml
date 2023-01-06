@@ -36,7 +36,7 @@ jobs:
 
       # Check out current repository
       - name: Fetch Sources
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.2.0
 
       # Setup Java 11 environment for the next steps
       - name: Setup Java
@@ -67,7 +67,7 @@ jobs:
           ./gradlew listProductsReleases # prepare list of IDEs for Plugin Verifier
 
       # Install Buf for tests
-      - uses: bufbuild/buf-setup-action@v1.9.0
+      - uses: bufbuild/buf-setup-action@v1.11.0
 
       - name: Print Environment
         run: printenv
@@ -136,7 +136,7 @@ jobs:
 
       # Check out current repository
       - name: Fetch Sources
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.2.0
 
       # Remove old release drafts by using the curl request for the available releases with draft flag
       - name: Remove Old Release Drafts
