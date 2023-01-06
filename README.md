@@ -17,7 +17,7 @@ Please submit bug reports and feature requests via GitHub Issues and don't hesit
 
 ## Running tests
 
-Once you have Buf CLI installed locally just run `./gredlew test` in your terminal or open the project in IntelliJ
+Once you have Buf CLI installed locally just run `./gradlew test` in your terminal or open the project in IntelliJ
 and use *Run Tests* run configuration.
 
 ## Running the plugin
