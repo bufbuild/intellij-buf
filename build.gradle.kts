@@ -81,6 +81,25 @@ tasks.register<Exec>("licenseHeader") {
     )
 }
 
+tasks.register<Exec>("licenseHeaderVerify") {
+    dependsOn("installLicenseHeader")
+    commandLine(
+        file("build/gobin/license-header").canonicalPath,
+        "--license-type",
+        "apache",
+        "--copyright-holder",
+        "Buf Technologies, Inc.",
+        "--year-range",
+        properties("buf.license.header.range").get(),
+        "--diff",
+        "--exit-code",
+    )
+}
+
+tasks.check {
+    dependsOn("licenseHeaderVerify")
+}
+
 tasks {
     // Set the JVM compatibility versions
     properties("javaVersion").get().let {
