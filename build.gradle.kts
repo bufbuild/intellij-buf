@@ -76,9 +76,9 @@ tasks {
         commandLine(
             file("build/gobin/license-header").canonicalPath,
             "--license-type",
-            "apache",
+            properties("buf.license.header.type").get(),
             "--copyright-holder",
-            "Buf Technologies, Inc.",
+            properties("buf.license.header.holder").get(),
             "--year-range",
             properties("buf.license.header.range").get(),
         )
@@ -90,9 +90,9 @@ tasks {
         commandLine(
             file("build/gobin/license-header").canonicalPath,
             "--license-type",
-            "apache",
+            properties("buf.license.header.type").get(),
             "--copyright-holder",
-            "Buf Technologies, Inc.",
+            properties("buf.license.header.holder").get(),
             "--year-range",
             properties("buf.license.header.range").get(),
             "--diff",
