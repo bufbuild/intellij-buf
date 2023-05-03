@@ -63,44 +63,47 @@ kover.xmlReport {
     onCheck = true
 }
 
-tasks.register<Exec>("installLicenseHeader") {
-    environment("GOBIN", file("build/gobin").canonicalPath)
-    commandLine("go", "install", "github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@latest")
-}
-
-tasks.register<Exec>("licenseHeader") {
-    dependsOn("installLicenseHeader")
-    commandLine(
-        file("build/gobin/license-header").canonicalPath,
-        "--license-type",
-        "apache",
-        "--copyright-holder",
-        "Buf Technologies, Inc.",
-        "--year-range",
-        properties("buf.license.header.range").get(),
-    )
-}
-
-tasks.register<Exec>("licenseHeaderVerify") {
-    dependsOn("installLicenseHeader")
-    commandLine(
-        file("build/gobin/license-header").canonicalPath,
-        "--license-type",
-        "apache",
-        "--copyright-holder",
-        "Buf Technologies, Inc.",
-        "--year-range",
-        properties("buf.license.header.range").get(),
-        "--diff",
-        "--exit-code",
-    )
-}
-
-tasks.check {
-    dependsOn("licenseHeaderVerify")
-}
-
 tasks {
+    register<Exec>("licenseHeaderInstall") {
+        description = "Installs the bufbuild/buf license-header CLI to build/gobin."
+        environment("GOBIN", file("build/gobin").canonicalPath)
+        commandLine("go", "install", "github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@latest")
+    }
+
+    register<Exec>("licenseHeader") {
+        description = "Runs the license-header CLI to add/update license information to source code."
+        dependsOn("licenseHeaderInstall")
+        commandLine(
+            file("build/gobin/license-header").canonicalPath,
+            "--license-type",
+            "apache",
+            "--copyright-holder",
+            "Buf Technologies, Inc.",
+            "--year-range",
+            properties("buf.license.header.range").get(),
+        )
+    }
+
+    register<Exec>("licenseHeaderVerify") {
+        description = "Verifies that all source code has appropriate license headers."
+        dependsOn("licenseHeaderInstall")
+        commandLine(
+            file("build/gobin/license-header").canonicalPath,
+            "--license-type",
+            "apache",
+            "--copyright-holder",
+            "Buf Technologies, Inc.",
+            "--year-range",
+            properties("buf.license.header.range").get(),
+            "--diff",
+            "--exit-code",
+        )
+    }
+
+    check {
+        dependsOn("licenseHeaderVerify")
+    }
+
     // Set the JVM compatibility versions
     properties("javaVersion").get().let {
         withType<JavaCompile> {
