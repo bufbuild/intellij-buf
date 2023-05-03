@@ -58,6 +58,24 @@ kover.xmlReport {
     onCheck = true
 }
 
+tasks.register<Exec>("installLicenseHeader") {
+    environment("GOBIN", file("build/gobin").canonicalPath)
+    commandLine("go", "install", "github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@latest")
+}
+
+tasks.register<Exec>("licenseHeader") {
+    dependsOn("installLicenseHeader")
+    commandLine(
+        file("build/gobin/license-header").canonicalPath,
+        "--license-type",
+        "apache",
+        "--copyright-holder",
+        "Buf Technologies, Inc.",
+        "--year-range",
+        properties("buf.license.header.range").get(),
+    )
+}
+
 tasks {
     // Set the JVM compatibility versions
     properties("javaVersion").get().let {
