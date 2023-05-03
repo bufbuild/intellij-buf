@@ -34,7 +34,6 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
      * Let's index all Buf modules
      * */
     override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
-        // TODO: We don't want to watch everything in ~/.cache or ${XDG_CACHE_HOME}, only the buf module files.
         return listOfNotNull(
             bufCacheFolder ?: LocalFileSystem.getInstance().findFileByNioFile(bufCacheFolderBase)
         )
