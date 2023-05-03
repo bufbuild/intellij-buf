@@ -44,7 +44,7 @@ class BufNotInstalledInspection : LocalInspectionTool() {
                 file,
                 displayName,
                 isOnTheFly,
-                arrayOf(NavigateToDocumentationLinkQuickFix("https://buf.build/")),
+                arrayOf(NavigateToDocumentationLinkQuickFix("https://buf.build/docs/installation/")),
                 ProblemHighlightType.WARNING
             )
         )
