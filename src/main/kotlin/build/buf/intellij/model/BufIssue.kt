@@ -15,13 +15,14 @@
 package build.buf.intellij.model
 
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 
 data class BufIssue(
     val path: String,
-    val start_line: Int,
-    val end_line: Int,
-    val start_column: Int,
-    val end_column: Int,
+    @SerializedName("start_line") val startLine: Int,
+    @SerializedName("end_line") val endLine: Int,
+    @SerializedName("start_column") val startColumn: Int,
+    @SerializedName("end_column") val endColumn: Int,
     val type: String,
     val message: String,
 ) {

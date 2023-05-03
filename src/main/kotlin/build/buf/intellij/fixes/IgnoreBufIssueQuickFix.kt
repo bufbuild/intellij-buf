@@ -37,11 +37,11 @@ class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
     override fun startInWriteAction(): Boolean = true
 
     override fun invoke(project: Project, editor: Editor, file: PsiFile) {
-        checkCommentIgnoresAllowed(project, editor, file)
+        checkCommentIgnoresAllowed(project, file)
         addIgnoreComment(project, editor, file)
     }
 
-    private fun checkCommentIgnoresAllowed(project: Project, editor: Editor, file: PsiFile) {
+    private fun checkCommentIgnoresAllowed(project: Project, file: PsiFile) {
         val bufLockFile = findBufConfigFile(file) ?: return
         val yamlRootMapping = bufLockFile.children.firstOrNull()?.children?.find {
             it is YAMLMapping

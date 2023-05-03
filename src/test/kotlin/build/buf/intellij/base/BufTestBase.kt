@@ -23,14 +23,11 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
 import com.intellij.util.SystemProperties
-import junit.framework.TestCase
-import org.junit.internal.runners.JUnit38ClassRunner
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.Assertions
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.Path
 
-@RunWith(JUnit38ClassRunner::class) // todo: remove once Gradle will pick up tests without it
 abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>() {
     fun configureByFolder(pathWithinTestData: String, vararg filePathsToConfigureFrom: String) {
         val folderPath = findTestDataFolder().resolve(pathWithinTestData)
@@ -77,7 +74,7 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
     protected fun findTestDataFolder(): Path {
         val result = Path.of(ClassLoader.getSystemResource("testData").toURI())
             .resolve(basePath)
-        TestCase.assertNotNull(result)
+        Assertions.assertNotNull(result)
         return result
     }
 

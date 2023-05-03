@@ -25,7 +25,7 @@ import java.nio.file.Path
 
 class BufRootsProvider : AdditionalLibraryRootsProvider() {
     companion object {
-        public val bufCacheFolderBase: Path
+        val bufCacheFolderBase: Path
             get() {
                 val env = System.getenv()
                 val pathFromEnv = (env["BUF_CACHE_DIR"] ?: env["XDG_CACHE_HOME"])?.let { Path.of(it) }
@@ -33,11 +33,11 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
                 return pathFromEnv ?: pathInHome
             }
 
-        public val bufCacheFolder: VirtualFile?
+        val bufCacheFolder: VirtualFile?
             get() = LocalFileSystem.getInstance().findFileByNioFile(bufCacheFolderBase)
                 ?.findFileByRelativePath("buf/v1/module/data")
 
-        public fun findModuleCacheFolder(mod: BufModuleCoordinates): VirtualFile? = bufCacheFolder
+        fun findModuleCacheFolder(mod: BufModuleCoordinates): VirtualFile? = bufCacheFolder
             ?.findChild(mod.remote)
             ?.findChild(mod.owner)
             ?.findChild(mod.repository)

@@ -30,7 +30,6 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.formatter.FormatterUtil
 import kotlinx.coroutines.runBlocking
 
-@Suppress("UnstableApiUsage")
 class BufFormatterService : AsyncDocumentFormattingService() {
     override fun getFeatures(): Set<FormattingService.Feature> = emptySet()
 

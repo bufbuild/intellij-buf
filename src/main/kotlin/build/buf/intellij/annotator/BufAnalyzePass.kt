@@ -253,8 +253,8 @@ fun AnnotationHolder.createAnnotationsForFile(
 }
 
 fun BufIssue.toTextRange(document: Document): TextRange? {
-    val startOffset = toOffset(document, this.start_line, this.start_column)
-    val endOffset = toOffset(document, this.end_line, this.end_column)
+    val startOffset = toOffset(document, this.startLine, this.startColumn)
+    val endOffset = toOffset(document, this.endLine, this.endColumn)
     return if (startOffset != null && endOffset != null && startOffset < endOffset) {
         TextRange(startOffset, endOffset)
     } else {

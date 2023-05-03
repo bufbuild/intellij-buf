@@ -63,9 +63,9 @@ class BufModuleIndex : ScalarIndexExtension<BufModuleCoordinates>() {
     }
 
     private fun findModuleDep(item: YAMLSequenceItem): BufModuleCoordinates? {
-        val bufModuleItem = item.keysValues.map {
+        val bufModuleItem = item.keysValues.associate {
             it.keyText to it.valueText
-        }.toMap()
+        }
         return BufModuleCoordinates(
             remote = bufModuleItem["remote"] ?: return null,
             owner = bufModuleItem["owner"] ?: return null,

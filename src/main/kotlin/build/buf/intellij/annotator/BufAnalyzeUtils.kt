@@ -54,7 +54,7 @@ import kotlin.io.path.relativeTo
  */
 object BufAnalyzeUtils {
     private val BUF_COMMAND_EXECUTION_TIMEOUT = Duration.ofMinutes(1)
-    public fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
+    fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
 
     fun checkLazily(
         project: Project,
@@ -111,7 +111,7 @@ object BufAnalyzeUtils {
         project: Project,
         owner: Disposable,
         workingDirectory: Path
-    ): BufAnalyzeResult? {
+    ): BufAnalyzeResult {
         ProgressManager.checkCanceled()
         val started = Instant.now()
 
@@ -129,7 +129,7 @@ object BufAnalyzeUtils {
                     project.bufSettings.state.breakingArgumentsOverride
 
                 gitRepoRoot != null ->
-                    findBreakingArguments(project, workingDirectory, gitRepoRoot)
+                    findBreakingArguments(workingDirectory, gitRepoRoot)
 
                 else -> emptyList()
             }
@@ -151,7 +151,7 @@ object BufAnalyzeUtils {
         return BufAnalyzeResult(workingDirectory, issues)
     }
 
-    private fun findBreakingArguments(project: Project, workingDirectory: Path, gitRepoRoot: Path): List<String> {
+    private fun findBreakingArguments(workingDirectory: Path, gitRepoRoot: Path): List<String> {
         if (gitRepoRoot == workingDirectory) {
             return listOf("--against", ".git")
         }
@@ -169,7 +169,7 @@ object BufAnalyzeUtils {
         return if (gitParent == gitParent.root) null else gitParent
     }
 
-    public suspend fun runBufCommand(
+    suspend fun runBufCommand(
         owner: Disposable,
         workingDirectory: Path,
         arguments: List<String>
