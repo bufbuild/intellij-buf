@@ -28,14 +28,25 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
         val bufCacheFolderBase: Path
             get() {
                 val env = System.getenv()
-                val pathFromEnv = (env["BUF_CACHE_DIR"] ?: env["XDG_CACHE_HOME"])?.let { Path.of(it) }
-                val pathInHome = (env["HOME"] ?: SystemProperties.getUserHome()).let { Path.of(it, ".cache") }
-                return pathFromEnv ?: pathInHome
+                val bufCacheDir = env["BUF_CACHE_DIR"]
+                if (bufCacheDir != null) {
+                    return Path.of(bufCacheDir)
+                }
+                val xdgCacheHome = env["XDG_CACHE_HOME"]
+                if (xdgCacheHome != null) {
+                    return Path.of(xdgCacheHome, "buf")
+                }
+                val home = env["HOME"]
+                if (home != null) {
+                    return Path.of(home, ".cache", "buf")
+                }
+                // TODO: LOCALAPPDATA on Windows
+                return Path.of(SystemProperties.getUserHome(), ".cache", "buf")
             }
 
         val bufCacheFolder: VirtualFile?
             get() = LocalFileSystem.getInstance().findFileByNioFile(bufCacheFolderBase)
-                ?.findFileByRelativePath("buf/v1/module/data")
+                ?.findFileByRelativePath("v1/module/data")
 
         fun findModuleCacheFolder(mod: BufModuleCoordinates): VirtualFile? = bufCacheFolder
             ?.findChild(mod.remote)
