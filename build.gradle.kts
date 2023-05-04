@@ -105,17 +105,6 @@ tasks {
         dependsOn("licenseHeaderVerify")
     }
 
-    // Set the JVM compatibility versions
-    properties("javaVersion").get().let {
-        withType<JavaCompile> {
-            sourceCompatibility = it
-            targetCompatibility = it
-        }
-        withType<KotlinCompile> {
-            kotlinOptions.jvmTarget = it
-        }
-    }
-
     test {
         systemProperty("NO_FS_ROOTS_ACCESS_CHECK", "true") // weird issue on linux
     }

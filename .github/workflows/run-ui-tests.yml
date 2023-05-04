@@ -57,6 +57,8 @@ jobs:
 
       # Install Buf for tests
       - uses: bufbuild/buf-setup-action@v1.17.0
+        with:
+          github_token: ${{ github.token }}
 
       # Run tests
       - name: Tests
