@@ -50,7 +50,7 @@ import kotlin.io.path.relativeTo
 /**
  * Inspired by Rust's RsExternalLinterUtils
  *
- * @see https://github.com/intellij-rust/intellij-rust
+ * @see <a href="https://github.com/intellij-rust/intellij-rust">intellij-rust</a>
  */
 object BufAnalyzeUtils {
     private val BUF_COMMAND_EXECUTION_TIMEOUT = Duration.ofMinutes(1)

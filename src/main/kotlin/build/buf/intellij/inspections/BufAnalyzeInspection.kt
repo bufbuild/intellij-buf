@@ -31,7 +31,7 @@ import com.intellij.psi.PsiFile
 
 class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
     companion object {
-        private val SHORT_NAME = "BufAnalyze"
+        private const val SHORT_NAME = "BufAnalyze"
     }
 
     override fun getShortName(): String = SHORT_NAME

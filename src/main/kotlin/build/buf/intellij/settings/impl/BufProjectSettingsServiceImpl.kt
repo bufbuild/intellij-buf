@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build.buf.intellij.settings.impl;
+package build.buf.intellij.settings.impl
 
 import build.buf.intellij.settings.BufProjectSettingsService
 import build.buf.intellij.settings.BufProjectSettingsService.State
@@ -20,8 +20,8 @@ import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.configurationStore.serializeObjectInto
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.StoragePathMacros;
-import com.intellij.openapi.project.Project;
+import com.intellij.openapi.components.StoragePathMacros
+import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializer
 import org.jdom.Element
 

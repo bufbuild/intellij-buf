@@ -21,7 +21,7 @@ import com.intellij.protobuf.lang.PbFileType
 /**
  * Trick FileTypeFactoryExtractor into suggesting our plugin without a conflict
  *
- * @see https://github.com/JetBrains/intellij-plugin-verifier/blob/master/intellij-feature-extractor/src/main/java/com/jetbrains/intellij/feature/extractor/extractor/FileTypeFactoryExtractor.kt
+ * @see <a href="https://github.com/JetBrains/intellij-plugin-verifier/blob/master/intellij-feature-extractor/src/main/java/com/jetbrains/intellij/feature/extractor/extractor/FileTypeFactoryExtractor.kt">FileTypeFactoryExtractor.kt</a>
  *
  */
 class FakeFileTypeFactoryForDiscoverability : FileTypeFactory() {
