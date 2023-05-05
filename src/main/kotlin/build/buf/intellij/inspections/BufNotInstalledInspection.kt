@@ -15,7 +15,7 @@
 package build.buf.intellij.inspections
 
 import build.buf.intellij.BufBundle
-import build.buf.intellij.annotator.BufAnalyzeUtils
+import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.ProblemDescriptor
@@ -38,7 +38,8 @@ class BufNotInstalledInspection : LocalInspectionTool() {
 
     override fun checkFile(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor>? {
         if (file !is PbFile) return null
-        if (BufAnalyzeUtils.findBufExecutable() != null) return null
+        val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(file.project)
+        if (bufExecutable != null) return null
         return arrayOf(
             manager.createProblemDescriptor(
                 file,

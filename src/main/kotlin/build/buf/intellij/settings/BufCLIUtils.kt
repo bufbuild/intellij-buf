@@ -14,20 +14,20 @@
 
 package build.buf.intellij.settings
 
+import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.openapi.project.Project
+import java.io.File
 
-interface BufProjectSettingsService {
-    data class State(
-        var backgroundLintingEnabled: Boolean = true,
-        var backgroundBreakingEnabled: Boolean = true,
-        var breakingArgumentsOverride: List<String> = emptyList(),
-        var useBufFormatter: Boolean = true,
-        var bufCLIPath: String = "",
-    )
+object BufCLIUtils {
+    private fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
 
-    var state: State
+    fun getConfiguredBufExecutable(project: Project): File? {
+        return project.bufSettings.state.bufCLIPath.let {
+            if (it.isNotEmpty()) {
+                File(it)
+            } else {
+                findBufExecutable()
+            }
+        }
+    }
 }
-
-val Project.bufSettings: BufProjectSettingsService
-    get() = getService(BufProjectSettingsService::class.java)
-        ?: error("Failed to get BufProjectSettingsService for $this")

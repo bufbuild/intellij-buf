@@ -51,6 +51,7 @@ class BufFormatterService : AsyncDocumentFormattingService() {
             override fun run() {
                 val output = runBlocking {
                     BufAnalyzeUtils.runBufCommand(
+                        project,
                         disposable,
                         contentRootForFile.toNioPath(),
                         listOf("format", relativePath)
