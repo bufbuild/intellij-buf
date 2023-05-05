@@ -1,5 +1,6 @@
-# GitHub Actions Workflow created for handling the release process based on the draft release prepared
-# with the Build workflow. Running the publishPlugin task requires the PUBLISH_TOKEN secret provided.
+# GitHub Actions Workflow created for handling the release process based on the draft release prepared with the Build workflow.
+# Running the publishPlugin task requires all following secrets to be provided: PUBLISH_TOKEN, PRIVATE_KEY, PRIVATE_KEY_PASSWORD, CERTIFICATE_CHAIN.
+# See https://plugins.jetbrains.com/docs/intellij/plugin-signing.html for more information.
 
 name: Release
 on:
@@ -14,11 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
 
       # Check out current repository
       - name: Fetch Sources
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.release.tag_name }}
 
@@ -40,11 +42,9 @@ jobs:
           EOM
           )"
           
-          CHANGELOG="${CHANGELOG//'%'/'%25'}"
-          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
-          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
-
-          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       # Run version compatibility tests
       - name: Run version compatibility tests
@@ -63,6 +63,9 @@ jobs:
       - name: Publish Plugin
         env:
           PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
         run: ./gradlew publishPlugin
 
       # Upload artifact as a release asset
@@ -79,6 +82,7 @@ jobs:
         run: |
           VERSION="${{ github.event.release.tag_name }}"
           BRANCH="changelog-update-$VERSION"
+          LABEL="release changelog"
 
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
@@ -86,9 +90,13 @@ jobs:
           git checkout -b $BRANCH
           git commit -am "Changelog update - $VERSION"
           git push --set-upstream origin $BRANCH
+          
+          gh label create "$LABEL" \
+            --description "Pull requests with release changelog update" \
+            || true
 
           gh pr create \
             --title "Changelog update - \`$VERSION\`" \
             --body "Current pull request contains patched \`CHANGELOG.md\` file for the \`$VERSION\` version." \
-            --base main \
+            --label "$LABEL" \
             --head $BRANCH

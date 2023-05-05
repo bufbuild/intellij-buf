@@ -9,41 +9,41 @@
     <depends>org.jetbrains.plugins.yaml</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <fileTypeOverrider implementation="com.github.bufbuild.intellij.BufLockFileTypeOverrider"/>
-        <fileBasedIndex implementation="com.github.bufbuild.intellij.index.BufModuleIndex"/>
-        <additionalLibraryRootsProvider implementation="com.github.bufbuild.intellij.resolve.BufRootsProvider"/>
+        <fileTypeOverrider implementation="build.buf.intellij.BufLockFileTypeOverrider"/>
+        <fileBasedIndex implementation="build.buf.intellij.index.BufModuleIndex"/>
+        <additionalLibraryRootsProvider implementation="build.buf.intellij.resolve.BufRootsProvider"/>
 
 
-        <highlightingPassFactory implementation="com.github.bufbuild.intellij.annotator.BufAnalyzePassFactoryRegistrar"/>
+        <highlightingPassFactory implementation="build.buf.intellij.annotator.BufAnalyzePassFactoryRegistrar"/>
         <statusBarWidgetFactory id="bufLintWidget"
-                                implementation="com.github.bufbuild.intellij.status.BufCLIWidgetFactory"
+                                implementation="build.buf.intellij.status.BufCLIWidgetFactory"
                                 order="first"/>
 
-        <formattingService implementation="com.github.bufbuild.intellij.formatter.BufFormatterService"/>
+        <formattingService implementation="build.buf.intellij.formatter.BufFormatterService"/>
 
 
-        <projectService serviceInterface="com.github.bufbuild.intellij.settings.BufProjectSettingsService"
-                        serviceImplementation="com.github.bufbuild.intellij.settings.impl.BufProjectSettingsServiceImpl"/>
-        <projectConfigurable instance="com.github.bufbuild.intellij.configurable.BufConfigurable"
+        <projectService serviceInterface="build.buf.intellij.settings.BufProjectSettingsService"
+                        serviceImplementation="build.buf.intellij.settings.impl.BufProjectSettingsServiceImpl"/>
+        <projectConfigurable instance="build.buf.intellij.configurable.BufConfigurable"
                              groupId="tools"
                              id="tools.buf"/>
 
         <localInspection language="protobuf" shortName="BufCLINotInstalled" bundle="messages.BufBundle"
                          key="buf.inspection.cli.not.installed"
                          groupKey="buf.inspections.group.name" enabledByDefault="true"
-                         implementationClass="com.github.bufbuild.intellij.inspections.BufNotInstalledInspection"/>
+                         implementationClass="build.buf.intellij.inspections.BufNotInstalledInspection"/>
 
 
         <globalInspection language="protobuf" groupBundle="messages.BufBundle"  groupKey="buf.inspections.group.name"
                           shortName="BufAnalyze" displayName="Buf Analyze"
                           enabledByDefault="true" level="ERROR"
-                          implementationClass="com.github.bufbuild.intellij.inspections.BufAnalyzeInspection"/>
+                          implementationClass="build.buf.intellij.inspections.BufAnalyzeInspection"/>
 
         <!-- Auto-discovery of the plugin via features extractor https://github.com/JetBrains/intellij-plugin-verifier/tree/master/intellij-feature-extractor -->
         <dependencySupport kind="java" coordinate="com.google.protobuf:protobuf-java"/>
-        <fileTypeFactory implementation="com.github.bufbuild.intellij.features.FakeFileTypeFactoryForDiscoverability"/>
+        <fileTypeFactory implementation="build.buf.intellij.features.FakeFileTypeFactoryForDiscoverability"/>
     </extensions>
     <extensions defaultExtensionNs="com.intellij.protobuf">
-        <fileResolveProvider implementation="com.github.bufbuild.intellij.resolve.BufProtoFileResolver"/>
+        <fileResolveProvider implementation="build.buf.intellij.resolve.BufProtoFileResolver"/>
     </extensions>
 </idea-plugin>

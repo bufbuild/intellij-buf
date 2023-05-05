@@ -33,7 +33,7 @@ jobs:
 
       # Check out current repository
       - name: Fetch Sources
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3
 
       # Setup Java 11 environment for the next steps
       - name: Setup Java
@@ -57,9 +57,9 @@ jobs:
 
       # Install Buf for tests
       - uses: bufbuild/buf-setup-action@v1.17.0
+        with:
+          github_token: ${{ github.token }}
 
       # Run tests
       - name: Tests
-        run: |
-          mkdir -p ~/.cache
-          ./gradlew test
+        run: ./gradlew test
