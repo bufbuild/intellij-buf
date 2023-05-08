@@ -17,9 +17,9 @@ package build.buf.intellij.annotator
 import build.buf.intellij.BufBundle
 import build.buf.intellij.cache.ProjectCache
 import build.buf.intellij.model.BufIssue
+import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
 import build.buf.intellij.status.BufCLIWidget
-import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ScriptRunnerUtil
@@ -54,7 +54,6 @@ import kotlin.io.path.relativeTo
  */
 object BufAnalyzeUtils {
     private val BUF_COMMAND_EXECUTION_TIMEOUT = Duration.ofMinutes(1)
-    fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
 
     fun checkLazily(
         project: Project,
@@ -118,7 +117,7 @@ object BufAnalyzeUtils {
         val issues = runBlocking {
             val lintIssues =
                 if (project.bufSettings.state.backgroundLintingEnabled) {
-                    runBufCommand(owner, workingDirectory, listOf("lint", "--error-format=json"))
+                    runBufCommand(project, owner, workingDirectory, listOf("lint", "--error-format=json"))
                         .mapNotNull { BufIssue.fromJSON(it) }
                 } else {
                     emptyList()
@@ -136,6 +135,7 @@ object BufAnalyzeUtils {
             val breakingIssues =
                 if (project.bufSettings.state.backgroundBreakingEnabled && breakingArguments.isNotEmpty()) {
                     runBufCommand(
+                        project,
                         owner,
                         workingDirectory,
                         listOf("breaking", "--error-format=json") + breakingArguments
@@ -170,11 +170,12 @@ object BufAnalyzeUtils {
     }
 
     suspend fun runBufCommand(
+        project: Project,
         owner: Disposable,
         workingDirectory: Path,
         arguments: List<String>
     ): Iterable<String> = withContext(Dispatchers.IO) {
-        val bufExecutable = findBufExecutable() ?: return@withContext emptyList()
+        val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext emptyList()
         val result = LinkedList<String>()
         val handler = ScriptRunnerUtil.execute(
             bufExecutable.absolutePath,

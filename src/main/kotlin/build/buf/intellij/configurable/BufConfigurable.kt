@@ -21,7 +21,10 @@ import build.buf.intellij.settings.bufSettings
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.layout.panel
+import java.nio.file.Paths
 
 class BufConfigurable(
     private val project: Project,
@@ -29,6 +32,18 @@ class BufConfigurable(
     private val state: BufProjectSettingsService.State = project.bufSettings.state.copy()
 
     override fun createPanel(): DialogPanel = panel {
+        row(BufBundle.message("settings.buf.cli.path")) {
+            textFieldWithBrowseButton(
+                prop = state::bufCLIPath,
+                browseDialogTitle = BufBundle.message("settings.buf.cli.path"),
+                project = project,
+            ).withValidationOnApply {
+                validateBufCLI(it)
+            }.withValidationOnInput {
+                validateBufCLI(it)
+            }
+            .constraints(growX, pushX)
+        }
         row {
             checkBox(BufBundle.message("settings.buf.use.formatter"), state::useBufFormatter)
         }
@@ -52,6 +67,7 @@ class BufConfigurable(
     }
 
     override fun reset() {
+        state.bufCLIPath = project.bufSettings.state.bufCLIPath
         state.useBufFormatter = project.bufSettings.state.useBufFormatter
         state.backgroundLintingEnabled = project.bufSettings.state.backgroundLintingEnabled
         state.backgroundBreakingEnabled = project.bufSettings.state.backgroundBreakingEnabled
@@ -66,5 +82,19 @@ class BufConfigurable(
     override fun isModified(): Boolean {
         if (super.isModified()) return true
         return project.bufSettings.state != state
+    }
+
+    private fun validateBufCLI(input: TextFieldWithBrowseButton): ValidationInfo? {
+        val value = input.text
+        if (value.isEmpty()) {
+            return null
+        }
+        val file = Paths.get(value).toFile()
+        return when {
+            !file.exists() -> ValidationInfo(BufBundle.message("settings.buf.cli.path.error.not_exist"), input)
+            !file.isFile -> ValidationInfo(BufBundle.message("settings.buf.cli.path.error.not_file"), input)
+            !file.canExecute() -> ValidationInfo(BufBundle.message("settings.buf.cli.path.error.not_executable"), input)
+            else -> null
+        }
     }
 }
