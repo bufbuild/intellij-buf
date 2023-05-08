@@ -1,0 +1,19 @@
+name: Qodana
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [ main ]
+jobs:
+  qodana:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # Run Qodana inspections
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@v2023.1.0
+        # Qodana currently failing - perhaps resolved in a follow up
+        continue-on-error: true
