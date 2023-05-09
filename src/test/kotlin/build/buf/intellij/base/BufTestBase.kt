@@ -20,6 +20,7 @@ import build.buf.intellij.resolve.BufRootsProvider
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
 import com.intellij.util.SystemProperties
@@ -29,6 +30,9 @@ import java.nio.file.Path
 import kotlin.io.path.Path
 
 abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>() {
+
+    protected open fun getEnv() : Map<String, String> = System.getenv()
+
     fun configureByFolder(pathWithinTestData: String, vararg filePathsToConfigureFrom: String) {
         val folderPath = findTestDataFolder().resolve(pathWithinTestData)
         addChildrenRecursively(folderPath.toFile(), folderPath.toFile())
@@ -36,31 +40,34 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
         runReadAction {
             BufAnalyzeUtils.checkLazily(project, project, Path(myFixture.tempDirPath))
         }.value // this will make "buf lint" to execute which will populate cache
+        val env = getEnv()
         // just to make sure the root is added
         LocalFileSystem.getInstance().apply {
-            addRootToWatch(
-                BufRootsProvider.bufCacheFolderBase.toString(),
-                true
-            )
+            BufRootsProvider.getBufCacheFolderV1(env)?.let {
+                addRootToWatch(it.toString(), true)
+            }
+            BufRootsProvider.getBufCacheFolderV2(env)?.let {
+                addRootToWatch(it.toString(), true)
+            }
             refresh(false)
         }
         val projectModules = BufModuleIndex.getAllProjectModules(project)
         assertNotEmpty(projectModules)
         val resolvedModuleRoots = projectModules.mapNotNull {
-            BufRootsProvider.findModuleCacheFolder(it)
+            BufRootsProvider.findModuleCacheFolderV1(it)
         }
         if (projectModules.size != resolvedModuleRoots.size) {
-            val cache = BufRootsProvider.bufCacheFolder
+            val cache = VirtualFileManager.getInstance().findFileByUrl("bufcache:///")
             fail(
                 """
                 Failed to resolve ${projectModules.size} modules inside ${cache?.canonicalPath}
-                
+
                 Debug info:
-                    - Cache base path ${BufRootsProvider.bufCacheFolderBase} modules
-                    - Env vars count: ${System.getenv().size}
-                    - BUF_CACHE_DIR: ${System.getenv()["BUF_CACHE_DIR"]}
-                    - XDG_CACHE_HOME: ${System.getenv()["XDG_CACHE_HOME"]}
-                    - HOME: ${System.getenv()["HOME"]}
+                    - Cache base path ${BufRootsProvider.getBufCacheFolderBase(env)} modules
+                    - Env vars count: ${env.size}
+                    - BUF_CACHE_DIR: ${env["BUF_CACHE_DIR"]}
+                    - XDG_CACHE_HOME: ${env["XDG_CACHE_HOME"]}
+                    - HOME: ${env["HOME"]}
                     - System Home: ${SystemProperties.getUserHome()}
                     - Found ${resolvedModuleRoots.size} modules
                     - Exists: (${cache?.exists()})

@@ -36,7 +36,7 @@ class BufModuleIndex : ScalarIndexExtension<BufModuleCoordinates>() {
 
     override fun dependsOnFileContent(): Boolean = true
 
-    override fun getVersion(): Int = 1
+    override fun getVersion(): Int = 2
 
     override fun getInputFilter(): FileBasedIndex.InputFilter {
         return FileBasedIndex.InputFilter { file ->
@@ -49,12 +49,13 @@ class BufModuleIndex : ScalarIndexExtension<BufModuleCoordinates>() {
     override fun getIndexer(): DataIndexer<BufModuleCoordinates, Void, FileContent> {
         return DataIndexer { inputData ->
             val yamlFile = inputData.psiFile as? YAMLFile ?: return@DataIndexer emptyMap()
+            val lockFileURL = yamlFile.virtualFile?.url ?: return@DataIndexer emptyMap()
             val result = linkedSetOf<BufModuleCoordinates>()
             yamlFile.accept(object : YamlRecursivePsiElementVisitor() {
                 override fun visitKeyValue(keyValue: YAMLKeyValue) {
                     if (keyValue.key?.textMatches("deps") == true) {
                         val yamlDeps = (keyValue.value as? YAMLSequence)?.items ?: emptyList()
-                        result.addAll(yamlDeps.mapNotNull { findModuleDep(it) })
+                        result.addAll(yamlDeps.mapNotNull { findModuleDep(lockFileURL, it) })
                     }
                 }
             })
@@ -62,11 +63,12 @@ class BufModuleIndex : ScalarIndexExtension<BufModuleCoordinates>() {
         }
     }
 
-    private fun findModuleDep(item: YAMLSequenceItem): BufModuleCoordinates? {
+    private fun findModuleDep(lockFileURL: String, item: YAMLSequenceItem): BufModuleCoordinates? {
         val bufModuleItem = item.keysValues.associate {
             it.keyText to it.valueText
         }
         return BufModuleCoordinates(
+            lockFileURL,
             remote = bufModuleItem["remote"] ?: return null,
             owner = bufModuleItem["owner"] ?: return null,
             repository = bufModuleItem["repository"] ?: return null,
@@ -81,16 +83,17 @@ object BufModuleIndexEntryKeyDescriptor : KeyDescriptor<BufModuleCoordinates> {
     override fun isEqual(a: BufModuleCoordinates, b: BufModuleCoordinates): Boolean = a == b
 
     override fun save(out: DataOutput, value: BufModuleCoordinates) {
-        IOUtil.writeStringList(out, listOf(value.remote, value.owner, value.repository, value.commit))
+        IOUtil.writeStringList(out, listOf(value.lockFileURL, value.remote, value.owner, value.repository, value.commit))
     }
 
     override fun read(input: DataInput): BufModuleCoordinates {
         val deserializedList = IOUtil.readStringList(input)
         return BufModuleCoordinates(
-            remote = deserializedList[0],
-            owner = deserializedList[1],
-            repository = deserializedList[2],
-            commit = deserializedList[3],
+            lockFileURL = deserializedList[0],
+            remote = deserializedList[1],
+            owner = deserializedList[2],
+            repository = deserializedList[3],
+            commit = deserializedList[4],
         )
     }
 }

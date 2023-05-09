@@ -1,0 +1,2 @@
+# Ignore generated files in GitHub diffs by default
+**/cache/** linguist-generated=true

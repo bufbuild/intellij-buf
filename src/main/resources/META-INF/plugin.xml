@@ -34,7 +34,7 @@
                          implementationClass="build.buf.intellij.inspections.BufNotInstalledInspection"/>
 
 
-        <globalInspection language="protobuf" groupBundle="messages.BufBundle"  groupKey="buf.inspections.group.name"
+        <globalInspection language="protobuf" groupBundle="messages.BufBundle" groupKey="buf.inspections.group.name"
                           shortName="BufAnalyze" displayName="Buf Analyze"
                           enabledByDefault="true" level="ERROR"
                           implementationClass="build.buf.intellij.inspections.BufAnalyzeInspection"/>

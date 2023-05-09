@@ -15,6 +15,7 @@
 package build.buf.intellij.model
 
 data class BufModuleCoordinates(
+    val lockFileURL: String,
     val remote: String,
     val owner: String,
     val repository: String,

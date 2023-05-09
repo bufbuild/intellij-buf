@@ -21,11 +21,7 @@ import java.nio.file.Path
 class BufRootsProviderTest {
     @Test
     fun testCacheFolderBufCacheDir() {
-        System.getenv()["BUF_CACHE_DIR"] = "/a/b/c"
-        try {
-            assertEquals(Path.of("/a/b/c"), BufRootsProvider.bufCacheFolderBase)
-        } finally {
-            System.getenv().remove("BUF_CACHE_DIR")
-        }
+        val env = mapOf(Pair("BUF_CACHE_DIR", "/a/b/c"))
+        assertEquals(Path.of("/a/b/c"), BufRootsProvider.getBufCacheFolderBase(env))
     }
 }

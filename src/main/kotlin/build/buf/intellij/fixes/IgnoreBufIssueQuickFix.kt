@@ -42,8 +42,8 @@ class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
     }
 
     private fun checkCommentIgnoresAllowed(project: Project, file: PsiFile) {
-        val bufLockFile = findBufConfigFile(file) ?: return
-        val yamlRootMapping = bufLockFile.children.firstOrNull()?.children?.find {
+        val bufConfigFile = findBufConfigFile(file) ?: return
+        val yamlRootMapping = bufConfigFile.children.firstOrNull()?.children?.find {
             it is YAMLMapping
         } as? YAMLMapping ?: return
         val lintNode = yamlRootMapping.getKeyValueByKey("lint")
@@ -57,23 +57,23 @@ class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
                 .children.first()
             yamlRootMapping.add(generateNode.firstChild)
             yamlRootMapping.add(generateNode.lastChild)
-            codeStyleManager.reformatText(bufLockFile, listOf(yamlRootMapping.textRange))
+            codeStyleManager.reformatText(bufConfigFile, listOf(yamlRootMapping.textRange))
         } else {
             val generateNode = PsiFileFactory.getInstance(project)
                 .createFileFromText(YAMLLanguage.INSTANCE, "\nallow_comment_ignores: true")
                 .children.first()
             lintNode.add(generateNode.firstChild)
             lintNode.add(generateNode.lastChild)
-            codeStyleManager.reformatText(bufLockFile, listOf(lintNode.textRange))
+            codeStyleManager.reformatText(bufConfigFile, listOf(lintNode.textRange))
         }
     }
 
     private fun findBufConfigFile(file: PsiFile): YAMLFile? {
         var vFile = file.virtualFile.parent
         while (vFile != null) {
-            val bufLock = vFile.findChild("buf.yaml")
-            if (bufLock != null) {
-                return PsiManager.getInstance(file.project).findFile(bufLock) as YAMLFile
+            val bufConfig = vFile.findChild("buf.yaml")
+            if (bufConfig != null) {
+                return PsiManager.getInstance(file.project).findFile(bufConfig) as YAMLFile
             }
             vFile = vFile.parent
         }
