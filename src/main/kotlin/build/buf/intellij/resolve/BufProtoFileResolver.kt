@@ -24,6 +24,7 @@ import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScopesCore
 import com.intellij.psi.search.ProjectScope
+import com.intellij.util.containers.mapSmartSet
 
 class BufProtoFileResolver : FileResolveProvider {
     override fun getChildEntries(path: String, project: Project): Collection<ChildEntry> {
@@ -43,7 +44,13 @@ class BufProtoFileResolver : FileResolveProvider {
             yield(bufRoot.findFileByRelativePath(path) ?: continue)
         }
         for (mod in BufModuleIndex.getAllProjectModules(project)) {
-            val modFolder = BufRootsProvider.findModuleCacheFolder(mod) ?: continue
+            val modFolderV2Path = BufRootsProvider.getOrCreateModuleCacheFolderV2(mod)
+                ?.findFileByRelativePath(path)
+            if (modFolderV2Path != null) {
+                yield(modFolderV2Path)
+                continue
+            }
+            val modFolder = BufRootsProvider.findModuleCacheFolderV1(mod) ?: continue
             yield(modFolder.findFileByRelativePath(path) ?: continue)
         }
     }
@@ -51,8 +58,14 @@ class BufProtoFileResolver : FileResolveProvider {
     override fun getDescriptorFile(project: Project): VirtualFile? = null
 
     override fun getSearchScope(project: Project): GlobalSearchScope {
-        val roots = BufModuleIndex.getAllProjectModules(project).mapNotNull {
-            BufRootsProvider.findModuleCacheFolder(it)
+        val roots = ArrayList<VirtualFile>()
+        for (mod in BufModuleIndex.getAllProjectModules(project)) {
+            val v2Root = BufRootsProvider.getOrCreateModuleCacheFolderV2(mod)
+            if (v2Root != null) {
+                roots.add(v2Root)
+                continue
+            }
+            BufRootsProvider.findModuleCacheFolderV1(mod)?.let { roots.add(it) }
         }
         return if (roots.isNotEmpty()) {
             GlobalSearchScopesCore.directoriesScope(project, true, *roots.toTypedArray())

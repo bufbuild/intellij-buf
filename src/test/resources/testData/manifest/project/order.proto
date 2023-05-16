@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build.buf.intellij.model
+syntax = "proto3";
 
-data class BufModuleCoordinates(
-    val lockFileURL: String,
-    val remote: String,
-    val owner: String,
-    val repository: String,
-    val commit: String,
-)
+import "google/type/money.proto";
+
+message Order {
+  google.type.Mo<caret>ney amount = 1;
+}

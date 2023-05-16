@@ -15,11 +15,21 @@
 package build.buf.intellij.resolve
 
 import build.buf.intellij.base.BufTestBase
+import java.nio.file.Path
 
-class BufResolveTest : BufTestBase() {
+class BufResolveV2Test : BufTestBase() {
+
+    override fun getEnv(): Map<String, String> {
+        return mapOf(Pair("BUF_CACHE_DIR", getCachePath()))
+    }
+
     override fun getBasePath(): String = "resolve"
 
-    fun testExternalBufModule() {
+    private fun getCachePath(): String {
+        return Path.of(ClassLoader.getSystemResource("testData")!!.toURI()).resolve("manifest/cache").toFile().absolutePath
+    }
+
+    fun testExternalBufModuleFromV2Cache() {
         configureByFolder("external", "order.proto")
         val reference = myFixture.getReferenceAtCaretPositionWithAssertion("order.proto")
         assertNotNull(reference.resolve())
