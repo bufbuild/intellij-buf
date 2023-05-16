@@ -88,7 +88,7 @@ class Manifest(
             val digestToBlobPath = HashMap<String, ArrayList<String>>()
             val pathToDigest = HashMap<String, Digest>()
             val pathToCanonicalPath = HashMap<String, String>()
-            val blobFile = repoCacheDir.findFileByRelativePath(
+            repoCacheDir.findFileByRelativePath(
                 "blobs/${commitDigest.hex.substring(0, 2)}/${commitDigest.hex.substring(2)}"
             )?.inputStream?.bufferedReader()?.use {
                 it.forEachLine { line ->

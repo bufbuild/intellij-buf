@@ -35,10 +35,10 @@ class ManifestTest : BasePlatformTestCase() {
         val manifest = Manifest.fromCommit(repoPath!!, "cc916c31859748a68fd229a3c8d7a2e8")
         Assertions.assertNotNull(manifest)
         Assertions.assertFalse(manifest!!.isEmpty())
-        Assertions.assertTrue(manifest.getPaths().contains("buf.md"))
-        val bufMDDigest = manifest.getDigestFor("buf.md")!!
-        Assertions.assertNotNull(bufMDDigest)
-        Assertions.assertTrue(manifest.getPathsFor(bufMDDigest.hex).contains("buf.md"))
+        Assertions.assertTrue(manifest.getPaths().contains("google/type/money.proto"))
+        val moneyDigest = manifest.getDigestFor("google/type/money.proto")!!
+        Assertions.assertNotNull(moneyDigest)
+        Assertions.assertTrue(manifest.getPathsFor(moneyDigest.hex).contains("google/type/money.proto"))
         // Not always the case, but true in this case (no duplicated files).
         Assertions.assertEquals(manifest.getPaths().size, manifest.getDigests().size)
     }
