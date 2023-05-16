@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Assertions
 import java.nio.file.Path
 
 class ManifestTest : BasePlatformTestCase() {
-
     override fun getBasePath(): String {
         return "manifest/project"
     }
