@@ -58,9 +58,14 @@ class BufProtoFileResolver : FileResolveProvider {
     override fun getDescriptorFile(project: Project): VirtualFile? = null
 
     override fun getSearchScope(project: Project): GlobalSearchScope {
-        val roots = BufModuleIndex.getAllProjectModules(project).mapSmartSet {
-            BufRootsProvider.getOrCreateModuleCacheFolderV2(it)
-                ?: BufRootsProvider.findModuleCacheFolderV1(it)
+        val roots = ArrayList<VirtualFile>()
+        for (mod in BufModuleIndex.getAllProjectModules(project)) {
+            val v2Root = BufRootsProvider.getOrCreateModuleCacheFolderV2(mod)
+            if (v2Root != null) {
+                roots.add(v2Root)
+                continue
+            }
+            BufRootsProvider.findModuleCacheFolderV1(mod)?.let { roots.add(it) }
         }
         return if (roots.isNotEmpty()) {
             GlobalSearchScopesCore.directoriesScope(project, true, *roots.toTypedArray())

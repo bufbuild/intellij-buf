@@ -14,28 +14,24 @@
 
 package build.buf.intellij.resolve
 
-import build.buf.intellij.index.BufModuleIndex
 import build.buf.intellij.manifest.Manifest
 import build.buf.intellij.model.BufModuleCoordinates
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.SystemProperties
 import com.intellij.util.io.isDirectory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.absolutePathString
 
-class BufRootsProvider : AdditionalLibraryRootsProvider(), DumbAware {
+class BufRootsProvider : AdditionalLibraryRootsProvider() {
     companion object {
         private val LOG: Logger = logger<BufRootsProvider>()
 
@@ -82,7 +78,7 @@ class BufRootsProvider : AdditionalLibraryRootsProvider(), DumbAware {
             }
             val commitPath = bufPath.resolve("${mod.remote}/${mod.owner}/${mod.repository}/${mod.commit}")
             if (commitPath.isDirectory()) {
-                return LocalFileSystem.getInstance().refreshAndFindFileByNioFile(commitPath)
+                return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
             }
             val manifest = findManifestV2(mod, env) ?: return null
             for (path in manifest.getPaths()) {
@@ -93,7 +89,7 @@ class BufRootsProvider : AdditionalLibraryRootsProvider(), DumbAware {
                 }
                 Files.copy(Path.of(canonicalPath), modulePath)
             }
-            return LocalFileSystem.getInstance().refreshAndFindFileByNioFile(commitPath)
+            return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
         }
     }
 
@@ -101,43 +97,21 @@ class BufRootsProvider : AdditionalLibraryRootsProvider(), DumbAware {
      * Let's index all Buf modules
      * */
     override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
+        val bufPath = Paths.get(PathManager.getSystemPath(), "buf")
+        if (!bufPath.isDirectory() && !bufPath.toFile().mkdirs()) {
+            LOG.warn("failed to create directory path: ${bufPath.absolutePathString()}")
+        }
         return listOfNotNull(
-            Paths.get(PathManager.getSystemPath(), "buf").let { LocalFileSystem.getInstance().findFileByNioFile(it) },
+            LocalFileSystem.getInstance().findFileByNioFile(bufPath),
             getBufCacheFolderV2(),
             getBufCacheFolderV1(),
         )
     }
 
     override fun getAdditionalProjectLibraries(project: Project): Collection<SyntheticLibrary> {
-        if (DumbService.isDumb(project)) {
-            return emptyList()
-        }
-        val sourceRootsByLockFile = LinkedHashMap<String, MutableSet<String>>()
-        for (mod in BufModuleIndex.getAllProjectModules(project)) {
-            // Create Buf Modules <buf.build/{owner}/{name}>
-            // 1. buf.work.yaml directories for dependencies found in buf.yaml
-            // 2. Add v2 cache dir with source roots set to buf.lock modules found in v2 cache
-            val sourceRoots = sourceRootsByLockFile.getOrPut(mod.lockFileURL) { HashSet() }
-            val sourceRootV2 = getOrCreateModuleCacheFolderV2(mod)
-            if (sourceRootV2 != null) {
-                sourceRootV2.let { sourceRoots.add(sourceRootV2.path) }
-                continue
-            }
-            // 3. Add v1 cache dir with source roots set to buf.lock modules not found in v2 cache
-            findModuleCacheFolderV1(mod)?.let { sourceRoots.add(it.path) }
-        }
-        val libraries = ArrayList<SyntheticLibrary>()
-        sourceRootsByLockFile.forEach { (lockFilePath, sourceRoots) ->
-            if (sourceRoots.isEmpty()) {
-                return@forEach
-            }
-            val lockFile = LocalFileSystem.getInstance().findFileByPath(VfsUtil.urlToPath(lockFilePath)) ?: return@forEach
-            // Ideally use buf.yaml name
-            // Otherwise use relative path to lock file
-            val projectDir = project.guessProjectDir() ?: return@forEach
-            val relativePath = VfsUtil.getRelativePath(lockFile, projectDir) ?: return@forEach
-            libraries.add(BufCacheLibrary(relativePath, sourceRoots))
-        }
-        return libraries
+        return listOfNotNull(
+            Paths.get(PathManager.getSystemPath(), "buf")?.let { BufCacheLibrary("v2 Cache", it.absolutePathString()) },
+            getBufCacheFolderV1()?.let { BufCacheLibrary("v1 Cache", it.path) },
+        )
     }
 }

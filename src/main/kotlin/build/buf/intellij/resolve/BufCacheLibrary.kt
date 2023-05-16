@@ -24,7 +24,7 @@ import java.nio.file.Path
 import java.util.*
 import javax.swing.Icon
 
-class BufCacheLibrary(private val name: String, private val srcRoots: Collection<String>) : SyntheticLibrary(), ItemPresentation {
+class BufCacheLibrary(private val name: String, private val cacheDir: String) : SyntheticLibrary(), ItemPresentation {
     override fun getPresentableText(): String {
         return BufBundle.message("syntactic.library.text", name)
     }
@@ -35,20 +35,16 @@ class BufCacheLibrary(private val name: String, private val srcRoots: Collection
 
     override fun equals(other: Any?): Boolean {
         val otherLibrary = other as? BufCacheLibrary ?: return false
-        return name == other.name && srcRoots == otherLibrary.srcRoots
+        return name == other.name && cacheDir == otherLibrary.cacheDir
     }
 
-    override fun hashCode(): Int = Objects.hash(name, srcRoots)
+    override fun hashCode(): Int = Objects.hash(name, cacheDir)
 
     override fun getSourceRoots(): Collection<VirtualFile> {
-        val roots = ArrayList<VirtualFile>(srcRoots.size)
-        for (srcRoot in srcRoots) {
-            val root = VirtualFileManager.getInstance().findFileByNioPath(Path.of(srcRoot))
-            if (root == null || !root.isValid) {
-                continue
-            }
-            roots.add(root)
+        val root = VirtualFileManager.getInstance().findFileByNioPath(Path.of(cacheDir))
+        if (root == null || !root.isValid) {
+            return emptyList()
         }
-        return roots
+        return root.children.toList()
     }
 }
