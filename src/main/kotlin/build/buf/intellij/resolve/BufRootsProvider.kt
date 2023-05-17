@@ -23,13 +23,23 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.SystemProperties
+import com.intellij.util.io.delete
 import com.intellij.util.io.isDirectory
+import java.io.File
+import java.io.IOException
+import java.nio.file.CopyOption
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
+import java.util.stream.Stream
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.exists
 
 class BufRootsProvider : AdditionalLibraryRootsProvider() {
     companion object {
@@ -62,6 +72,10 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
                 ?.findFileByRelativePath("v2/module")
         }
 
+        fun getIDEAModCacheV2(): Path {
+            return Paths.get(PathManager.getSystemPath(), "buf", "modcache")
+        }
+
         private fun findManifestV2(mod: BufModuleCoordinates, env: Map<String, String> = System.getenv()): Manifest? {
             val repoCacheFolder = getBufCacheFolderV2(env)
                 ?.findFileByRelativePath("${mod.remote}/${mod.owner}/${mod.repository}") ?: return null
@@ -72,24 +86,48 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             ?.findFileByRelativePath("${mod.remote}/${mod.owner}/${mod.repository}/${mod.commit}")
 
         fun getOrCreateModuleCacheFolderV2(mod: BufModuleCoordinates, env: Map<String, String> = System.getenv()): VirtualFile? {
-            val bufPath = Paths.get(PathManager.getSystemPath(), "buf")
+            val bufPath = getIDEAModCacheV2()
             if (!bufPath.isDirectory() && !bufPath.toFile().mkdirs()) {
+                LOG.warn("failed to create directory: $bufPath")
                 return null
             }
             val commitPath = bufPath.resolve("${mod.remote}/${mod.owner}/${mod.repository}/${mod.commit}")
             if (commitPath.isDirectory()) {
                 return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
             }
-            val manifest = findManifestV2(mod, env) ?: return null
-            for (path in manifest.getPaths()) {
-                val canonicalPath = manifest.getCanonicalPath(path) ?: return null
-                val modulePath = commitPath.resolve(path)
-                if (!modulePath.parent.isDirectory()) {
-                    Files.createDirectories(modulePath.parent)
-                }
-                Files.copy(Path.of(canonicalPath), modulePath)
+            if (!commitPath.parent.isDirectory() && !commitPath.parent.toFile().mkdirs()) {
+                LOG.warn("failed to create directory: ${commitPath.parent}")
+                return null
             }
-            return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
+            val manifest = findManifestV2(mod, env) ?: return null
+            val commitTempPath = Files.createTempDirectory(commitPath.parent, "tmp_" + mod.commit)
+            try {
+                for (path in manifest.getPaths()) {
+                    val canonicalPath = manifest.getCanonicalPath(path) ?: return null
+                    val modulePath = commitTempPath.resolve(path)
+                    if (!modulePath.parent.isDirectory()) {
+                        Files.createDirectories(modulePath.parent)
+                    }
+                    Files.copy(Path.of(canonicalPath), modulePath)
+                }
+                try {
+                    Files.move(commitTempPath, commitPath, StandardCopyOption.ATOMIC_MOVE)
+                } catch (e: DirectoryNotEmptyException) {
+                    // This is expected if we raced with another process
+                }
+                return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
+            } catch (e: Exception) {
+                LOG.warn("failed to copy buf v2 cache module $mod", e)
+                return null
+            } finally {
+                if (commitTempPath.exists()) {
+                    try {
+                        commitTempPath.delete(recursively = true)
+                    } catch (e: IOException) {
+                        LOG.warn("failed to delete temporary dir: $commitTempPath", e)
+                    }
+                }
+            }
         }
     }
 
@@ -97,7 +135,7 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
      * Let's index all Buf modules
      * */
     override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
-        val bufPath = Paths.get(PathManager.getSystemPath(), "buf")
+        val bufPath = getIDEAModCacheV2()
         if (!bufPath.isDirectory() && !bufPath.toFile().mkdirs()) {
             LOG.warn("failed to create directory path: ${bufPath.absolutePathString()}")
         }
@@ -110,7 +148,7 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
 
     override fun getAdditionalProjectLibraries(project: Project): Collection<SyntheticLibrary> {
         return listOfNotNull(
-            Paths.get(PathManager.getSystemPath(), "buf")?.let { BufCacheLibrary("v2 Cache", it.absolutePathString()) },
+            getIDEAModCacheV2().let { BufCacheLibrary("v2 Cache", it.absolutePathString()) },
             getBufCacheFolderV1()?.let { BufCacheLibrary("v1 Cache", it.path) },
         )
     }
