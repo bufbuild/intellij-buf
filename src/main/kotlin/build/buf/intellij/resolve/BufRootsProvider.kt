@@ -22,14 +22,16 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
+import com.intellij.openapi.util.SystemInfoRt
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.SystemProperties
+import com.intellij.util.io.delete
 import com.intellij.util.io.isDirectory
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.io.IOException
+import java.nio.file.*
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.exists
 
 class BufRootsProvider : AdditionalLibraryRootsProvider() {
     companion object {
@@ -40,6 +42,12 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             if (bufCacheDir != null) {
                 return Path.of(bufCacheDir)
             }
+            if (SystemInfoRt.isWindows) {
+                val localAppData = env["LOCALAPPDATA"]
+                if (localAppData != null) {
+                    return Path.of(localAppData, "buf")
+                }
+            }
             val xdgCacheHome = env["XDG_CACHE_HOME"]
             if (xdgCacheHome != null) {
                 return Path.of(xdgCacheHome, "buf")
@@ -48,7 +56,6 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             if (home != null) {
                 return Path.of(home, ".cache", "buf")
             }
-            // TODO: LOCALAPPDATA on Windows
             return Path.of(SystemProperties.getUserHome(), ".cache", "buf")
         }
 
@@ -62,6 +69,10 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
                 ?.findFileByRelativePath("v2/module")
         }
 
+        fun getIDEAModCacheV2(): Path {
+            return Paths.get(PathManager.getSystemPath(), "buf", "modcache")
+        }
+
         private fun findManifestV2(mod: BufModuleCoordinates, env: Map<String, String> = System.getenv()): Manifest? {
             val repoCacheFolder = getBufCacheFolderV2(env)
                 ?.findFileByRelativePath("${mod.remote}/${mod.owner}/${mod.repository}") ?: return null
@@ -72,8 +83,9 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             ?.findFileByRelativePath("${mod.remote}/${mod.owner}/${mod.repository}/${mod.commit}")
 
         fun getOrCreateModuleCacheFolderV2(mod: BufModuleCoordinates, env: Map<String, String> = System.getenv()): VirtualFile? {
-            val bufPath = Paths.get(PathManager.getSystemPath(), "buf")
+            val bufPath = getIDEAModCacheV2()
             if (!bufPath.isDirectory() && !bufPath.toFile().mkdirs()) {
+                LOG.warn("failed to create directory: $bufPath")
                 return null
             }
             val commitPath = bufPath.resolve("${mod.remote}/${mod.owner}/${mod.repository}/${mod.commit}")
@@ -81,15 +93,44 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
                 return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
             }
             val manifest = findManifestV2(mod, env) ?: return null
-            for (path in manifest.getPaths()) {
-                val canonicalPath = manifest.getCanonicalPath(path) ?: return null
-                val modulePath = commitPath.resolve(path)
-                if (!modulePath.parent.isDirectory()) {
-                    Files.createDirectories(modulePath.parent)
-                }
-                Files.copy(Path.of(canonicalPath), modulePath)
+            if (!commitPath.parent.isDirectory() && !commitPath.parent.toFile().mkdirs()) {
+                LOG.warn("failed to create directory: ${commitPath.parent}")
+                return null
             }
-            return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
+            val commitTempPath = Files.createTempDirectory(commitPath.parent, "tmp_" + mod.commit)
+            try {
+                for (path in manifest.getPaths()) {
+                    val canonicalPath = manifest.getCanonicalPath(path) ?: return null
+                    val modulePath = commitTempPath.resolve(path)
+                    if (!modulePath.parent.isDirectory()) {
+                        Files.createDirectories(modulePath.parent)
+                    }
+                    Files.copy(Path.of(canonicalPath), modulePath)
+                }
+                try {
+                    Files.move(commitTempPath, commitPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+                } catch (e: DirectoryNotEmptyException) {
+                    // This is expected if we raced with another process
+                } catch (e: FileSystemException) {
+                    // This can happen in a race - DirectoryNotEmpty
+                    val message = e.message ?: ""
+                    if (!message.contains("Directory not empty")) {
+                        LOG.warn("failed to move directory $commitTempPath to $commitPath: $e")
+                    }
+                }
+                return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
+            } catch (e: Exception) {
+                LOG.warn("failed to copy buf v2 cache module $mod", e)
+                return null
+            } finally {
+                if (commitTempPath.exists()) {
+                    try {
+                        commitTempPath.delete(recursively = true)
+                    } catch (e: IOException) {
+                        LOG.warn("failed to delete temporary dir: $commitTempPath", e)
+                    }
+                }
+            }
         }
     }
 
@@ -97,20 +138,23 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
      * Let's index all Buf modules
      * */
     override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
-        val bufPath = Paths.get(PathManager.getSystemPath(), "buf")
+        val bufPath = getIDEAModCacheV2()
         if (!bufPath.isDirectory() && !bufPath.toFile().mkdirs()) {
             LOG.warn("failed to create directory path: ${bufPath.absolutePathString()}")
         }
         return listOfNotNull(
             LocalFileSystem.getInstance().findFileByNioFile(bufPath),
-            getBufCacheFolderV2(),
             getBufCacheFolderV1(),
         )
     }
 
     override fun getAdditionalProjectLibraries(project: Project): Collection<SyntheticLibrary> {
+        val bufPath = getIDEAModCacheV2()
+        if (!bufPath.isDirectory() && !bufPath.toFile().mkdirs()) {
+            LOG.warn("failed to create directory path: ${bufPath.absolutePathString()}")
+        }
         return listOfNotNull(
-            Paths.get(PathManager.getSystemPath(), "buf")?.let { BufCacheLibrary("v2 Cache", it.absolutePathString()) },
+            BufCacheLibrary("v2 Cache", bufPath.absolutePathString()),
             getBufCacheFolderV1()?.let { BufCacheLibrary("v1 Cache", it.path) },
         )
     }
