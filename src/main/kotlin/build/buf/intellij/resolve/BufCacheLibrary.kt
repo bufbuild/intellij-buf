@@ -41,10 +41,6 @@ class BufCacheLibrary(private val name: String, private val cacheDir: String) : 
     override fun hashCode(): Int = Objects.hash(name, cacheDir)
 
     override fun getSourceRoots(): Collection<VirtualFile> {
-        val root = VirtualFileManager.getInstance().findFileByNioPath(Path.of(cacheDir))
-        if (root == null || !root.isValid) {
-            return emptyList()
-        }
-        return root.children.toList()
+        return listOfNotNull(VirtualFileManager.getInstance().findFileByNioPath(Path.of(cacheDir)))
     }
 }

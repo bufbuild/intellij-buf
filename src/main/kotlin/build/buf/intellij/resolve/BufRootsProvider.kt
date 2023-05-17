@@ -23,21 +23,12 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.SystemProperties
 import com.intellij.util.io.delete
 import com.intellij.util.io.isDirectory
-import java.io.File
 import java.io.IOException
-import java.nio.file.CopyOption
-import java.nio.file.DirectoryNotEmptyException
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
-import java.util.stream.Stream
+import java.nio.file.*
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.exists
 
@@ -95,11 +86,11 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             if (commitPath.isDirectory()) {
                 return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
             }
+            val manifest = findManifestV2(mod, env) ?: return null
             if (!commitPath.parent.isDirectory() && !commitPath.parent.toFile().mkdirs()) {
                 LOG.warn("failed to create directory: ${commitPath.parent}")
                 return null
             }
-            val manifest = findManifestV2(mod, env) ?: return null
             val commitTempPath = Files.createTempDirectory(commitPath.parent, "tmp_" + mod.commit)
             try {
                 for (path in manifest.getPaths()) {
@@ -111,9 +102,15 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
                     Files.copy(Path.of(canonicalPath), modulePath)
                 }
                 try {
-                    Files.move(commitTempPath, commitPath, StandardCopyOption.ATOMIC_MOVE)
+                    Files.move(commitTempPath, commitPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
                 } catch (e: DirectoryNotEmptyException) {
                     // This is expected if we raced with another process
+                } catch (e: FileSystemException) {
+                    // This can happen in a race - DirectoryNotEmpty
+                    val message = e.message ?: ""
+                    if (!message.contains("Directory not empty")) {
+                        LOG.warn("failed to move directory $commitTempPath to $commitPath: $e")
+                    }
                 }
                 return LocalFileSystem.getInstance().findFileByNioFile(commitPath)
             } catch (e: Exception) {
@@ -141,14 +138,17 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
         }
         return listOfNotNull(
             LocalFileSystem.getInstance().findFileByNioFile(bufPath),
-            getBufCacheFolderV2(),
             getBufCacheFolderV1(),
         )
     }
 
     override fun getAdditionalProjectLibraries(project: Project): Collection<SyntheticLibrary> {
+        val bufPath = getIDEAModCacheV2()
+        if (!bufPath.isDirectory() && !bufPath.toFile().mkdirs()) {
+            LOG.warn("failed to create directory path: ${bufPath.absolutePathString()}")
+        }
         return listOfNotNull(
-            getIDEAModCacheV2().let { BufCacheLibrary("v2 Cache", it.absolutePathString()) },
+            BufCacheLibrary("v2 Cache", bufPath.absolutePathString()),
             getBufCacheFolderV1()?.let { BufCacheLibrary("v1 Cache", it.path) },
         )
     }
