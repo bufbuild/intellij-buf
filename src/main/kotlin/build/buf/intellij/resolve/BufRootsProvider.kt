@@ -22,6 +22,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
+import com.intellij.openapi.util.SystemInfoRt
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.SystemProperties
@@ -41,6 +42,12 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             if (bufCacheDir != null) {
                 return Path.of(bufCacheDir)
             }
+            if (SystemInfoRt.isWindows) {
+                val localAppData = env["LOCALAPPDATA"]
+                if (localAppData != null) {
+                    return Path.of(localAppData, "buf")
+                }
+            }
             val xdgCacheHome = env["XDG_CACHE_HOME"]
             if (xdgCacheHome != null) {
                 return Path.of(xdgCacheHome, "buf")
@@ -49,7 +56,6 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             if (home != null) {
                 return Path.of(home, ".cache", "buf")
             }
-            // TODO: LOCALAPPDATA on Windows
             return Path.of(SystemProperties.getUserHome(), ".cache", "buf")
         }
 
