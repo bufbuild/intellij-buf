@@ -202,8 +202,9 @@ object BufAnalyzeUtils {
         }, owner)
         handler.startNotify()
         if (handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())) {
-            if (exitCode.get() != 0) {
-                LOG.warn("buf exit code: $exitCode")
+            val code = exitCode.get()
+            if (code != 0) {
+                LOG.warn("buf exit code: $code")
             }
         } else {
             // Process failed to complete within given timeout - stop it
