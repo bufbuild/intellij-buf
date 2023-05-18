@@ -22,11 +22,14 @@ import build.buf.intellij.settings.bufSettings
 import build.buf.intellij.status.BufCLIWidget
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessOutputType
 import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.EmptyProgressIndicator
@@ -44,6 +47,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.exists
 import kotlin.io.path.relativeTo
 
@@ -53,6 +57,7 @@ import kotlin.io.path.relativeTo
  * @see <a href="https://github.com/intellij-rust/intellij-rust">intellij-rust</a>
  */
 object BufAnalyzeUtils {
+    private val LOG: Logger = logger<BufAnalyzeUtils>()
     private val BUF_COMMAND_EXECUTION_TIMEOUT = Duration.ofMinutes(1)
 
     fun checkLazily(
@@ -176,7 +181,8 @@ object BufAnalyzeUtils {
         arguments: List<String>
     ): Iterable<String> = withContext(Dispatchers.IO) {
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext emptyList()
-        val result = LinkedList<String>()
+        val stdout = LinkedList<String>()
+        val exitCode = AtomicInteger()
         val handler = ScriptRunnerUtil.execute(
             bufExecutable.absolutePath,
             workingDirectory.toString(),
@@ -185,12 +191,25 @@ object BufAnalyzeUtils {
         )
         handler.addProcessListener(object : ProcessAdapter() {
             override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
-                result.add(event.text.trimEnd())
+                when (outputType) {
+                    ProcessOutputType.STDOUT -> stdout.add(event.text.trimEnd())
+                }
+            }
+
+            override fun processTerminated(event: ProcessEvent) {
+                exitCode.set(event.exitCode)
             }
         }, owner)
         handler.startNotify()
-        handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())
-        result.drop(1) // first line is always the CMD executed
+        if (handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())) {
+            if (exitCode.get() != 0) {
+                LOG.warn("buf exit code: $exitCode")
+            }
+        } else {
+            // Process failed to complete within given timeout - stop it
+            handler.destroyProcess()
+        }
+        stdout
     }
 
     private val externalLinterLazyResultCache =
