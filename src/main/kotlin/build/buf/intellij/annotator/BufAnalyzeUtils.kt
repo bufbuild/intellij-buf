@@ -48,6 +48,7 @@ import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.exists
 import kotlin.io.path.relativeTo
 
@@ -181,6 +182,7 @@ object BufAnalyzeUtils {
         arguments: List<String>
     ): Iterable<String> = withContext(Dispatchers.IO) {
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext emptyList()
+        val cmd = AtomicReference<String>()
         val stdout = LinkedList<String>()
         val exitCode = AtomicInteger()
         val handler = ScriptRunnerUtil.execute(
@@ -192,6 +194,7 @@ object BufAnalyzeUtils {
         handler.addProcessListener(object : ProcessAdapter() {
             override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
                 when (outputType) {
+                    ProcessOutputType.SYSTEM -> cmd.set(event.text.trimEnd())
                     ProcessOutputType.STDOUT -> stdout.add(event.text.trimEnd())
                 }
             }
@@ -204,7 +207,7 @@ object BufAnalyzeUtils {
         if (handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())) {
             val code = exitCode.get()
             if (code != 0) {
-                LOG.warn("buf exit code: $code")
+                LOG.warn("${cmd.get() ?: "buf"} exit code: $code")
             }
         } else {
             // Process failed to complete within given timeout - stop it

@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
     alias(libs.plugins.kover) // Gradle Kover Plugin
+    alias(libs.plugins.osdetector)
 }
 
 group = properties("pluginGroup").get()
@@ -27,6 +28,7 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.jupiter.engine)
     testRuntimeOnly(libs.junit.vintage.engine)
+    testRuntimeOnly(group = "build.buf", name = "buf", version = libs.versions.buf.get(), classifier = osdetector.classifier, ext = "exe")
 }
 
 java {
@@ -103,6 +105,8 @@ tasks {
             properties("buf.license.header.holder").get(),
             "--year-range",
             properties("buf.license.header.range").get(),
+            "--ignore",
+            "/cachev",
             "--diff",
             "--exit-code",
         )
@@ -113,6 +117,7 @@ tasks {
     }
 
     test {
+        environment("BUF_CACHE_DIR", File(project.projectDir.path + "/src/test/resources/testData/cachev1").absolutePath)
         systemProperty("NO_FS_ROOTS_ACCESS_CHECK", "true") // weird issue on linux
         useJUnitPlatform()
     }

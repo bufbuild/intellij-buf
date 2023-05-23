@@ -26,7 +26,7 @@ class ManifestTest : BasePlatformTestCase() {
 
     fun testManifest() {
         val cachePath = Path.of(ClassLoader.getSystemResource("testData").toURI())
-            .resolve("manifest/cache/v2/module/buf.build/googleapis/googleapis")
+            .resolve("cachev2/v2/module/buf.build/googleapis/googleapis")
             .toFile()
             .absolutePath
         Assertions.assertNotNull(cachePath)
