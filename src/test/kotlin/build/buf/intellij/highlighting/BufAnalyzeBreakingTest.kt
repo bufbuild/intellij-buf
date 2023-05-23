@@ -21,7 +21,7 @@ import build.buf.intellij.settings.bufSettings
 class BufAnalyzeBreakingTest : BufTestBase() {
     override fun getBasePath(): String = "highlighting"
     fun testBreakingType() {
-        project.bufSettings.state = BufProjectSettingsService.State(
+        project.bufSettings.state = project.bufSettings.state.copy(
             backgroundLintingEnabled = false,
             backgroundBreakingEnabled = true,
             breakingArgumentsOverride = listOf(
