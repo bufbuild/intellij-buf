@@ -15,7 +15,6 @@
 package build.buf.intellij.resolve
 
 import build.buf.intellij.index.BufModuleIndex
-import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
@@ -28,34 +27,15 @@ import com.intellij.psi.search.ProjectScope
 
 class BufProtoFileResolver : FileResolveProvider {
     override fun getChildEntries(path: String, project: Project): Collection<ChildEntry> {
-        val files = findFiles(path, project)
+        return findFiles(path, project)
             .filter { it.isDirectory }
             .map { VfsUtil.getChildren(it, FileResolveProvider.PROTO_AND_DIRECTORY_FILTER) }
             .flatten()
             .map { ChildEntry(it.name, it.isDirectory) }
             .toSet()
-        return files
     }
 
-    override fun getChildEntries(path: String, module: Module): MutableCollection<ChildEntry> {
-        val childEntries = super.getChildEntries(path, module)
-        return childEntries
-    }
-
-    override fun findFile(path: String, module: Module): VirtualFile? {
-        val file = super.findFile(path, module)
-        return file
-    }
-
-    override fun canFindFile(project: Project, file: VirtualFile): Boolean {
-        val canFind = super.canFindFile(project, file)
-        return canFind
-    }
-
-    override fun findFile(path: String, project: Project): VirtualFile? {
-        val file = findFiles(path, project).firstOrNull()
-        return file
-    }
+    override fun findFile(path: String, project: Project): VirtualFile? = findFiles(path, project).firstOrNull()
 
     private fun findFiles(path: String, project: Project): Sequence<VirtualFile> {
         val files = LinkedHashSet<VirtualFile>()
@@ -64,9 +44,12 @@ class BufProtoFileResolver : FileResolveProvider {
             files.add(bufRoot.findFileByRelativePath(path) ?: continue)
         }
         for (mod in BufModuleIndex.getAllProjectModules(project)) {
-            BufRootsProvider.getOrCreateModuleCacheFolderV2(mod)
+            val modFolderV2Path = BufRootsProvider.getOrCreateModuleCacheFolderV2(mod)
                 ?.findFileByRelativePath(path)
-                ?.let { files.add(it) }
+            if (modFolderV2Path != null) {
+                files.add(modFolderV2Path)
+                continue
+            }
             val modFolder = BufRootsProvider.findModuleCacheFolderV1(mod) ?: continue
             files.add(modFolder.findFileByRelativePath(path) ?: continue)
         }
@@ -81,6 +64,7 @@ class BufProtoFileResolver : FileResolveProvider {
             val v2Root = BufRootsProvider.getOrCreateModuleCacheFolderV2(mod)
             if (v2Root != null) {
                 roots.add(v2Root)
+                continue
             }
             BufRootsProvider.findModuleCacheFolderV1(mod)?.let { roots.add(it) }
         }
