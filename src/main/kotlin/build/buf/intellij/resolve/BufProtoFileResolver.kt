@@ -24,7 +24,6 @@ import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScopesCore
 import com.intellij.psi.search.ProjectScope
-import com.intellij.util.containers.mapSmartSet
 
 class BufProtoFileResolver : FileResolveProvider {
     override fun getChildEntries(path: String, project: Project): Collection<ChildEntry> {
@@ -38,21 +37,23 @@ class BufProtoFileResolver : FileResolveProvider {
 
     override fun findFile(path: String, project: Project): VirtualFile? = findFiles(path, project).firstOrNull()
 
-    private fun findFiles(path: String, project: Project): Sequence<VirtualFile> = sequence {
+    private fun findFiles(path: String, project: Project): Sequence<VirtualFile> {
+        val files = LinkedHashSet<VirtualFile>()
         for (bufConfig in FilenameIndex.getFilesByName(project, "buf.yaml", ProjectScope.getProjectScope(project))) {
             val bufRoot = bufConfig.virtualFile.parent
-            yield(bufRoot.findFileByRelativePath(path) ?: continue)
+            files.add(bufRoot.findFileByRelativePath(path) ?: continue)
         }
         for (mod in BufModuleIndex.getAllProjectModules(project)) {
             val modFolderV2Path = BufRootsProvider.getOrCreateModuleCacheFolderV2(mod)
                 ?.findFileByRelativePath(path)
             if (modFolderV2Path != null) {
-                yield(modFolderV2Path)
+                files.add(modFolderV2Path)
                 continue
             }
             val modFolder = BufRootsProvider.findModuleCacheFolderV1(mod) ?: continue
-            yield(modFolder.findFileByRelativePath(path) ?: continue)
+            files.add(modFolder.findFileByRelativePath(path) ?: continue)
         }
+        return files.asSequence()
     }
 
     override fun getDescriptorFile(project: Project): VirtualFile? = null
