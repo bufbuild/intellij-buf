@@ -10,7 +10,7 @@ kotlin = "1.8.21"
 changelog = "2.0.0"
 gradleIntelliJPlugin = "1.14.0"
 qodana = "0.1.13"
-kover = "0.7.0"
+kover = "0.7.1"
 osdetector = "1.7.3"
 
 [libraries]
