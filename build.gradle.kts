@@ -34,7 +34,6 @@ dependencies {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(11))
-        vendor.set(JvmVendorSpec.AZUL)
     }
 }
 
@@ -81,7 +80,7 @@ tasks {
     register<Exec>("licenseHeaderInstall") {
         description = "Installs the bufbuild/buf license-header CLI to build/gobin."
         environment("GOBIN", file("build/gobin").canonicalPath)
-        commandLine("go", "install", "github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@latest")
+        commandLine("go", "install", "github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@v${libs.versions.buf.get()}")
     }
 
     register<Exec>("licenseHeader") {
@@ -95,6 +94,8 @@ tasks {
             properties("buf.license.header.holder").get(),
             "--year-range",
             properties("buf.license.header.range").get(),
+            "--ignore",
+            "/cachev",
         )
     }
 
