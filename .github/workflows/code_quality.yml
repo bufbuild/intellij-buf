@@ -14,6 +14,6 @@ jobs:
           fetch-depth: 0
       # Run Qodana inspections
       - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2023.1.4
+        uses: JetBrains/qodana-action@v2023.1.5
         # Qodana currently failing - perhaps resolved in a follow up
         continue-on-error: true
