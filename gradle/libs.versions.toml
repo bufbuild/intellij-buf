@@ -2,7 +2,7 @@
 # libraries
 annotations = "24.0.1"
 buf = "1.22.0"
-junit = "5.9.3"
+junit = "5.10.0"
 
 # plugins
 dokka = "1.8.20"
