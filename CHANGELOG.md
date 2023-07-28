@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.1.5 - 2023-07-28
+- Improve process handling with the buf CLI.
+- Add displayName attribute to fix error in IntelliJ 2023.2.
+
 ## 0.1.4 - 2023-05-17
 
 ### Features
