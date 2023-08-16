@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build.buf.intellij.annotator
+package build.buf.intellij
 
-import com.intellij.codeHighlighting.TextEditorHighlightingPassFactoryRegistrar
-import com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar
-import com.intellij.openapi.project.Project
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.Service
 
-class BufAnalyzePassFactoryRegistrar : TextEditorHighlightingPassFactoryRegistrar {
-    override fun registerHighlightingPassFactory(registrar: TextEditorHighlightingPassRegistrar, project: Project) {
-        BufAnalyzePassFactory(registrar)
-    }
+/**
+ * Application level service used as disposable.
+ * [Reference](https://plugins.jetbrains.com/docs/intellij/disposers.html?from=IncorrectParentDisposable#choosing-a-disposable-parent)
+ */
+@Service(Service.Level.APP)
+class BufPluginService : Disposable {
+    override fun dispose() {}
 }

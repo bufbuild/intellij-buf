@@ -1,7 +1,7 @@
 [versions]
 # libraries
 annotations = "24.0.1"
-buf = "1.22.0"
+buf = "1.26.1"
 junit = "5.10.0"
 
 # plugins

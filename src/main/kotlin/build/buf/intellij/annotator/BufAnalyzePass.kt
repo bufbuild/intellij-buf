@@ -14,6 +14,7 @@
 
 package build.buf.intellij.annotator
 
+import build.buf.intellij.BufPluginService
 import build.buf.intellij.fixes.IgnoreBufIssueQuickFix
 import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.bufSettings
@@ -31,6 +32,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.Document
@@ -40,7 +42,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.util.BackgroundTaskUtil
 import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
@@ -59,6 +60,8 @@ class BufAnalyzePass(
     document: Document,
     private val withWidget: Boolean = true
 ) : TextEditorHighlightingPass(file.project, document), DumbAware {
+    private val appService = service<BufPluginService>()
+
     @Suppress("UnstableApiUsage", "DEPRECATION")
     private val annotationHolder: AnnotationHolderImpl = AnnotationHolderImpl(AnnotationSession(file), false)
 
@@ -67,7 +70,7 @@ class BufAnalyzePass(
     private val annotationResult: BufAnalyzeResult? get() = annotationInfo?.value
 
     @Volatile
-    private var disposable: Disposable = myProject
+    private var disposable: Disposable = appService
 
     override fun doCollectInformation(progress: ProgressIndicator) {
         annotationHolder.clear()
@@ -78,7 +81,7 @@ class BufAnalyzePass(
             .getContentRootForFile(file.virtualFile) ?: return
 
         disposable = myProject.messageBus.createDisposableOnAnyPsiChange()
-            .also { Disposer.register(myProject, it) }
+            .also { Disposer.register(appService, it) }
 
         annotationInfo = BufAnalyzeUtils.checkLazily(myProject, disposable, contentRootForFile.toNioPath(), withWidget)
     }
@@ -171,9 +174,11 @@ class BufAnalyzePass(
 }
 
 class BufAnalyzePassFactory(
-    project: Project,
     registrar: TextEditorHighlightingPassRegistrar
 ) : DirtyScopeTrackingHighlightingPassFactory, MainHighlightingPassFactory {
+
+    private val appService = service<BufPluginService>()
+
     private val myPassId: Int = registrar.registerTextEditorHighlightingPass(
         this,
         null,
@@ -187,7 +192,7 @@ class BufAnalyzePassFactory(
         TIME_SPAN,
         true,
         MergingUpdateQueue.ANY_COMPONENT,
-        project,
+        appService,
         null,
         false
     )
