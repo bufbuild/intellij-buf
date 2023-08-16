@@ -15,6 +15,7 @@
 package build.buf.intellij.inspections
 
 import build.buf.intellij.BufBundle
+import build.buf.intellij.BufPluginService
 import build.buf.intellij.annotator.BufAnalyzeResult
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.annotator.createAnnotationsForFile
@@ -24,6 +25,7 @@ import com.intellij.codeInspection.*
 import com.intellij.lang.annotation.AnnotationSession
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
 import com.intellij.protobuf.lang.psi.PbFile
@@ -33,6 +35,8 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
     companion object {
         private const val SHORT_NAME = "BufAnalyze"
     }
+
+    private val appService = service<BufPluginService>()
 
     override fun getShortName(): String = SHORT_NAME
 
@@ -50,7 +54,7 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
         if (file !is PbFile) return
         val project = manager.project
         val disposable = project.messageBus.createDisposableOnAnyPsiChange()
-            .also { Disposer.register(project, it) }
+            .also { Disposer.register(appService, it) }
 
         val contentRootForFile = ProjectFileIndex.getInstance(project)
             .getContentRootForFile(file.virtualFile) ?: return
