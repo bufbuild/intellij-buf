@@ -16,10 +16,7 @@ package build.buf.intellij.inspections
 
 import build.buf.intellij.BufBundle
 import build.buf.intellij.BufPluginService
-import build.buf.intellij.annotator.BufAnalyzeResult
-import build.buf.intellij.annotator.BufAnalyzeUtils
-import build.buf.intellij.annotator.createAnnotationsForFile
-import build.buf.intellij.annotator.createDisposableOnAnyPsiChange
+import build.buf.intellij.annotator.*
 import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
 import com.intellij.codeInspection.*
 import com.intellij.lang.annotation.AnnotationSession

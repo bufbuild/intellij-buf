@@ -16,6 +16,7 @@ package build.buf.intellij.annotator
 
 import build.buf.intellij.BufBundle
 import build.buf.intellij.cache.ProjectCache
+import build.buf.intellij.config.BufConfig
 import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
@@ -28,6 +29,7 @@ import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
@@ -38,6 +40,8 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.WindowManager
+import com.intellij.protobuf.lang.psi.PbFile
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -87,7 +91,11 @@ object BufAnalyzeUtils {
         workingDirectory: Path
     ): BufAnalyzeResult? {
         val widget = WriteAction.computeAndWait<BufCLIWidget?, Throwable> {
-            FileDocumentManager.getInstance().saveAllDocuments()
+            FileDocumentManager.getInstance()
+                .saveDocuments { document ->
+                    val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@saveDocuments false
+                    psiFile is PbFile || BufConfig.CONFIG_FILES.contains(psiFile.name)
+                }
             val statusBar = WindowManager.getInstance().getStatusBar(project)
             statusBar?.getWidget(BufCLIWidget.ID) as? BufCLIWidget
         }
@@ -154,6 +162,8 @@ object BufAnalyzeUtils {
         val finish = Instant.now()
         thisLogger().info("Ran buf lint in ${Duration.between(started, finish).toMillis()}ms")
         ProgressManager.checkCanceled()
+        val analyzeModTracker = project.service<BufAnalyzeModificationTracker>()
+        project.putUserData(BufAnalyzePassFactory.LAST_ANALYZE_MOD_COUNT, analyzeModTracker.modificationCount)
         return BufAnalyzeResult(workingDirectory, issues)
     }
 

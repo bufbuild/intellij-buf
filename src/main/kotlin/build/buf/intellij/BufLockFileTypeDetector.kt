@@ -14,6 +14,7 @@
 
 package build.buf.intellij
 
+import build.buf.intellij.config.BufConfig
 import com.intellij.openapi.fileTypes.FileType
 import com.intellij.openapi.fileTypes.impl.FileTypeOverrider
 import com.intellij.openapi.vfs.VirtualFile
@@ -30,7 +31,7 @@ class BufLockFileTypeOverrider : FileTypeOverrider {
             return null
         }
         return when (file.name) {
-            "buf.lock" -> YAMLFileType.YML
+            BufConfig.BUF_LOCK -> YAMLFileType.YML
             else -> null
         }
     }
