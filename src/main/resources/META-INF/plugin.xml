@@ -39,7 +39,6 @@
 
         <!-- Auto-discovery of the plugin via features extractor https://github.com/JetBrains/intellij-plugin-verifier/tree/master/intellij-feature-extractor -->
         <dependencySupport kind="java" coordinate="com.google.protobuf:protobuf-java"/>
-        <fileTypeFactory implementation="build.buf.intellij.features.FakeFileTypeFactoryForDiscoverability"/>
     </extensions>
     <extensions defaultExtensionNs="com.intellij.protobuf">
         <fileResolveProvider implementation="build.buf.intellij.resolve.BufProtoFileResolver"/>
