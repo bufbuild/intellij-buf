@@ -19,11 +19,11 @@ package build.buf.intellij.config
  */
 object BufConfig {
     /** The lock file for a module's dependencies */
-    val BUF_LOCK = "buf.lock"
+    const val BUF_LOCK = "buf.lock"
     /** The buf.yaml configuration file for a Buf module */
-    val BUF_YAML = "buf.yaml"
+    const val BUF_YAML = "buf.yaml"
     /** The workspace configuration file */
-    val BUF_WORK_YAML = "buf.work.yaml"
+    private const val BUF_WORK_YAML = "buf.work.yaml"
 
     /** All configuration files used by the Buf CLI */
     val CONFIG_FILES = setOf(BUF_LOCK, BUF_YAML, BUF_WORK_YAML)
