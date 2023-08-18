@@ -14,6 +14,7 @@
 
 package build.buf.intellij.index
 
+import build.buf.intellij.config.BufConfig
 import build.buf.intellij.model.BufModuleCoordinates
 import com.intellij.openapi.project.Project
 import com.intellij.util.indexing.*
@@ -40,7 +41,7 @@ class BufModuleIndex : ScalarIndexExtension<BufModuleCoordinates>() {
 
     override fun getInputFilter(): FileBasedIndex.InputFilter {
         return FileBasedIndex.InputFilter { file ->
-            file.name == "buf.lock"
+            file.name == BufConfig.BUF_LOCK
         }
     }
 

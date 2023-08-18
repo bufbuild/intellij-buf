@@ -15,6 +15,7 @@
 package build.buf.intellij.fixes
 
 import build.buf.intellij.BufBundle
+import build.buf.intellij.config.BufConfig
 import com.intellij.codeInsight.intention.impl.BaseIntentionAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -69,9 +70,9 @@ class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
     }
 
     private fun findBufConfigFile(file: PsiFile): YAMLFile? {
-        var vFile = file.virtualFile.parent
+        var vFile = file.virtualFile?.parent
         while (vFile != null) {
-            val bufConfig = vFile.findChild("buf.yaml")
+            val bufConfig = vFile.findChild(BufConfig.BUF_YAML)
             if (bufConfig != null) {
                 return PsiManager.getInstance(file.project).findFile(bufConfig) as YAMLFile
             }

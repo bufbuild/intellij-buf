@@ -27,6 +27,7 @@ import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.openapi.wm.impl.status.TextPanel
 import com.intellij.ui.ClickListener
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
@@ -51,7 +52,7 @@ class BufCLIWidget(private val project: Project) : TextPanel.WithIconAndArrows()
 
     init {
         setTextAlignment(CENTER_ALIGNMENT)
-        border = StatusBarWidget.WidgetBorder.WIDE
+        border = JBUI.CurrentTheme.StatusBar.Widget.border()
     }
 
     override fun ID(): String = ID

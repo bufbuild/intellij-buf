@@ -44,6 +44,7 @@ import com.intellij.openapi.progress.util.BackgroundTaskUtil
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
 import com.intellij.protobuf.lang.psi.PbFile
 import com.intellij.psi.PsiFile
@@ -103,7 +104,7 @@ class BufAnalyzePass(
         if (file !is PbFile) return
 
         if (annotationInfo == null) {
-            disposable = myProject
+            disposable = appService
             doFinish(emptyList())
             return
         }
@@ -201,11 +202,17 @@ class BufAnalyzePassFactory(
         file: PsiFile,
         document: Document,
         highlightInfoProcessor: HighlightInfoProcessor
-    ): TextEditorHighlightingPass {
+    ): TextEditorHighlightingPass? {
+        if (!shouldRunPass(file)) {
+            return null
+        }
         return BufAnalyzePass(this, file, document, false)
     }
 
     override fun createHighlightingPass(file: PsiFile, editor: Editor): TextEditorHighlightingPass? {
+        if (!shouldRunPass(file)) {
+            return null
+        }
         FileStatusMap.getDirtyTextRange(editor, passId) ?: return null
         return BufAnalyzePass(this, file, editor.document)
     }
@@ -216,6 +223,18 @@ class BufAnalyzePassFactory(
 
     companion object {
         private const val TIME_SPAN: Int = 300
+        val LAST_ANALYZE_MOD_COUNT = Key.create<Long>("build.buf.analyze.mod_count")
+
+        fun shouldRunPass(file: PsiFile): Boolean {
+            if (file !is PbFile) {
+                return false
+            }
+            val analyzeModTracker = file.project.service<BufAnalyzeModificationTracker>()
+            val currentModCount = analyzeModTracker.modificationCount
+            val lastModCount = file.project.getUserData(LAST_ANALYZE_MOD_COUNT)
+            // No change to .proto/buf configuration since last analyze run.
+            return lastModCount == null || currentModCount != lastModCount
+        }
     }
 }
 

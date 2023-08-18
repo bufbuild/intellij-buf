@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build.buf.intellij
+package build.buf.intellij.config
 
-import com.intellij.DynamicBundle
-import org.jetbrains.annotations.NonNls
-import org.jetbrains.annotations.PropertyKey
+/**
+ * Constants for the Buf CLI configuration files.
+ */
+object BufConfig {
+    /** The lock file for a module's dependencies */
+    const val BUF_LOCK = "buf.lock"
+    /** The buf.yaml configuration file for a Buf module */
+    const val BUF_YAML = "buf.yaml"
+    /** The workspace configuration file */
+    private const val BUF_WORK_YAML = "buf.work.yaml"
 
-@NonNls
-private const val BUNDLE = "messages.BufBundle"
-
-object BufBundle : DynamicBundle(BUNDLE) {
-
-    @JvmStatic
-    fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =
-        getMessage(key, *params)
+    /** All configuration files used by the Buf CLI */
+    val CONFIG_FILES = setOf(BUF_LOCK, BUF_YAML, BUF_WORK_YAML)
 }

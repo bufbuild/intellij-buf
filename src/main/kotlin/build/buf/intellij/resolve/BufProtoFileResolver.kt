@@ -14,6 +14,7 @@
 
 package build.buf.intellij.resolve
 
+import build.buf.intellij.config.BufConfig
 import build.buf.intellij.index.BufModuleIndex
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
@@ -39,8 +40,8 @@ class BufProtoFileResolver : FileResolveProvider {
 
     private fun findFiles(path: String, project: Project): Sequence<VirtualFile> {
         val files = LinkedHashSet<VirtualFile>()
-        for (bufConfig in FilenameIndex.getFilesByName(project, "buf.yaml", ProjectScope.getProjectScope(project))) {
-            val bufRoot = bufConfig.virtualFile.parent
+        for (bufConfig in FilenameIndex.getVirtualFilesByName(BufConfig.BUF_YAML, ProjectScope.getProjectScope(project))) {
+            val bufRoot = bufConfig.parent ?: continue
             files.add(bufRoot.findFileByRelativePath(path) ?: continue)
         }
         for (mod in BufModuleIndex.getAllProjectModules(project)) {
