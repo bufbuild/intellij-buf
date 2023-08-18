@@ -18,12 +18,14 @@ import ai.grazie.nlp.utils.tokenizeByWhitespace
 import build.buf.intellij.BufBundle
 import build.buf.intellij.settings.BufProjectSettingsService
 import build.buf.intellij.settings.bufSettings
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.ui.layout.panel
+import com.intellij.ui.components.JBCheckBox
+import com.intellij.ui.dsl.builder.*
 import java.nio.file.Paths
 
 class BufConfigurable(
@@ -31,39 +33,45 @@ class BufConfigurable(
 ) : BoundConfigurable(BufBundle.message("settings.buf.title")) {
     private val state: BufProjectSettingsService.State = project.bufSettings.state.copy()
 
+    private lateinit var breakingEnabled: Cell<JBCheckBox>
+
     override fun createPanel(): DialogPanel = panel {
         row(BufBundle.message("settings.buf.cli.path")) {
             textFieldWithBrowseButton(
-                prop = state::bufCLIPath,
                 browseDialogTitle = BufBundle.message("settings.buf.cli.path"),
                 project = project,
-            ).withValidationOnApply {
-                validateBufCLI(it)
-            }.withValidationOnInput {
-                validateBufCLI(it)
-            }
-            .constraints(growX, pushX)
+                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor(),
+            ).columns(COLUMNS_LARGE)
+                .align(Align.FILL)
+                .bindText(state::bufCLIPath)
+                .validationOnApply {
+                    validateBufCLI(it)
+                }.validationOnInput {
+                    validateBufCLI(it)
+                }
         }
         row {
-            checkBox(BufBundle.message("settings.buf.use.formatter"), state::useBufFormatter)
+            checkBox(BufBundle.message("settings.buf.use.formatter"))
+                .bindSelected(state::useBufFormatter)
         }
         row {
-            checkBox(BufBundle.message("settings.buf.background.linting.enabled"), state::backgroundLintingEnabled)
+            checkBox(BufBundle.message("settings.buf.background.linting.enabled"))
+                .bindSelected(state::backgroundLintingEnabled)
         }
         row {
-            checkBox(BufBundle.message("settings.buf.background.breaking.enabled"), state::backgroundBreakingEnabled)
-            subRowIndent = 1
+            breakingEnabled = checkBox(BufBundle.message("settings.buf.background.breaking.enabled"))
+                .bindSelected(state::backgroundBreakingEnabled)
+        }
+        indent {
             row("buf breaking") {
-                textField(
+                textField().bindText(
                     { state.breakingArgumentsOverride.joinToString(separator = " ") },
                     { text -> state.breakingArgumentsOverride = text.tokenizeByWhitespace() }
-                ).comment("For example, --against .git#tag=v1.0.0. By default, breaking changes will be verified against uncommitted changes.")
-                    .apply {
-                        visible(state.backgroundBreakingEnabled)
-                        enabled(state.backgroundBreakingEnabled)
-                    }
+                ).columns(COLUMNS_LARGE)
+                    .align(Align.FILL)
+                    .comment("For example, --against .git#tag=v1.0.0. By default, breaking changes will be verified against uncommitted changes.")
             }
-        }
+        }.enabledIf(breakingEnabled.selected)
     }
 
     override fun reset() {
