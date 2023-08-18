@@ -43,6 +43,9 @@ class BufAnalyzeModificationTracker(private val project: Project) : Modification
                 }
             }
         }
+        // In addition to .proto files and Buf CLI config files, also change the modification count on changes to the
+        // plugin's state (which includes settings like arguments to 'buf breaking', whether to enable breaking/lint
+        // checks, and the path to the Buf CLI).
         val settings = project.service<BufProjectSettingsService>()
         modificationCount += settings.state.hashCode()
         return modificationCount
