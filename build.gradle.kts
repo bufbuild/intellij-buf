@@ -5,9 +5,7 @@ fun properties(key: String) = providers.gradleProperty(key)
 fun environment(key: String) = providers.environmentVariable(key)
 
 plugins {
-    `version-catalog`
-
-    id("java")
+    id("java") // Java support
     alias(libs.plugins.kotlin) // Kotlin support
     alias(libs.plugins.gradleIntelliJPlugin) // Gradle IntelliJ Plugin
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
@@ -19,30 +17,29 @@ plugins {
 group = properties("pluginGroup").get()
 version = properties("pluginVersion").get()
 
+// Configure project's dependencies
 repositories {
     mavenCentral()
 }
 
+// Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.jupiter.engine)
     testRuntimeOnly(libs.junit.vintage.engine)
-    testRuntimeOnly(group = "build.buf", name = "buf", version = libs.versions.buf.get(), classifier = osdetector.classifier, ext = "exe")
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
 }
 
 // Set the JVM language level used to build the project. Use Java 11 for 2020.3+, and Java 17 for 2022.2+.
 kotlin {
-    jvmToolchain(17)
+    @Suppress("UnstableApiUsage")
+    jvmToolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+        vendor = JvmVendorSpec.JETBRAINS
+    }
 }
 
-// Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
+// Configure Gradle IntelliJ Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
     pluginName = properties("pluginName")
     version = properties("platformVersion")
@@ -117,8 +114,14 @@ tasks {
         )
     }
 
+    register<Exec>("bufInstall") {
+        description = "Installs the bufbuild/buf CLI to build/gobin."
+        environment("GOBIN", file("build/gobin").canonicalPath)
+        commandLine("go", "install", "github.com/bufbuild/buf/cmd/buf@v${libs.versions.buf.get()}")
+    }
+
     check {
-        dependsOn("licenseHeaderVerify")
+        dependsOn("licenseHeaderVerify", "bufInstall")
     }
 
     test {

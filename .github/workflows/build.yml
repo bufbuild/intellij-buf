@@ -48,18 +48,23 @@ jobs:
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@v1.1.0
 
-      # Setup Java 17 environment for the next steps
+      # Set up Java environment for the next steps
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
           distribution: zulu
           java-version: 17
-          cache: gradle
+
+      # Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-home-cache-cleanup: true
 
       # Setup Go (including module cache) for license-header
       - uses: actions/setup-go@v4
         with:
-          go-version: '1.20.x'
+          go-version: '1.21.x'
           check-latest: true
 
       # Set environment variables
@@ -87,7 +92,7 @@ jobs:
 
       # Run tests
       - name: Run Tests
-        run: ./gradlew check
+        run: ./gradlew check --info
 
       # Collect Tests Result of failed tests
       - name: Collect Tests Result
@@ -97,7 +102,7 @@ jobs:
           name: tests-result
           path: ${{ github.workspace }}/build/reports/tests
 
-      # Upload Kover report to CodeCov
+      # Upload the Kover report to CodeCov
       - name: Upload Code Coverage Report
         uses: codecov/codecov-action@v3
         with:
@@ -142,7 +147,7 @@ jobs:
   # Prepare a draft release for GitHub Releases page for the manual verification
   # If accepted and published, release workflow would be triggered
   releaseDraft:
-    name: Release Draft
+    name: Release draft
     if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
