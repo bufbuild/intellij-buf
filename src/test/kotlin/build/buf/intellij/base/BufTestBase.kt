@@ -28,22 +28,11 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
 
     override fun setUp() {
         super.setUp()
-        var cliPath: String? = null
-        System.getProperty("java.class.path")?.let { classPath ->
-            classPath.splitToSequence(':').forEach {
-                if (it.contains("buf-") && it.endsWith(".exe")) {
-                    cliPath = it
-                }
-            }
-        }
-        Assertions.assertNotNull(cliPath, "failed to find CLI path in ${System.getProperty("java.class.path")}")
-        cliPath?.let {
-            File(it).setExecutable(true)
-            if (project.bufSettings.state.bufCLIPath != it) {
-                project.bufSettings.state = project.bufSettings.state.copy(
-                    bufCLIPath = it
-                )
-            }
+        val cliPath = "build/gobin/buf"
+        if (project.bufSettings.state.bufCLIPath != cliPath) {
+            project.bufSettings.state = project.bufSettings.state.copy(
+                bufCLIPath = cliPath
+            )
         }
     }
 

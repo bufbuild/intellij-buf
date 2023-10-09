@@ -28,7 +28,6 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.jupiter.engine)
     testRuntimeOnly(libs.junit.vintage.engine)
-    testRuntimeOnly(group = "build.buf", name = "buf", version = libs.versions.buf.get(), classifier = osdetector.classifier, ext = "exe")
 }
 
 // Set the JVM language level used to build the project. Use Java 11 for 2020.3+, and Java 17 for 2022.2+.
@@ -115,8 +114,14 @@ tasks {
         )
     }
 
+    register<Exec>("bufInstall") {
+        description = "Installs the bufbuild/buf CLI to build/gobin."
+        environment("GOBIN", file("build/gobin").canonicalPath)
+        commandLine("go", "install", "github.com/bufbuild/buf/cmd/buf@v${libs.versions.buf.get()}")
+    }
+
     check {
-        dependsOn("licenseHeaderVerify")
+        dependsOn("licenseHeaderVerify", "bufInstall")
     }
 
     test {
