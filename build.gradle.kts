@@ -131,8 +131,10 @@ tasks {
     }
 
     test {
+        dependsOn("bufInstall")
         environment("BUF_CACHE_DIR", File(project.projectDir.path + "/src/test/resources/testData/cachev1").absolutePath)
         systemProperty("NO_FS_ROOTS_ACCESS_CHECK", "true") // weird issue on linux
+        systemProperty("BUF_CLI", bufCLIFile.absolutePath)
         useJUnitPlatform()
     }
 
