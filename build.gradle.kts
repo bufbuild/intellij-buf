@@ -17,6 +17,10 @@ plugins {
 group = properties("pluginGroup").get()
 version = properties("pluginVersion").get()
 
+val bufCLIFile = project.layout.buildDirectory.file("gobin/buf").get().asFile
+val bufLicenseHeaderCLIFile = project.layout.buildDirectory.file("gobin/license-header").get().asFile
+val bufLicenseHeaderCLIPath: String = bufLicenseHeaderCLIFile.absolutePath
+
 // Configure project's dependencies
 repositories {
     mavenCentral()
@@ -76,7 +80,8 @@ koverReport {
 tasks {
     register<Exec>("licenseHeaderInstall") {
         description = "Installs the bufbuild/buf license-header CLI to build/gobin."
-        environment("GOBIN", file("build/gobin").canonicalPath)
+        environment("GOBIN", bufLicenseHeaderCLIFile.parentFile.absolutePath)
+        outputs.file(bufLicenseHeaderCLIFile)
         commandLine("go", "install", "github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@v${libs.versions.buf.get()}")
     }
 
@@ -84,7 +89,7 @@ tasks {
         description = "Runs the license-header CLI to add/update license information to source code."
         dependsOn("licenseHeaderInstall")
         commandLine(
-            file("build/gobin/license-header").canonicalPath,
+            bufLicenseHeaderCLIPath,
             "--license-type",
             properties("buf.license.header.type").get(),
             "--copyright-holder",
@@ -100,7 +105,7 @@ tasks {
         description = "Verifies that all source code has appropriate license headers."
         dependsOn("licenseHeaderInstall")
         commandLine(
-            file("build/gobin/license-header").canonicalPath,
+            bufLicenseHeaderCLIPath,
             "--license-type",
             properties("buf.license.header.type").get(),
             "--copyright-holder",
@@ -116,7 +121,8 @@ tasks {
 
     register<Exec>("bufInstall") {
         description = "Installs the bufbuild/buf CLI to build/gobin."
-        environment("GOBIN", file("build/gobin").canonicalPath)
+        environment("GOBIN", bufCLIFile.parentFile.absolutePath)
+        outputs.file(bufCLIFile)
         commandLine("go", "install", "github.com/bufbuild/buf/cmd/buf@v${libs.versions.buf.get()}")
     }
 
