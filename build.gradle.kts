@@ -127,7 +127,7 @@ tasks {
     }
 
     check {
-        dependsOn("licenseHeaderVerify", "bufInstall")
+        dependsOn("licenseHeaderVerify")
     }
 
     test {
