@@ -5,7 +5,7 @@ buf = "1.27.0"
 junit = "5.10.0"
 
 # plugins
-dokka = "1.9.0"
+dokka = "1.9.10"
 kotlin = "1.9.10"
 changelog = "2.2.0"
 gradleIntelliJPlugin = "1.16.0"
