@@ -62,7 +62,7 @@ jobs:
           gradle-home-cache-cleanup: true
 
       # Setup Go (including module cache) for license-header
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.21.x'
           check-latest: true
