@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Support [Protobuf plugin](https://github.com/devkanro/intellij-protobuf-plugin) by devkanro
 
 ## 0.2.1 - 2023-08-18
 - Migrate to Kotlin UI DSL v2 in https://github.com/bufbuild/intellij-buf/pull/138
