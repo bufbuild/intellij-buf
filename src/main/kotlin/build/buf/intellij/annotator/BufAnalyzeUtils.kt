@@ -21,6 +21,7 @@ import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
 import build.buf.intellij.status.BufCLIWidget
+import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputType
@@ -40,7 +41,6 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.WindowManager
-import com.intellij.protobuf.lang.psi.PbFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
@@ -94,7 +94,7 @@ object BufAnalyzeUtils {
             FileDocumentManager.getInstance()
                 .saveDocuments { document ->
                     val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@saveDocuments false
-                    psiFile is PbFile || BufConfig.CONFIG_FILES.contains(psiFile.name)
+                    psiFile.isProtobufFile() || BufConfig.CONFIG_FILES.contains(psiFile.name)
                 }
             val statusBar = WindowManager.getInstance().getStatusBar(project)
             statusBar?.getWidget(BufCLIWidget.ID) as? BufCLIWidget

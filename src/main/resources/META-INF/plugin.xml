@@ -5,8 +5,9 @@
     <vendor>Buf</vendor>
 
     <depends>com.intellij.modules.platform</depends>
-    <depends>idea.plugin.protoeditor</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
+    <depends optional="true" config-file="official-protobuf-plugin-support.xml">idea.plugin.protoeditor</depends>
+    <depends optional="true" config-file="kanro-protobuf-plugin-support.xml">io.kanro.idea.plugin.protobuf</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <fileTypeOverrider implementation="build.buf.intellij.BufLockFileTypeOverrider"/>
@@ -39,8 +40,5 @@
 
         <!-- Auto-discovery of the plugin via features extractor https://github.com/JetBrains/intellij-plugin-verifier/tree/master/intellij-feature-extractor -->
         <dependencySupport kind="java" coordinate="com.google.protobuf:protobuf-java"/>
-    </extensions>
-    <extensions defaultExtensionNs="com.intellij.protobuf">
-        <fileResolveProvider implementation="build.buf.intellij.resolve.BufProtoFileResolver"/>
     </extensions>
 </idea-plugin>

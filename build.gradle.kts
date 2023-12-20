@@ -1,5 +1,6 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
+import org.jetbrains.kotlin.gradle.internal.ensureParentDirsCreated
 
 fun properties(key: String) = providers.gradleProperty(key)
 fun environment(key: String) = providers.environmentVariable(key)
@@ -187,6 +188,23 @@ tasks {
         certificateChain = environment("CERTIFICATE_CHAIN")
         privateKey = environment("PRIVATE_KEY")
         password = environment("PRIVATE_KEY_PASSWORD")
+    }
+
+    prepareSandbox {
+        doLast {
+            val file = project.layout.buildDirectory.file("idea-sandbox/config/disabled_plugins.txt").get().asFile
+            file.ensureParentDirsCreated()
+            file.writeText(
+                buildString {
+                    // Comment this to use Protobuf plugin by JetBrains
+                    // appendLine("idea.plugin.protoeditor")
+                    // appendLine("com.intellij.grpc")
+
+                    // Comment this to use Protobuf plugin by Kanro
+                    appendLine("io.kanro.idea.plugin.protobuf")
+                },
+            )
+        }
     }
 
     publishPlugin {

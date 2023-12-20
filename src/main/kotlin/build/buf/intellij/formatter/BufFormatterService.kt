@@ -17,6 +17,7 @@ package build.buf.intellij.formatter
 import build.buf.intellij.BufBundle
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.settings.bufSettings
+import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.codeInsight.actions.ReformatCodeProcessor
 import com.intellij.formatting.service.AsyncDocumentFormattingService
 import com.intellij.formatting.service.AsyncFormattingRequest
@@ -25,7 +26,6 @@ import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.protobuf.lang.psi.PbFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.formatter.FormatterUtil
 import kotlinx.coroutines.runBlocking
@@ -34,7 +34,7 @@ class BufFormatterService : AsyncDocumentFormattingService() {
     override fun getFeatures(): Set<FormattingService.Feature> = emptySet()
 
     override fun canFormat(file: PsiFile): Boolean =
-        file is PbFile && file.project.bufSettings.state.useBufFormatter && getFormattingReason() == FormattingReason.ReformatCode
+        file.isProtobufFile() && file.project.bufSettings.state.useBufFormatter && getFormattingReason() == FormattingReason.ReformatCode
 
     override fun createFormattingTask(request: AsyncFormattingRequest): FormattingTask? {
         val context = request.context

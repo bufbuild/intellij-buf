@@ -17,6 +17,7 @@ package build.buf.intellij.inspections
 import build.buf.intellij.BufBundle
 import build.buf.intellij.BufPluginService
 import build.buf.intellij.annotator.*
+import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
 import com.intellij.codeInspection.*
 import com.intellij.lang.annotation.AnnotationSession
@@ -25,7 +26,6 @@ import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
-import com.intellij.protobuf.lang.psi.PbFile
 import com.intellij.psi.PsiFile
 
 class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
@@ -48,7 +48,7 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
         globalContext: GlobalInspectionContext,
         problemDescriptionsProcessor: ProblemDescriptionsProcessor
     ) {
-        if (file !is PbFile) return
+        if (!file.isProtobufFile()) return
         val project = manager.project
         val disposable = project.messageBus.createDisposableOnAnyPsiChange()
             .also { Disposer.register(appService, it) }

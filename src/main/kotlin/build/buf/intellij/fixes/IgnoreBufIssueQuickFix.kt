@@ -16,10 +16,10 @@ package build.buf.intellij.fixes
 
 import build.buf.intellij.BufBundle
 import build.buf.intellij.config.BufConfig
+import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.codeInsight.intention.impl.BaseIntentionAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
-import com.intellij.protobuf.lang.psi.PbFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.PsiManager
@@ -33,7 +33,7 @@ class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
 
     override fun getText(): String = BufBundle.getMessage("buf.quickfix.ignore.issue")
 
-    override fun isAvailable(project: Project, editor: Editor, file: PsiFile): Boolean = file is PbFile
+    override fun isAvailable(project: Project, editor: Editor, file: PsiFile): Boolean = file.isProtobufFile()
 
     override fun startInWriteAction(): Boolean = true
 

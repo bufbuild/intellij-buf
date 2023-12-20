@@ -1,0 +1,5 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="io.kanro.idea.plugin.protobuf">
+        <rootProvider implementation="build.buf.intellij.vendor.kanro.BufProtoRootProvider"/>
+    </extensions>
+</idea-plugin>

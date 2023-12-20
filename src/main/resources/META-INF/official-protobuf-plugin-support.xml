@@ -1,0 +1,5 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij.protobuf">
+        <fileResolveProvider implementation="build.buf.intellij.vendor.jetbrains.BufProtoFileResolver"/>
+    </extensions>
+</idea-plugin>

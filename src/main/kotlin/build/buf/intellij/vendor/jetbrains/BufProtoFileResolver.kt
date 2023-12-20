@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build.buf.intellij.resolve
+package build.buf.intellij.vendor.jetbrains
 
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.index.BufModuleIndex
+import build.buf.intellij.resolve.BufRootsProvider
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
