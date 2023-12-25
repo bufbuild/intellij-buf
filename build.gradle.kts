@@ -1,5 +1,6 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
+import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import org.jetbrains.kotlin.gradle.internal.ensureParentDirsCreated
 
 fun properties(key: String) = providers.gradleProperty(key)
@@ -190,18 +191,22 @@ tasks {
         password = environment("PRIVATE_KEY_PASSWORD")
     }
 
-    prepareSandbox {
+    withType<PrepareSandboxTask> {
+        val vendor = project.findProperty("buf.protobuf.vendor")?.toString()
+            ?: System.getenv("BUF_PROTOBUF_VENDOR") ?: "official"
+        logger.info("Current Protobuf Plugin vendor: $vendor")
+        val file = project.layout.buildDirectory.dir(configDir).get().file("disabled_plugins.txt").asFile
+
         doLast {
-            val file = project.layout.buildDirectory.file("idea-sandbox/config/disabled_plugins.txt").get().asFile
             file.ensureParentDirsCreated()
             file.writeText(
                 buildString {
-                    // Comment this to use Protobuf plugin by JetBrains
-                    // appendLine("idea.plugin.protoeditor")
-                    // appendLine("com.intellij.grpc")
-
-                    // Comment this to use Protobuf plugin by Kanro
-                    appendLine("io.kanro.idea.plugin.protobuf")
+                    if (vendor == "devkanro") {
+                        appendLine("idea.plugin.protoeditor")
+                        appendLine("com.intellij.grpc")
+                    } else {
+                        appendLine("io.kanro.idea.plugin.protobuf")
+                    }
                 },
             )
         }
@@ -213,7 +218,8 @@ tasks {
         // The pluginVersion is based on the SemVer (https://semver.org) and supports pre-release labels, like 2.1.7-alpha.3
         // Specify pre-release label to publish the plugin in a custom Release Channel automatically. Read more:
         // https://plugins.jetbrains.com/docs/intellij/deployment.html#specifying-a-release-channel
-        channels = properties("pluginVersion").map { listOf(it.split('-').getOrElse(1) { "default" }.split('.').first()) }
+        channels =
+            properties("pluginVersion").map { listOf(it.split('-').getOrElse(1) { "default" }.split('.').first()) }
     }
 
     runPluginVerifier {
