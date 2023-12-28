@@ -51,7 +51,7 @@ class BufProtoRootProvider : ProtobufRootProvider {
         return roots
     }
 
-    override fun searchScope(context: PsiElement): GlobalSearchScope? {
+    override fun searchScope(context: PsiElement): GlobalSearchScope {
         val project = context.project
         val roots = ArrayList<VirtualFile>()
         for (mod in BufModuleIndex.getAllProjectModules(project)) {
