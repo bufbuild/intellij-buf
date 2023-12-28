@@ -22,11 +22,9 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.ModificationTracker
-import com.intellij.protobuf.lang.PbLanguage
 import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiModificationTracker
-import io.kanro.idea.plugin.protobuf.lang.ProtobufLanguage
 
 /**
  * Project level service to keep track of all changes to .proto files, Buf configuration files, and the plugin config.
@@ -34,11 +32,14 @@ import io.kanro.idea.plugin.protobuf.lang.ProtobufLanguage
  */
 @Service(Service.Level.PROJECT)
 class BufAnalyzeModificationTracker(private val project: Project) : ModificationTracker {
-    private val protoModificationTracker = PsiModificationTracker.getInstance(project).forLanguage(protobufLanguage()!!)
+    private val protoModificationTracker = protobufLanguage()?.let {
+        PsiModificationTracker.getInstance(project).forLanguage(it)
+    }
+
 
     override fun getModificationCount(): Long {
         var modificationCount: Long =
-            protoModificationTracker.modificationCount
+            protoModificationTracker?.modificationCount ?: 0
         runReadAction {
             for (configFile in BufConfig.CONFIG_FILES) {
                 FilenameIndex.getVirtualFilesByName(configFile, GlobalSearchScope.projectScope(project)).forEach {
