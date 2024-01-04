@@ -195,7 +195,7 @@ tasks {
         val vendor = project.findProperty("buf.protobuf.vendor")?.toString()
             ?: System.getenv("BUF_PROTOBUF_VENDOR") ?: "official"
         logger.info("Current Protobuf Plugin vendor: $vendor")
-        val file = project.layout.buildDirectory.dir(configDir).get().file("disabled_plugins.txt").asFile
+        val disabledPluginsFile = project.layout.buildDirectory.dir(configDir).get().file("disabled_plugins.txt").asFile
 
         doLast {
             file.ensureParentDirsCreated()
