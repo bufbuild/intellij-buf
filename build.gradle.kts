@@ -198,8 +198,8 @@ tasks {
         val disabledPluginsFile = project.layout.buildDirectory.dir(configDir).get().file("disabled_plugins.txt").asFile
 
         doLast {
-            file.ensureParentDirsCreated()
-            file.writeText(
+            disabledPluginsFile.ensureParentDirsCreated()
+            disabledPluginsFile.writeText(
                 buildString {
                     if (vendor == "devkanro") {
                         appendLine("idea.plugin.protoeditor")
