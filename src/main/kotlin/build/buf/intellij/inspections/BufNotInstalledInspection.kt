@@ -16,11 +16,11 @@ package build.buf.intellij.inspections
 
 import build.buf.intellij.BufBundle
 import build.buf.intellij.settings.BufCLIUtils
+import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
-import com.intellij.protobuf.lang.psi.PbFile
 import com.intellij.psi.PsiFile
 import org.jetbrains.annotations.NotNull
 
@@ -37,7 +37,7 @@ class BufNotInstalledInspection : LocalInspectionTool() {
     }
 
     override fun checkFile(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor>? {
-        if (file !is PbFile) return null
+        if (!file.isProtobufFile()) return null
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(file.project)
         if (bufExecutable != null) return null
         return arrayOf(

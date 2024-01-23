@@ -16,12 +16,12 @@ package build.buf.intellij.annotator
 
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.settings.BufProjectSettingsService
+import build.buf.intellij.vendor.protobufLanguage
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.ModificationTracker
-import com.intellij.protobuf.lang.PbLanguage
 import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiModificationTracker
@@ -32,10 +32,14 @@ import com.intellij.psi.util.PsiModificationTracker
  */
 @Service(Service.Level.PROJECT)
 class BufAnalyzeModificationTracker(private val project: Project) : ModificationTracker {
-    private val protoModificationTracker = PsiModificationTracker.getInstance(project).forLanguage(PbLanguage.INSTANCE)
+    private val protoModificationTracker = protobufLanguage()?.let {
+        PsiModificationTracker.getInstance(project).forLanguage(it)
+    }
+
 
     override fun getModificationCount(): Long {
-        var modificationCount : Long = protoModificationTracker.modificationCount
+        var modificationCount: Long =
+            protoModificationTracker?.modificationCount ?: 0
         runReadAction {
             for (configFile in BufConfig.CONFIG_FILES) {
                 FilenameIndex.getVirtualFilesByName(configFile, GlobalSearchScope.projectScope(project)).forEach {

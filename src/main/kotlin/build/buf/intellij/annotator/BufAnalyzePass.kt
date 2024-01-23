@@ -18,6 +18,7 @@ import build.buf.intellij.BufPluginService
 import build.buf.intellij.fixes.IgnoreBufIssueQuickFix
 import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.bufSettings
+import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.codeHighlighting.DirtyScopeTrackingHighlightingPassFactory
 import com.intellij.codeHighlighting.MainHighlightingPassFactory
 import com.intellij.codeHighlighting.TextEditorHighlightingPass
@@ -46,7 +47,6 @@ import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
-import com.intellij.protobuf.lang.psi.PbFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.impl.AnyPsiChangeListener
 import com.intellij.psi.impl.PsiManagerImpl
@@ -75,7 +75,7 @@ class BufAnalyzePass(
 
     override fun doCollectInformation(progress: ProgressIndicator) {
         annotationHolder.clear()
-        if (file !is PbFile) return
+        if (!file.isProtobufFile()) return
         if (!myProject.bufSettings.state.backgroundLintingEnabled && !myProject.bufSettings.state.backgroundBreakingEnabled) return
 
         val contentRootForFile = ProjectFileIndex.getInstance(myProject)
@@ -101,7 +101,7 @@ class BufAnalyzePass(
     }
 
     override fun doApplyInformationToEditor() {
-        if (file !is PbFile) return
+        if (!file.isProtobufFile()) return
 
         if (annotationInfo == null) {
             disposable = appService
@@ -126,8 +126,6 @@ class BufAnalyzePass(
                     }
                 })
             }
-
-            override fun canEat(update: Update?): Boolean = true
         }
 
         if (isUnitTestMode) {
@@ -138,7 +136,7 @@ class BufAnalyzePass(
     }
 
     private fun doApply(annotationResult: BufAnalyzeResult) {
-        if (file !is PbFile || !file.isValid) return
+        if (!file.isProtobufFile() || !file.isValid) return
         try {
             @Suppress("UnstableApiUsage")
             annotationHolder.runAnnotatorWithContext(file) { _, holder ->
@@ -226,7 +224,7 @@ class BufAnalyzePassFactory(
         val LAST_ANALYZE_MOD_COUNT = Key.create<Long>("build.buf.analyze.mod_count")
 
         fun shouldRunPass(file: PsiFile): Boolean {
-            if (file !is PbFile) {
+            if (!file.isProtobufFile()) {
                 return false
             }
             val analyzeModTracker = file.project.service<BufAnalyzeModificationTracker>()
@@ -255,7 +253,7 @@ fun MessageBus.createDisposableOnAnyPsiChange(): Disposable {
 }
 
 fun AnnotationHolder.createAnnotationsForFile(
-    file: PbFile,
+    file: PsiFile,
     annotationResult: BufAnalyzeResult
 ) {
     val doc = file.viewProvider.document
