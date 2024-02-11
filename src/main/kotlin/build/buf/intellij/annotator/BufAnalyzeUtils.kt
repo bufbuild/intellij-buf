@@ -189,7 +189,8 @@ object BufAnalyzeUtils {
         project: Project,
         owner: Disposable,
         workingDirectory: Path,
-        arguments: List<String>
+        arguments: List<String>,
+        preserveNewlines: Boolean = false,
     ): Iterable<String> = withContext(Dispatchers.IO) {
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext emptyList()
         val cmd = AtomicReference<String>()
@@ -205,7 +206,7 @@ object BufAnalyzeUtils {
             override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
                 when (outputType) {
                     ProcessOutputType.SYSTEM -> cmd.set(event.text.trimEnd())
-                    ProcessOutputType.STDOUT -> stdout.add(event.text.trimEnd())
+                    ProcessOutputType.STDOUT -> stdout.add(if (preserveNewlines) event.text else event.text.trimEnd())
                 }
             }
 
