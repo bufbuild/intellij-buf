@@ -54,7 +54,8 @@ class BufFormatterService : AsyncDocumentFormattingService() {
                         project,
                         disposable,
                         contentRootForFile.toNioPath(),
-                        listOf("format", relativePath)
+                        listOf("format", relativePath),
+                        preserveNewlines = true,
                     )
                 }
                 if (output.firstOrNull()?.startsWith("unknown command") == true) {
@@ -63,7 +64,7 @@ class BufFormatterService : AsyncDocumentFormattingService() {
                         BufBundle.message("formatter.cli.version.not.supported")
                     )
                 } else {
-                    request.onTextReady(output.joinToString(separator = "\n"))
+                    request.onTextReady(output.joinToString(separator = ""))
                 }
             }
 

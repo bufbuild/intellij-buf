@@ -18,6 +18,7 @@ import build.buf.intellij.base.BufTestBase
 import com.intellij.codeInsight.actions.ReformatCodeProcessor
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.psi.codeStyle.CodeStyleManager
+import com.intellij.util.io.readText
 
 class BufFormatterTest : BufTestBase() {
     fun testFormatting() {
@@ -54,8 +55,19 @@ class BufFormatterTest : BufTestBase() {
               string user_id = 1;
               // The user's email.
               string email = 2;
-            }
-        """.trimIndent()
+            }""".trimIndent() + "\n"
         )
+    }
+
+    fun testLargeFile() {
+        val file = myFixture.configureByText(
+            "largeprotofile.proto",
+            findTestDataFolder().resolve("formatter/largeprotofile-before.proto").readText(),
+        )
+        WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
+            CodeStyleManager.getInstance(project).reformat(file)
+        })
+        val expected = findTestDataFolder().resolve("formatter/largeprotofile-after.proto").readText()
+        myFixture.checkResult(expected)
     }
 }
