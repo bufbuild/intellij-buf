@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2024-02-12
+
+- Preserve newlines with buf format by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/181
+
 ## [0.3.0] - 2024-01-23
 
 - Support Protobuf plugin by kanro by @devkanro in https://github.com/bufbuild/intellij-buf/pull/166
@@ -41,7 +45,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/bufbuild/intellij-buf/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/bufbuild/intellij-buf/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/bufbuild/intellij-buf/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bufbuild/intellij-buf/compare/v0.1.5...v0.2.0
