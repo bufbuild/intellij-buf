@@ -57,12 +57,6 @@ jobs:
         with:
           gradle-home-cache-cleanup: true
 
-      # Setup Go (including module cache) for license-header
-      - uses: actions/setup-go@v5
-        with:
-          go-version: 'stable'
-          check-latest: true
-
       # Set environment variables
       - name: Export Properties
         id: properties
@@ -126,6 +120,22 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-home-cache-cleanup: true
+
+      # Setup Go (including module cache) for license-header
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          check-latest: true
+
+      - name: Cache Go Modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: "${{ runner.os }}-gomod-build-${{ hashFiles('gradle.properties', 'gradle/libs.versions.toml') }}"
+          restore-keys:
+            "${{ runner.os }}-gomod-build-"
 
       # Run tests
       - name: Run Tests
