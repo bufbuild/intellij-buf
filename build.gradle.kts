@@ -18,7 +18,7 @@ plugins {
 group = properties("pluginGroup").get()
 version = properties("pluginVersion").get()
 
-val bufCLIFile = project.layout.buildDirectory.file("gobin/buf").get().asFile
+val buf: Configuration by configurations.creating
 val bufLicenseHeaderCLIFile = project.layout.buildDirectory.file("gobin/license-header").get().asFile
 val bufLicenseHeaderCLIPath: String = bufLicenseHeaderCLIFile.absolutePath
 
@@ -29,10 +29,12 @@ repositories {
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
+    buf("build.buf:buf:${libs.versions.buf.get()}:${osdetector.classifier}@exe")
+
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.jupiter.engine)
-    testRuntimeOnly(libs.junit.vintage.engine)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 // Set the JVM language level used to build the project.
@@ -107,11 +109,9 @@ tasks {
         )
     }
 
-    register<Exec>("bufInstall") {
-        description = "Installs the bufbuild/buf CLI to build/gobin."
-        environment("GOBIN", bufCLIFile.parentFile.absolutePath)
-        outputs.file(bufCLIFile)
-        commandLine("go", "install", "github.com/bufbuild/buf/cmd/buf@v${libs.versions.buf.get()}")
+    register("configureBuf") {
+        description = "Installs the Buf CLI."
+        File(buf.asPath).setExecutable(true)
     }
 
     check {
@@ -119,10 +119,10 @@ tasks {
     }
 
     test {
-        dependsOn("bufInstall")
+        dependsOn("configureBuf")
         environment("BUF_CACHE_DIR", File(project.projectDir.path + "/src/test/resources/testData/cachev1").absolutePath)
         systemProperty("NO_FS_ROOTS_ACCESS_CHECK", "true") // weird issue on linux
-        systemProperty("BUF_CLI", bufCLIFile.absolutePath)
+        systemProperty("BUF_CLI", buf.asPath)
         useJUnitPlatform()
     }
 
