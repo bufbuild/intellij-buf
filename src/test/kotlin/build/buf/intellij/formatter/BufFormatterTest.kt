@@ -23,7 +23,8 @@ import com.intellij.util.io.readText
 class BufFormatterTest : BufTestBase() {
     fun testFormatting() {
         val file = myFixture.configureByText(
-            "user.proto", """
+            "user.proto",
+            """
                             syntax =
                     "proto3";
                 
@@ -39,7 +40,7 @@ class BufFormatterTest : BufTestBase() {
                     1;
                               // The user's email.
                 string      email = 2; }
-        """.trimIndent()
+            """.trimIndent(),
         )
         WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
             CodeStyleManager.getInstance(project).reformat(file)
@@ -55,7 +56,8 @@ class BufFormatterTest : BufTestBase() {
               string user_id = 1;
               // The user's email.
               string email = 2;
-            }""".trimIndent() + "\n"
+            }
+            """.trimIndent() + "\n",
         )
     }
 

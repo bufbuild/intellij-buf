@@ -17,10 +17,18 @@ package build.buf.intellij.index
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.model.BufModuleCoordinates
 import com.intellij.openapi.project.Project
-import com.intellij.util.indexing.*
+import com.intellij.util.indexing.DataIndexer
+import com.intellij.util.indexing.FileBasedIndex
+import com.intellij.util.indexing.FileContent
+import com.intellij.util.indexing.ID
+import com.intellij.util.indexing.ScalarIndexExtension
 import com.intellij.util.io.IOUtil
 import com.intellij.util.io.KeyDescriptor
-import org.jetbrains.yaml.psi.*
+import org.jetbrains.yaml.psi.YAMLFile
+import org.jetbrains.yaml.psi.YAMLKeyValue
+import org.jetbrains.yaml.psi.YAMLSequence
+import org.jetbrains.yaml.psi.YAMLSequenceItem
+import org.jetbrains.yaml.psi.YamlRecursivePsiElementVisitor
 import java.io.DataInput
 import java.io.DataOutput
 
@@ -28,9 +36,7 @@ class BufModuleIndex : ScalarIndexExtension<BufModuleCoordinates>() {
     companion object {
         private val INDEX_ID = ID.create<BufModuleCoordinates, Void>("BufModuleIndex")
 
-        fun getAllProjectModules(project: Project): Collection<BufModuleCoordinates> {
-            return FileBasedIndex.getInstance().getAllKeys(INDEX_ID, project)
-        }
+        fun getAllProjectModules(project: Project): Collection<BufModuleCoordinates> = FileBasedIndex.getInstance().getAllKeys(INDEX_ID, project)
     }
 
     override fun getName(): ID<BufModuleCoordinates, Void> = INDEX_ID
@@ -39,10 +45,8 @@ class BufModuleIndex : ScalarIndexExtension<BufModuleCoordinates>() {
 
     override fun getVersion(): Int = 2
 
-    override fun getInputFilter(): FileBasedIndex.InputFilter {
-        return FileBasedIndex.InputFilter { file ->
-            file.name == BufConfig.BUF_LOCK
-        }
+    override fun getInputFilter(): FileBasedIndex.InputFilter = FileBasedIndex.InputFilter { file ->
+        file.name == BufConfig.BUF_LOCK
     }
 
     override fun getKeyDescriptor(): KeyDescriptor<BufModuleCoordinates> = BufModuleIndexEntryKeyDescriptor

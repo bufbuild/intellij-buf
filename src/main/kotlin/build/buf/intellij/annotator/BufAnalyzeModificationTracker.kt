@@ -36,7 +36,6 @@ class BufAnalyzeModificationTracker(private val project: Project) : Modification
         PsiModificationTracker.getInstance(project).forLanguage(it)
     }
 
-
     override fun getModificationCount(): Long {
         var modificationCount: Long =
             protoModificationTracker?.modificationCount ?: 0

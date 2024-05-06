@@ -25,7 +25,14 @@ import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.components.JBCheckBox
-import com.intellij.ui.dsl.builder.*
+import com.intellij.ui.dsl.builder.Align
+import com.intellij.ui.dsl.builder.COLUMNS_LARGE
+import com.intellij.ui.dsl.builder.Cell
+import com.intellij.ui.dsl.builder.bindSelected
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.columns
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.selected
 import java.nio.file.Paths
 
 class BufConfigurable(
@@ -66,7 +73,7 @@ class BufConfigurable(
             row("buf breaking") {
                 textField().bindText(
                     { state.breakingArgumentsOverride.joinToString(separator = " ") },
-                    { text -> state.breakingArgumentsOverride = text.tokenizeByWhitespace() }
+                    { text -> state.breakingArgumentsOverride = text.tokenizeByWhitespace() },
                 ).columns(COLUMNS_LARGE)
                     .align(Align.FILL)
                     .comment("For example, --against .git#tag=v1.0.0. By default, breaking changes will be verified against uncommitted changes.")

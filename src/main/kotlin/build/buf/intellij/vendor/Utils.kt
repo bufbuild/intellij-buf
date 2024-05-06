@@ -51,10 +51,6 @@ private val kanroProtobufLanguage: Language? by lazy {
     }
 }
 
-fun PsiFile.isProtobufFile(): Boolean {
-    return ((officialProtobufFile?.isInstance(this) ?: false || kanroProtobufFile?.isInstance(this) ?: false))
-}
+fun PsiFile.isProtobufFile(): Boolean = ((officialProtobufFile?.isInstance(this) ?: false || kanroProtobufFile?.isInstance(this) ?: false))
 
-fun protobufLanguage(): Language? {
-    return officialProtobufLanguage ?: kanroProtobufLanguage
-}
+fun protobufLanguage(): Language? = officialProtobufLanguage ?: kanroProtobufLanguage

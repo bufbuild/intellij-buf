@@ -32,9 +32,7 @@ class BufNotInstalledInspection : LocalInspectionTool() {
     override fun isEnabledByDefault(): Boolean = true
 
     @NotNull
-    override fun getShortName(): String {
-        return "BufCLINotInstalled"
-    }
+    override fun getShortName(): String = "BufCLINotInstalled"
 
     override fun checkFile(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor>? {
         if (!file.isProtobufFile()) return null
@@ -46,8 +44,8 @@ class BufNotInstalledInspection : LocalInspectionTool() {
                 displayName,
                 isOnTheFly,
                 arrayOf(NavigateToDocumentationLinkQuickFix("https://buf.build/docs/installation/")),
-                ProblemHighlightType.WARNING
-            )
+                ProblemHighlightType.WARNING,
+            ),
         )
     }
 }

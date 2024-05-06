@@ -29,7 +29,12 @@ import com.intellij.util.SystemProperties
 import com.intellij.util.io.delete
 import com.intellij.util.io.isDirectory
 import java.io.IOException
-import java.nio.file.*
+import java.nio.file.DirectoryNotEmptyException
+import java.nio.file.FileSystemException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.exists
 
@@ -59,19 +64,13 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
             return Path.of(SystemProperties.getUserHome(), ".cache", "buf")
         }
 
-        fun getBufCacheFolderV1(env: Map<String, String> = System.getenv()) : VirtualFile? {
-            return LocalFileSystem.getInstance().findFileByNioFile(getBufCacheFolderBase(env))
-                ?.findFileByRelativePath("v1/module/data")
-        }
+        fun getBufCacheFolderV1(env: Map<String, String> = System.getenv()): VirtualFile? = LocalFileSystem.getInstance().findFileByNioFile(getBufCacheFolderBase(env))
+            ?.findFileByRelativePath("v1/module/data")
 
-        fun getBufCacheFolderV2(env: Map<String, String> = System.getenv()) : VirtualFile? {
-            return LocalFileSystem.getInstance().findFileByNioFile(getBufCacheFolderBase(env))
-                ?.findFileByRelativePath("v2/module")
-        }
+        fun getBufCacheFolderV2(env: Map<String, String> = System.getenv()): VirtualFile? = LocalFileSystem.getInstance().findFileByNioFile(getBufCacheFolderBase(env))
+            ?.findFileByRelativePath("v2/module")
 
-        fun getIDEAModCacheV2(): Path {
-            return Paths.get(PathManager.getSystemPath(), "buf", "modcache")
-        }
+        fun getIDEAModCacheV2(): Path = Paths.get(PathManager.getSystemPath(), "buf", "modcache")
 
         private fun findManifestV2(mod: BufModuleCoordinates, env: Map<String, String> = System.getenv()): Manifest? {
             val repoCacheFolder = getBufCacheFolderV2(env)

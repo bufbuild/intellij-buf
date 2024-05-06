@@ -61,7 +61,7 @@ class BufFormatterService : AsyncDocumentFormattingService() {
                 if (output.firstOrNull()?.startsWith("unknown command") == true) {
                     request.onError(
                         BufBundle.message("formatter.title"),
-                        BufBundle.message("formatter.cli.version.not.supported")
+                        BufBundle.message("formatter.cli.version.not.supported"),
                     )
                 } else {
                     request.onTextReady(output.joinToString(separator = ""))
@@ -85,7 +85,7 @@ class BufFormatterService : AsyncDocumentFormattingService() {
         private enum class FormattingReason {
             ReformatCode,
             ReformatCodeBeforeCommit,
-            Implicit
+            Implicit,
         }
 
         private fun getFormattingReason(): FormattingReason =

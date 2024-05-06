@@ -25,17 +25,19 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializer
 import org.jdom.Element
 
-private const val serviceName: String = "BufProjectSettings"
+private const val SERVICE_NAME: String = "BufProjectSettings"
 
 @com.intellij.openapi.components.State(
-    name = serviceName, storages = [
+    name = SERVICE_NAME,
+    storages = [
         Storage(StoragePathMacros.WORKSPACE_FILE),
-        Storage("misc.xml", deprecated = true)
-    ]
+        Storage("misc.xml", deprecated = true),
+    ],
 )
 class BufProjectSettingsServiceImpl(
-    private val project: Project
-) : PersistentStateComponent<Element>, BufProjectSettingsService {
+    private val project: Project,
+) : PersistentStateComponent<Element>,
+    BufProjectSettingsService {
     @Volatile
     private var _state: State = State()
 
@@ -49,7 +51,7 @@ class BufProjectSettingsServiceImpl(
         }
 
     override fun getState(): Element {
-        val element = Element(serviceName)
+        val element = Element(SERVICE_NAME)
         serializeObjectInto(_state, element)
         return element
     }

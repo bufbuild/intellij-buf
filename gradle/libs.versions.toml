@@ -11,6 +11,7 @@ gradleIntelliJPlugin = "1.17.3"
 qodana = "2023.3.1"
 kover = "0.7.6"
 osdetector = "1.7.3"
+spotless = "6.25.0"
 
 [libraries]
 annotations = { group = "org.jetbrains", name = "annotations", version.ref = "annotations" }
@@ -27,3 +28,4 @@ kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 qodana = { id = "org.jetbrains.qodana", version.ref = "qodana" }
 osdetector = { id = "com.google.osdetector", version.ref = "osdetector" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

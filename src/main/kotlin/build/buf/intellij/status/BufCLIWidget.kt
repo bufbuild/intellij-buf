@@ -41,7 +41,9 @@ class BufCLIWidgetFactory : StatusBarWidgetFactory {
     override fun canBeEnabledOn(statusBar: StatusBar): Boolean = true
 }
 
-class BufCLIWidget(private val project: Project) : TextPanel.WithIconAndArrows(), CustomStatusBarWidget {
+class BufCLIWidget(private val project: Project) :
+    TextPanel.WithIconAndArrows(),
+    CustomStatusBarWidget {
     private var statusBar: StatusBar? = null
 
     var inProgress: Boolean = false
@@ -85,8 +87,8 @@ class BufCLIWidget(private val project: Project) : TextPanel.WithIconAndArrows()
         UIUtil.invokeLaterIfNeeded {
             if (project.isDisposed) return@invokeLaterIfNeeded
             text = BufBundle.message("name")
-            val analyzingEnabled = project.bufSettings.state.backgroundLintingEnabled
-                    || project.bufSettings.state.backgroundBreakingEnabled
+            val analyzingEnabled = project.bufSettings.state.backgroundLintingEnabled ||
+                project.bufSettings.state.backgroundBreakingEnabled
             toolTipText = when {
                 !analyzingEnabled -> BufBundle.message("analyzing.disabled")
                 inProgress -> BufBundle.message("analyzing.in.progress")
