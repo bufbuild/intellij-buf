@@ -30,12 +30,10 @@ data class BufIssue(
         get() = type == "COMPILE"
 
     companion object {
-        fun fromJSON(text: String): BufIssue? {
-            return try {
-                Gson().fromJson(text, BufIssue::class.java)
-            } catch (th: Throwable) {
-                null
-            }
+        fun fromJSON(text: String): BufIssue? = try {
+            Gson().fromJson(text, BufIssue::class.java)
+        } catch (th: Throwable) {
+            null
         }
     }
 }

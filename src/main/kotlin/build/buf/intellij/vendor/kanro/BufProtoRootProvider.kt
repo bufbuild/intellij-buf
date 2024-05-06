@@ -33,7 +33,8 @@ class BufProtoRootProvider : ProtobufRootProvider {
         val project = context.project
         val roots = mutableListOf<ProtobufRoot>()
         for (bufConfig in FilenameIndex.getVirtualFilesByName(
-            BufConfig.BUF_YAML, ProjectScope.getProjectScope(project)
+            BufConfig.BUF_YAML,
+            ProjectScope.getProjectScope(project),
         )) {
             val parent = bufConfig.parent ?: continue
             roots.add(ProtobufRoot("bufCurrentModule", parent))

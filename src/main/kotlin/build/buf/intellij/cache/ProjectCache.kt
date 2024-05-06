@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap
 
 class ProjectCache<in T, R>(
     cacheName: String,
-    private val dependencyGetter: (Project) -> Any
+    private val dependencyGetter: (Project) -> Any,
 ) {
     init {
         if (!registered.add(cacheName)) {
@@ -33,7 +33,7 @@ class ProjectCache<in T, R>(
                 """
                 ProjectCache `$cacheName` is already registered.
                 Make sure ProjectCache is static, that is, put it inside companion object.
-            """.trimIndent()
+                """.trimIndent(),
             )
         }
     }
@@ -45,7 +45,7 @@ class ProjectCache<in T, R>(
             .getCachedValue(project, cacheKey, {
                 CachedValueProvider.Result.create(
                     ConcurrentHashMap(),
-                    dependencyGetter(project)
+                    dependencyGetter(project),
                 )
             }, false)
         return cache.getOrPut(key) { defaultValue() }

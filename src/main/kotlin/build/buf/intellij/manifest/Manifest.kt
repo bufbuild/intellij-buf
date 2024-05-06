@@ -15,10 +15,7 @@
 package build.buf.intellij.manifest
 
 import com.intellij.openapi.vfs.VirtualFile
-import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
+import java.util.Collections
 
 class Manifest(
     /* Contains digest hex to list of relative paths */
@@ -26,21 +23,17 @@ class Manifest(
     /* Contains relative path to Digest */
     private val pathToDigest: Map<String, Digest>,
     /* Contains mapping of path to canonical path */
-    private val pathToCanonicalPath: Map<String, String>
+    private val pathToCanonicalPath: Map<String, String>,
 ) {
     /**
      * Returns all unique paths in the manifest, order not guaranteed.
      */
-    fun getPaths(): Set<String> {
-        return Collections.unmodifiableSet(pathToDigest.keys)
-    }
+    fun getPaths(): Set<String> = Collections.unmodifiableSet(pathToDigest.keys)
 
     /**
      * Returns all unique digests in the manifest, order not guaranteed.
      */
-    fun getDigests(): Set<Digest> {
-        return Collections.unmodifiableSet(HashSet(pathToDigest.values))
-    }
+    fun getDigests(): Set<Digest> = Collections.unmodifiableSet(HashSet(pathToDigest.values))
 
     /**
      * Returns the paths for a given digest, or an empty list if not found.
@@ -53,23 +46,17 @@ class Manifest(
     /**
      * Returns the digest for a path, or null if not found.
      */
-    fun getDigestFor(path: String): Digest? {
-        return this.pathToDigest[path]
-    }
+    fun getDigestFor(path: String): Digest? = this.pathToDigest[path]
 
     /**
      * Returns the canonical path in the local cache to the relative file.
      */
-    fun getCanonicalPath(relPath: String): String? {
-        return this.pathToCanonicalPath[relPath]
-    }
+    fun getCanonicalPath(relPath: String): String? = this.pathToCanonicalPath[relPath]
 
     /**
      * Returns true if the manifest has no entries.
      */
-    fun isEmpty(): Boolean {
-        return this.pathToDigest.isEmpty() && this.digestToPaths.isEmpty()
-    }
+    fun isEmpty(): Boolean = this.pathToDigest.isEmpty() && this.digestToPaths.isEmpty()
 
     companion object {
         /**
@@ -82,14 +69,14 @@ class Manifest(
          */
         fun fromCommit(repoCacheDir: VirtualFile, commit: String): Manifest? {
             val commitDigest =
-                repoCacheDir.findFileByRelativePath("commits/${commit}")?.inputStream?.bufferedReader()?.use {
+                repoCacheDir.findFileByRelativePath("commits/$commit")?.inputStream?.bufferedReader()?.use {
                     Digest.fromString(it.readLine())
                 } ?: return null
             val digestToBlobPath = HashMap<String, ArrayList<String>>()
             val pathToDigest = HashMap<String, Digest>()
             val pathToCanonicalPath = HashMap<String, String>()
             repoCacheDir.findFileByRelativePath(
-                "blobs/${commitDigest.hex.substring(0, 2)}/${commitDigest.hex.substring(2)}"
+                "blobs/${commitDigest.hex.substring(0, 2)}/${commitDigest.hex.substring(2)}",
             )?.inputStream?.bufferedReader()?.use {
                 it.forEachLine { line ->
                     val entry = line.split("  ", limit = 2)
@@ -106,7 +93,7 @@ class Manifest(
                     }
                     pathToDigest[path] = digest
                     val blobFilePath = repoCacheDir.findFileByRelativePath(
-                        "blobs/${digest.hex.substring(0, 2)}/${digest.hex.substring(2)}"
+                        "blobs/${digest.hex.substring(0, 2)}/${digest.hex.substring(2)}",
                     )?.canonicalPath
                     if (blobFilePath != null) {
                         pathToCanonicalPath[path] = blobFilePath

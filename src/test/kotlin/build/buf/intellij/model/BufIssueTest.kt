@@ -14,13 +14,15 @@
 
 package build.buf.intellij.model
 
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 
 class BufIssueTest {
     @Test
     fun testJSON() {
-        val issue = BufIssue.fromJSON("""
+        val issue = BufIssue.fromJSON(
+            """
             {
                 "start_line": 1,
                 "end_line": 2,
@@ -29,7 +31,8 @@ class BufIssueTest {
                 "type": "some type",
                 "message": "some message"
             }
-        """.trimIndent())
+            """.trimIndent(),
+        )
         assertNotNull(issue!!, "failed to deserialize issue from JSON")
         assertEquals(1, issue.startLine)
         assertEquals(2, issue.endLine)

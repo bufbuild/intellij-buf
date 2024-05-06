@@ -23,7 +23,12 @@ import com.intellij.codeHighlighting.DirtyScopeTrackingHighlightingPassFactory
 import com.intellij.codeHighlighting.MainHighlightingPassFactory
 import com.intellij.codeHighlighting.TextEditorHighlightingPass
 import com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar
-import com.intellij.codeInsight.daemon.impl.*
+import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
+import com.intellij.codeInsight.daemon.impl.DaemonCodeAnalyzerEx
+import com.intellij.codeInsight.daemon.impl.FileStatusMap
+import com.intellij.codeInsight.daemon.impl.HighlightInfo
+import com.intellij.codeInsight.daemon.impl.HighlightInfoProcessor
+import com.intellij.codeInsight.daemon.impl.UpdateHighlightersUtil
 import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.AnnotationSession
@@ -59,8 +64,9 @@ class BufAnalyzePass(
     private val factory: BufAnalyzePassFactory,
     private val file: PsiFile,
     document: Document,
-    private val withWidget: Boolean = true
-) : TextEditorHighlightingPass(file.project, document), DumbAware {
+    private val withWidget: Boolean = true,
+) : TextEditorHighlightingPass(file.project, document),
+    DumbAware {
     private val appService = service<BufPluginService>()
 
     @Suppress("UnstableApiUsage", "DEPRECATION")
@@ -116,15 +122,18 @@ class BufAnalyzePass(
             }
 
             override fun run() {
-                BackgroundTaskUtil.runUnderDisposeAwareIndicator(disposable, Runnable {
-                    val annotationResult = annotationResult ?: return@Runnable
-                    runReadAction {
-                        ProgressManager.checkCanceled()
-                        doApply(annotationResult)
-                        ProgressManager.checkCanceled()
-                        doFinish(highlights)
-                    }
-                })
+                BackgroundTaskUtil.runUnderDisposeAwareIndicator(
+                    disposable,
+                    Runnable {
+                        val annotationResult = annotationResult ?: return@Runnable
+                        runReadAction {
+                            ProgressManager.checkCanceled()
+                            doApply(annotationResult)
+                            ProgressManager.checkCanceled()
+                            doFinish(highlights)
+                        }
+                    },
+                )
             }
         }
 
@@ -158,7 +167,7 @@ class BufAnalyzePass(
                 file.textLength,
                 highlights,
                 colorsScheme,
-                id
+                id,
             )
             DaemonCodeAnalyzerEx.getInstanceEx(myProject).fileStatusMap.markFileUpToDate(document, id)
         }
@@ -173,8 +182,9 @@ class BufAnalyzePass(
 }
 
 class BufAnalyzePassFactory(
-    registrar: TextEditorHighlightingPassRegistrar
-) : DirtyScopeTrackingHighlightingPassFactory, MainHighlightingPassFactory {
+    registrar: TextEditorHighlightingPassRegistrar,
+) : DirtyScopeTrackingHighlightingPassFactory,
+    MainHighlightingPassFactory {
 
     private val appService = service<BufPluginService>()
 
@@ -183,7 +193,7 @@ class BufAnalyzePassFactory(
         null,
         null,
         false,
-        -1
+        -1,
     )
 
     private val externalLinterQueue = MergingUpdateQueue(
@@ -193,13 +203,13 @@ class BufAnalyzePassFactory(
         MergingUpdateQueue.ANY_COMPONENT,
         appService,
         null,
-        false
+        false,
     )
 
     override fun createMainHighlightingPass(
         file: PsiFile,
         document: Document,
-        highlightInfoProcessor: HighlightInfoProcessor
+        highlightInfoProcessor: HighlightInfoProcessor,
     ): TextEditorHighlightingPass? {
         if (!shouldRunPass(file)) {
             return null
@@ -236,7 +246,6 @@ class BufAnalyzePassFactory(
     }
 }
 
-
 fun MessageBus.createDisposableOnAnyPsiChange(): Disposable {
     val disposable = Disposer.newDisposable("Dispose on PSI change")
     connect(disposable).subscribe(
@@ -247,14 +256,14 @@ fun MessageBus.createDisposableOnAnyPsiChange(): Disposable {
                     Disposer.dispose(disposable)
                 }
             }
-        }
+        },
     )
     return disposable
 }
 
 fun AnnotationHolder.createAnnotationsForFile(
     file: PsiFile,
-    annotationResult: BufAnalyzeResult
+    annotationResult: BufAnalyzeResult,
 ) {
     val doc = file.viewProvider.document
         ?: error("Can't find document for $file")
@@ -292,4 +301,3 @@ fun toOffset(document: Document, line: Int, column: Int): Int? {
     return (document.getLineStartOffset(line) + column)
         .takeIf { it <= document.textLength }
 }
-

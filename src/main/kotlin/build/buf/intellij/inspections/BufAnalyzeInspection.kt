@@ -16,10 +16,18 @@ package build.buf.intellij.inspections
 
 import build.buf.intellij.BufBundle
 import build.buf.intellij.BufPluginService
-import build.buf.intellij.annotator.*
+import build.buf.intellij.annotator.BufAnalyzeResult
+import build.buf.intellij.annotator.BufAnalyzeUtils
+import build.buf.intellij.annotator.createAnnotationsForFile
+import build.buf.intellij.annotator.createDisposableOnAnyPsiChange
 import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
-import com.intellij.codeInspection.*
+import com.intellij.codeInspection.GlobalInspectionContext
+import com.intellij.codeInspection.GlobalSimpleInspectionTool
+import com.intellij.codeInspection.InspectionManager
+import com.intellij.codeInspection.ProblemDescriptionsProcessor
+import com.intellij.codeInspection.ProblemDescriptorUtil
+import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.lang.annotation.AnnotationSession
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
@@ -46,7 +54,7 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
         manager: InspectionManager,
         problemsHolder: ProblemsHolder,
         globalContext: GlobalInspectionContext,
-        problemDescriptionsProcessor: ProblemDescriptionsProcessor
+        problemDescriptionsProcessor: ProblemDescriptionsProcessor,
     ) {
         if (!file.isProtobufFile()) return
         val project = manager.project

@@ -18,9 +18,7 @@ data class Digest(
     val digestType: String,
     val hex: String,
 ) {
-    override fun toString(): String {
-        return "$digestType:$hex"
-    }
+    override fun toString(): String = "$digestType:$hex"
 
     companion object {
         private const val DIGEST_TYPE_SHAKE_256 = "shake256"

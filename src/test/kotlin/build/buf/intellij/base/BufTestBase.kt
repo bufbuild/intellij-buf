@@ -38,7 +38,7 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
         }
         if (project.bufSettings.state.bufCLIPath != cliPath) {
             project.bufSettings.state = project.bufSettings.state.copy(
-                bufCLIPath = cliPath
+                bufCLIPath = cliPath,
             )
         }
     }
@@ -70,7 +70,7 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
         if (!file.isDirectory) {
             myFixture.addFileToProject(
                 FileUtil.getRelativePath(root, file) ?: return,
-                file.readText()
+                file.readText(),
             )
             return
         }

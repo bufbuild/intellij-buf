@@ -49,7 +49,7 @@ import kotlinx.coroutines.withContext
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -69,7 +69,7 @@ object BufAnalyzeUtils {
         project: Project,
         owner: Disposable,
         workingDirectory: Path,
-        withWidget: Boolean = true
+        withWidget: Boolean = true,
     ): Lazy<BufAnalyzeResult?> {
         check(ApplicationManager.getApplication().isReadAccessAllowed)
         return externalLinterLazyResultCache.getOrPut(project, workingDirectory) {
@@ -88,7 +88,7 @@ object BufAnalyzeUtils {
     private fun checkWrapped(
         project: Project,
         owner: Disposable,
-        workingDirectory: Path
+        workingDirectory: Path,
     ): BufAnalyzeResult? {
         val widget = WriteAction.computeAndWait<BufCLIWidget?, Throwable> {
             FileDocumentManager.getInstance()
@@ -123,7 +123,7 @@ object BufAnalyzeUtils {
     private fun check(
         project: Project,
         owner: Disposable,
-        workingDirectory: Path
+        workingDirectory: Path,
     ): BufAnalyzeResult {
         ProgressManager.checkCanceled()
         val started = Instant.now()
@@ -152,7 +152,7 @@ object BufAnalyzeUtils {
                         project,
                         owner,
                         workingDirectory,
-                        listOf("breaking", "--error-format=json") + breakingArguments
+                        listOf("breaking", "--error-format=json") + breakingArguments,
                     ).mapNotNull { BufIssue.fromJSON(it) }
                 } else {
                     emptyList()
@@ -200,20 +200,23 @@ object BufAnalyzeUtils {
             bufExecutable.absolutePath,
             workingDirectory.toString(),
             null,
-            arguments.toTypedArray()
+            arguments.toTypedArray(),
         )
-        handler.addProcessListener(object : ProcessAdapter() {
-            override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
-                when (outputType) {
-                    ProcessOutputType.SYSTEM -> cmd.set(event.text.trimEnd())
-                    ProcessOutputType.STDOUT -> stdout.add(if (preserveNewlines) event.text else event.text.trimEnd())
+        handler.addProcessListener(
+            object : ProcessAdapter() {
+                override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
+                    when (outputType) {
+                        ProcessOutputType.SYSTEM -> cmd.set(event.text.trimEnd())
+                        ProcessOutputType.STDOUT -> stdout.add(if (preserveNewlines) event.text else event.text.trimEnd())
+                    }
                 }
-            }
 
-            override fun processTerminated(event: ProcessEvent) {
-                exitCode.set(event.exitCode)
-            }
-        }, owner)
+                override fun processTerminated(event: ProcessEvent) {
+                    exitCode.set(event.exitCode)
+                }
+            },
+            owner,
+        )
         handler.startNotify()
         if (handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())) {
             val code = exitCode.get()
@@ -231,7 +234,6 @@ object BufAnalyzeUtils {
         ProjectCache<Path, Lazy<BufAnalyzeResult?>>("externalLinterLazyResultCache") {
             PsiModificationTracker.MODIFICATION_COUNT
         }
-
 }
 
 data class BufAnalyzeResult(val workingDirectory: Path, val issue: List<BufIssue>)

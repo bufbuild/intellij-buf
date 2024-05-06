@@ -46,7 +46,7 @@ class BufFixesTest : BufTestBase() {
               string B<caret>ar = 1;
             }
             
-        """.trimIndent()
+            """.trimIndent(),
         )
     }
 }

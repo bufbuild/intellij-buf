@@ -21,13 +21,11 @@ import java.io.File
 object BufCLIUtils {
     private fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
 
-    fun getConfiguredBufExecutable(project: Project): File? {
-        return project.bufSettings.state.bufCLIPath.let {
-            if (it.isNotEmpty()) {
-                File(it)
-            } else {
-                findBufExecutable()
-            }
+    fun getConfiguredBufExecutable(project: Project): File? = project.bufSettings.state.bufCLIPath.let {
+        if (it.isNotEmpty()) {
+            File(it)
+        } else {
+            findBufExecutable()
         }
     }
 }

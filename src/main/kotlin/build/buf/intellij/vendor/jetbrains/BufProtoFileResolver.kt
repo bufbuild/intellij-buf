@@ -28,14 +28,12 @@ import com.intellij.psi.search.GlobalSearchScopesCore
 import com.intellij.psi.search.ProjectScope
 
 class BufProtoFileResolver : FileResolveProvider {
-    override fun getChildEntries(path: String, project: Project): Collection<ChildEntry> {
-        return findFiles(path, project)
-            .filter { it.isDirectory }
-            .map { VfsUtil.getChildren(it, FileResolveProvider.PROTO_AND_DIRECTORY_FILTER) }
-            .flatten()
-            .map { ChildEntry(it.name, it.isDirectory) }
-            .toSet()
-    }
+    override fun getChildEntries(path: String, project: Project): Collection<ChildEntry> = findFiles(path, project)
+        .filter { it.isDirectory }
+        .map { VfsUtil.getChildren(it, FileResolveProvider.PROTO_AND_DIRECTORY_FILTER) }
+        .flatten()
+        .map { ChildEntry(it.name, it.isDirectory) }
+        .toSet()
 
     override fun findFile(path: String, project: Project): VirtualFile? = findFiles(path, project).firstOrNull()
 
