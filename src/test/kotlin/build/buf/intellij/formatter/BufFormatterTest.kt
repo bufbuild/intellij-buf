@@ -18,7 +18,7 @@ import build.buf.intellij.base.BufTestBase
 import com.intellij.codeInsight.actions.ReformatCodeProcessor
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.psi.codeStyle.CodeStyleManager
-import com.intellij.util.io.readText
+import kotlin.io.path.readText
 
 class BufFormatterTest : BufTestBase() {
     fun testFormatting() {

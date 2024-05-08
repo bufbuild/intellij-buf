@@ -16,6 +16,8 @@ package build.buf.intellij.resolve
 
 import build.buf.intellij.BufBundle
 import build.buf.intellij.icons.BufIcons
+import build.buf.intellij.module.ModuleKey
+import build.buf.intellij.module.toDashless
 import com.intellij.navigation.ItemPresentation
 import com.intellij.openapi.roots.SyntheticLibrary
 import com.intellij.openapi.vfs.VirtualFile
@@ -24,19 +26,27 @@ import java.nio.file.Path
 import java.util.Objects
 import javax.swing.Icon
 
-class BufCacheLibrary(private val name: String, private val cacheDir: String) :
-    SyntheticLibrary(),
+/**
+ * Represents a BSR module as an external in the IntelliJ [com.intellij.openapi.project.Project].
+ */
+class BufCacheLibrary(private val moduleKey: ModuleKey, private val sourceRoot: String) :
+    SyntheticLibrary(
+        "BufCacheLibrary($moduleKey,$sourceRoot)",
+        null,
+    ),
     ItemPresentation {
-    override fun getPresentableText(): String = BufBundle.message("syntactic.library.text", name)
+    override fun getPresentableText(): String = BufBundle.message("syntactic.library.text", "${moduleKey.moduleFullName}:${moduleKey.commitID.toDashless().substring(0, 8)}")
 
     override fun getIcon(unused: Boolean): Icon = BufIcons.Logo
 
     override fun equals(other: Any?): Boolean {
         val otherLibrary = other as? BufCacheLibrary ?: return false
-        return name == other.name && cacheDir == otherLibrary.cacheDir
+        return moduleKey == otherLibrary.moduleKey && sourceRoot == otherLibrary.sourceRoot
     }
 
-    override fun hashCode(): Int = Objects.hash(name, cacheDir)
+    override fun hashCode(): Int = Objects.hash(moduleKey, sourceRoot)
 
-    override fun getSourceRoots(): Collection<VirtualFile> = listOfNotNull(VirtualFileManager.getInstance().findFileByNioPath(Path.of(cacheDir)))
+    override fun getSourceRoots(): Collection<VirtualFile> = listOfNotNull(
+        VirtualFileManager.getInstance().findFileByNioPath(Path.of(sourceRoot)),
+    )
 }

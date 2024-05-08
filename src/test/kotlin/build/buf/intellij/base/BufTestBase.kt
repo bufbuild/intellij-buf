@@ -14,10 +14,8 @@
 
 package build.buf.intellij.base
 
-import build.buf.intellij.resolve.BufRootsProvider
 import build.buf.intellij.settings.bufSettings
 import com.intellij.openapi.util.io.FileUtil
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
 import org.junit.jupiter.api.Assertions
@@ -47,16 +45,6 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
         val folderPath = findTestDataFolder().resolve(pathWithinTestData)
         addChildrenRecursively(folderPath.toFile(), folderPath.toFile())
         myFixture.configureByFiles(*filePathsToConfigureFrom)
-        // make sure the root is added
-        LocalFileSystem.getInstance().apply {
-            BufRootsProvider.getBufCacheFolderV1()?.let {
-                addRootToWatch(it.path, true)
-            }
-            BufRootsProvider.getBufCacheFolderV2()?.let {
-                addRootToWatch(it.path, true)
-            }
-            refresh(false)
-        }
     }
 
     protected fun findTestDataFolder(): Path {

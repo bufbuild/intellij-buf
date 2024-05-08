@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build.buf.intellij.manifest
+package build.buf.intellij.cas
 
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
@@ -25,19 +25,21 @@ class ManifestTest : BasePlatformTestCase() {
     fun testManifest() {
         val cachePath = Path.of(ClassLoader.getSystemResource("testData").toURI())
             .resolve("cachev2/v2/module/buf.build/googleapis/googleapis")
-            .toFile()
-            .absolutePath
         Assertions.assertNotNull(cachePath)
-        val repoPath = LocalFileSystem.getInstance().findFileByPath(cachePath)
+        val repoPath = LocalFileSystem.getInstance().findFileByNioFile(cachePath)
         Assertions.assertNotNull(repoPath)
-        val manifest = Manifest.fromCommit(repoPath!!, "cc916c31859748a68fd229a3c8d7a2e8")
-        Assertions.assertNotNull(manifest)
-        Assertions.assertFalse(manifest!!.isEmpty())
-        Assertions.assertTrue(manifest.getPaths().contains("google/type/money.proto"))
-        val moneyDigest = manifest.getDigestFor("google/type/money.proto")!!
-        Assertions.assertNotNull(moneyDigest)
-        Assertions.assertTrue(manifest.getPathsFor(moneyDigest.hex).contains("google/type/money.proto"))
-        // Not always the case, but true in this case (no duplicated files).
-        Assertions.assertEquals(manifest.getPaths().size, manifest.getDigests().size)
+        val commitPath = cachePath.resolve("commits/cc916c31859748a68fd229a3c8d7a2e8")
+        val manifestDigest = CASDigest.parse(commitPath.toFile().readText().trim()).getOrThrow()
+        val manifestPath = cachePath.resolve("blobs/${manifestDigest.hex.substring(0, 2)}/${manifestDigest.hex.substring(2)}")
+        val manifest = Manifest.parse(manifestPath.toFile().readText()).getOrThrow()
+        Assertions.assertFalse(manifest.getFileNodes().isEmpty())
+        // Verify round tripping.
+        Assertions.assertEquals(manifest, Manifest.parse(manifest.toString()).getOrThrow())
+        val moneyFileNode = manifest.getFileNode("google/type/money.proto")!!
+        Assertions.assertNotNull(moneyFileNode.digest)
+        Assertions.assertNotNull(moneyFileNode.path)
+        Assertions.assertEquals(moneyFileNode.digest, manifest.getDigest(moneyFileNode.path))
+        Assertions.assertNull(manifest.getFileNode("non/existing/file.proto"))
+        Assertions.assertNull(manifest.getDigest("non/existing/file.proto"))
     }
 }

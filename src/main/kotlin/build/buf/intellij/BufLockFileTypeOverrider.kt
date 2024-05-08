@@ -21,9 +21,9 @@ import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.yaml.YAMLFileType
 
 /**
- * Make sure buf.lock files are treated as YAML files, so they are parsed to PSI for BufModuleIndex to consume.
+ * Make sure `buf.lock` files are treated as YAML files, so they are parsed to PSI for BufModuleIndex to consume.
  *
- * @see build.buf.intellij.index.BufModuleIndex
+ * See [build.buf.intellij.index.BufModuleKeyIndex].
  */
 class BufLockFileTypeOverrider : FileTypeOverrider {
     override fun getOverriddenFileType(file: VirtualFile): FileType? {
