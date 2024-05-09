@@ -16,7 +16,6 @@ package build.buf.intellij.vendor.kanro
 
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.index.BufModuleKeyIndex
-import build.buf.intellij.module.ModuleFullName
 import build.buf.intellij.module.cache.ModuleCacheService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.vfs.LocalFileSystem
