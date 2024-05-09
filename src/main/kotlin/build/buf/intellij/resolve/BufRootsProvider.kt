@@ -14,16 +14,15 @@
 
 package build.buf.intellij.resolve
 
-import build.buf.intellij.index.BufModuleKeyIndex
+import build.buf.intellij.index.BufIndexes
 import build.buf.intellij.module.cache.ModuleCacheService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import kotlin.io.path.absolutePathString
+import com.intellij.openapi.vfs.VirtualFileManager
 
 /**
  * Configures monitoring of BSR cached modules and external libraries for each BSR module found in
@@ -33,8 +32,16 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
 
     private val moduleCacheService = service<ModuleCacheService>()
 
-    override fun getRootsToWatch(project: Project): Collection<VirtualFile> = moduleCacheService.moduleDataRoots()
-        .mapNotNull { LocalFileSystem.getInstance().findFileByNioFile(it) }
+    override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
+        if (DumbService.getInstance(project).isDumb) {
+            return emptyList()
+        }
+        val fs = VirtualFileManager.getInstance()
+        return BufIndexes.getProjectModuleKeys(project).mapNotNull {
+            val moduleDataPath = moduleCacheService.moduleDataPathForModuleKey(it) ?: return@mapNotNull null
+            fs.findFileByNioPath(moduleDataPath)
+        }
+    }
 
     override fun getAdditionalProjectLibraries(project: Project): Collection<SyntheticLibrary> {
         // We need to wait for indexing to be available to determine which module dependencies are used in the project.
@@ -42,11 +49,13 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
         if (DumbService.getInstance(project).isDumb) {
             return emptyList()
         }
-        return BufModuleKeyIndex.getAllProjectModuleKeys(project)
+        val fs = VirtualFileManager.getInstance()
+        return BufIndexes.getProjectModuleKeys(project)
             .sortedBy { it.toString() }
             .mapNotNull {
                 val moduleDataPath = moduleCacheService.moduleDataPathForModuleKey(it) ?: return@mapNotNull null
-                BufCacheLibrary(it, moduleDataPath.absolutePathString())
+                val moduleDataUrl = fs.findFileByNioPath(moduleDataPath)?.url ?: return@mapNotNull null
+                BufCacheLibrary(it, moduleDataUrl)
             }
     }
 }

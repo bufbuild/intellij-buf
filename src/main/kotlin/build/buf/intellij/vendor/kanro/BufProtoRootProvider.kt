@@ -14,17 +14,14 @@
 
 package build.buf.intellij.vendor.kanro
 
-import build.buf.intellij.config.BufConfig
-import build.buf.intellij.index.BufModuleKeyIndex
+import build.buf.intellij.index.BufIndexes
 import build.buf.intellij.module.cache.ModuleCacheService
 import com.intellij.openapi.components.service
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiElement
-import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScopesCore
-import com.intellij.psi.search.ProjectScope
 import io.kanro.idea.plugin.protobuf.lang.root.ProtobufRoot
 import io.kanro.idea.plugin.protobuf.lang.root.ProtobufRootProvider
 
@@ -37,18 +34,15 @@ class BufProtoRootProvider : ProtobufRootProvider {
     override fun roots(context: PsiElement): List<ProtobufRoot> {
         val project = context.project
         val roots = mutableListOf<ProtobufRoot>()
-        for (bufConfig in FilenameIndex.getVirtualFilesByName(
-            BufConfig.BUF_YAML,
-            ProjectScope.getProjectScope(project),
-        )) {
-            val parent = bufConfig.parent ?: continue
-            roots.add(ProtobufRoot("bufCurrentModule", parent))
+        val fs = VirtualFileManager.getInstance()
+        for (bufModuleConfig in BufIndexes.getProjectBufModuleConfigs(project)) {
+            val moduleName = bufModuleConfig.moduleFullName?.toString() ?: "bufCurrentModule"
+            roots.add(ProtobufRoot(moduleName, fs.findFileByUrl(bufModuleConfig.pathUrl) ?: continue))
         }
-        val fs = LocalFileSystem.getInstance()
-        for (moduleKey in BufModuleKeyIndex.getAllProjectModuleKeys(project)) {
+        for (moduleKey in BufIndexes.getProjectModuleKeys(project)) {
             val moduleKeyName = "$moduleKey"
             val moduleDataFile = moduleCacheService.moduleDataPathForModuleKey(moduleKey)
-                ?.let { fs.findFileByNioFile(it) } ?: continue
+                ?.let { fs.findFileByNioPath(it) } ?: continue
             roots.add(ProtobufRoot(moduleKeyName, moduleDataFile))
         }
         return roots
@@ -57,10 +51,10 @@ class BufProtoRootProvider : ProtobufRootProvider {
     override fun searchScope(context: PsiElement): GlobalSearchScope {
         val project = context.project
         val roots = ArrayList<VirtualFile>()
-        val fs = LocalFileSystem.getInstance()
-        for (moduleKey in BufModuleKeyIndex.getAllProjectModuleKeys(project)) {
+        val fs = VirtualFileManager.getInstance()
+        for (moduleKey in BufIndexes.getProjectModuleKeys(project)) {
             val moduleDataFile = moduleCacheService.moduleDataPathForModuleKey(moduleKey)
-                ?.let { fs.findFileByNioFile(it) } ?: continue
+                ?.let { fs.findFileByNioPath(it) } ?: continue
             roots.add(moduleDataFile)
         }
         return if (roots.isNotEmpty()) {

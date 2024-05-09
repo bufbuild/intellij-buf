@@ -19,9 +19,7 @@ import build.buf.intellij.module.ModuleDigest
 import build.buf.intellij.module.ModuleFullName
 import build.buf.intellij.module.ModuleKey
 import build.buf.intellij.module.UUIDUtils
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.project.Project
 import com.intellij.util.indexing.DataIndexer
 import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.indexing.FileContent
@@ -31,37 +29,29 @@ import com.intellij.util.io.IOUtil
 import com.intellij.util.io.KeyDescriptor
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLKeyValue
+import org.jetbrains.yaml.psi.YAMLScalar
 import org.jetbrains.yaml.psi.YAMLSequence
 import org.jetbrains.yaml.psi.YAMLSequenceItem
 import org.jetbrains.yaml.psi.YamlRecursivePsiElementVisitor
 import java.io.DataInput
 import java.io.DataOutput
+import java.util.Objects
 
 /**
  * Indexes the dependencies found in `buf.lock` files as [ModuleKey] instances.
  */
-class BufModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
-    companion object {
-        private val INDEX_ID = ID.create<ModuleKey, Void>("BufModuleIndex")
-        private val LOG: Logger = logger<BufModuleKeyIndex>()
-
-        /**
-         * Returns all [ModuleKey] instances parsed from `buf.lock` files in the [Project].
-         */
-        fun getAllProjectModuleKeys(project: Project): Collection<ModuleKey> = FileBasedIndex.getInstance().getAllKeys(INDEX_ID, project)
-    }
-
-    override fun getName(): ID<ModuleKey, Void> = INDEX_ID
+class ModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
+    override fun getName(): ID<ModuleKey, Void> = BufIndexes.MODULE_KEY_INDEX_ID
 
     override fun dependsOnFileContent(): Boolean = true
 
-    override fun getVersion(): Int = 3
+    override fun getVersion(): Int = 4
 
     override fun getInputFilter(): FileBasedIndex.InputFilter = FileBasedIndex.InputFilter { file ->
         file.name == BufConfig.BUF_LOCK
     }
 
-    override fun getKeyDescriptor(): KeyDescriptor<ModuleKey> = BufModuleIndexEntryKeyDescriptor
+    override fun getKeyDescriptor(): KeyDescriptor<ModuleKey> = ModuleKeyIndexEntryKeyDescriptor
 
     override fun getIndexer(): DataIndexer<ModuleKey, Void, FileContent> {
         return DataIndexer { inputData ->
@@ -81,9 +71,10 @@ class BufModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
     }
 
     private fun findModuleKey(localFileURL: String, item: YAMLSequenceItem): ModuleKey? {
-        val bufModuleItem = item.keysValues.associate {
-            it.keyText to it.valueText
-        }
+        val bufModuleItem = item.keysValues.filter { it.value is YAMLScalar }
+            .associate {
+                it.keyText to it.valueText
+            }
         return try {
             val moduleFullName = bufModuleItem["name"].let { moduleFullName ->
                 if (moduleFullName != null) { // v2
@@ -97,7 +88,7 @@ class BufModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
             }
             val commit = bufModuleItem["commit"] ?: return null
             val digest = bufModuleItem["digest"]?.let {
-                ModuleDigest.parse(it).getOrThrow()
+                ModuleDigest.parse(it).getOrNull()
             }
             val commitID = UUIDUtils.fromDashless(commit).getOrThrow()
             ModuleKey(moduleFullName, commitID, digest = digest)
@@ -106,12 +97,16 @@ class BufModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
             return null
         }
     }
+
+    companion object {
+        private val LOG = logger<ModuleKeyIndex>()
+    }
 }
 
-object BufModuleIndexEntryKeyDescriptor : KeyDescriptor<ModuleKey> {
-    override fun getHashCode(value: ModuleKey): Int = value.hashCode()
+object ModuleKeyIndexEntryKeyDescriptor : KeyDescriptor<ModuleKey> {
+    override fun getHashCode(value: ModuleKey): Int = Objects.hash(value.moduleFullName, value.commitID)
 
-    override fun isEqual(a: ModuleKey, b: ModuleKey): Boolean = a == b
+    override fun isEqual(a: ModuleKey, b: ModuleKey): Boolean = a.moduleFullName == b.moduleFullName && a.commitID == b.commitID
 
     override fun save(out: DataOutput, value: ModuleKey) {
         IOUtil.writeStringList(out, listOf(value.toString(), value.digest?.toString().orEmpty()))
@@ -119,7 +114,7 @@ object BufModuleIndexEntryKeyDescriptor : KeyDescriptor<ModuleKey> {
 
     override fun read(input: DataInput): ModuleKey {
         val (moduleKeyString, digestString) = IOUtil.readStringList(input)
-        val digest = digestString?.let { ModuleDigest.parse(it).getOrThrow() }
+        val digest = if (digestString.isNotEmpty()) digestString?.let { ModuleDigest.parse(it).getOrThrow() } else null
         return ModuleKey.parse(moduleKeyString, digest = digest).getOrThrow()
     }
 }

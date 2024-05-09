@@ -11,7 +11,8 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <fileTypeOverrider implementation="build.buf.intellij.BufLockFileTypeOverrider"/>
-        <fileBasedIndex implementation="build.buf.intellij.index.BufModuleKeyIndex"/>
+        <fileBasedIndex implementation="build.buf.intellij.index.BufModuleConfigIndex"/>
+        <fileBasedIndex implementation="build.buf.intellij.index.ModuleKeyIndex"/>
         <additionalLibraryRootsProvider implementation="build.buf.intellij.resolve.BufRootsProvider"/>
 
         <highlightingPassFactory implementation="build.buf.intellij.annotator.BufAnalyzePassFactoryRegistrar"/>

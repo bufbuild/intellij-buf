@@ -14,20 +14,17 @@
 
 package build.buf.intellij.vendor.jetbrains
 
-import build.buf.intellij.config.BufConfig
-import build.buf.intellij.index.BufModuleKeyIndex
+import build.buf.intellij.index.BufIndexes
 import build.buf.intellij.module.cache.ModuleCacheService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.protobuf.lang.resolve.FileResolveProvider
 import com.intellij.protobuf.lang.resolve.FileResolveProvider.ChildEntry
-import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScopesCore
-import com.intellij.psi.search.ProjectScope
 
 /**
  * Enables resolving .proto files in Buf modules in the [Project] and dependencies from BSR modules.
@@ -45,15 +42,14 @@ class BufProtoFileResolver : FileResolveProvider {
     override fun findFile(path: String, project: Project): VirtualFile? = findFiles(path, project).firstOrNull()
 
     private fun findFiles(path: String, project: Project): Sequence<VirtualFile> {
-        val files = LinkedHashSet<VirtualFile>()
-        for (bufConfig in FilenameIndex.getVirtualFilesByName(BufConfig.BUF_YAML, ProjectScope.getProjectScope(project))) {
-            val bufRoot = bufConfig.parent ?: continue
-            files.add(bufRoot.findFileByRelativePath(path) ?: continue)
+        val files = linkedSetOf<VirtualFile>()
+        val fs = VirtualFileManager.getInstance()
+        for (bufModuleConfig in BufIndexes.getProjectBufModuleConfigs(project)) {
+            files.add(fs.findFileByUrl(bufModuleConfig.pathUrl)?.findFileByRelativePath(path) ?: continue)
         }
-        val fs = LocalFileSystem.getInstance()
-        for (moduleKey in BufModuleKeyIndex.getAllProjectModuleKeys(project)) {
+        for (moduleKey in BufIndexes.getProjectModuleKeys(project)) {
             val moduleDataFile = moduleCacheService.moduleDataPathForModuleKey(moduleKey)
-                ?.let { fs.findFileByNioFile(it)?.findFileByRelativePath(path) } ?: continue
+                ?.let { fs.findFileByNioPath(it)?.findFileByRelativePath(path) } ?: continue
             files.add(moduleDataFile)
         }
         return files.asSequence()
@@ -63,10 +59,10 @@ class BufProtoFileResolver : FileResolveProvider {
 
     override fun getSearchScope(project: Project): GlobalSearchScope {
         val roots = ArrayList<VirtualFile>()
-        val fs = LocalFileSystem.getInstance()
-        for (moduleKey in BufModuleKeyIndex.getAllProjectModuleKeys(project)) {
+        val fs = VirtualFileManager.getInstance()
+        for (moduleKey in BufIndexes.getProjectModuleKeys(project)) {
             val moduleDataFile = moduleCacheService.moduleDataPathForModuleKey(moduleKey)
-                ?.let { fs.findFileByNioFile(it) } ?: continue
+                ?.let { fs.findFileByNioPath(it) } ?: continue
             roots.add(moduleDataFile)
         }
         return if (roots.isNotEmpty()) {
