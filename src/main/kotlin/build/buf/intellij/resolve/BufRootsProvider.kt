@@ -37,6 +37,8 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
         .mapNotNull { LocalFileSystem.getInstance().findFileByNioFile(it) }
 
     override fun getAdditionalProjectLibraries(project: Project): Collection<SyntheticLibrary> {
+        // We need to wait for indexing to be available to determine which module dependencies are used in the project.
+        // Short circuit here if running in dumb mode to avoid exceptions.
         if (DumbService.getInstance(project).isDumb) {
             return emptyList()
         }
