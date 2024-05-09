@@ -20,7 +20,7 @@ package build.buf.intellij.cas
  * Only the `shake256` digest type is supported.
  */
 enum class CASDigestType(private val digestType: String, val length: Int) {
-    SHAKE_256("shake256", 64),
+    SHAKE256("shake256", 64),
     ;
 
     override fun toString(): String = digestType

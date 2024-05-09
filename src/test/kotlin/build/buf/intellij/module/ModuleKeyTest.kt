@@ -35,7 +35,7 @@ class ModuleKeyTest {
         Assertions.assertEquals(moduleKey, moduleKeyFromToString)
         Assertions.assertEquals(moduleKey.hashCode(), moduleKeyFromToString.hashCode())
 
-        val randomDigestBytes = ByteArray(CASDigestType.SHAKE_256.length)
+        val randomDigestBytes = ByteArray(CASDigestType.SHAKE256.length)
         ThreadLocalRandom.current().nextBytes(randomDigestBytes)
         val digest = ModuleDigest.parse("b5:${Hex.encodeHexString(randomDigestBytes)}").getOrThrow()
         val moduleKeyWithDigest = moduleKey.copy(digest = digest)

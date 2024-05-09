@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadLocalRandom
 class FileNodeTest {
     @Test
     fun testParse() {
-        val randomDigestBytes = ByteArray(CASDigestType.SHAKE_256.length)
+        val randomDigestBytes = ByteArray(CASDigestType.SHAKE256.length)
         ThreadLocalRandom.current().nextBytes(randomDigestBytes)
         val digestStr = "shake256:${Hex.encodeHexString(randomDigestBytes)}"
         val fileNodeStr = "$digestStr  path/to/file.proto"

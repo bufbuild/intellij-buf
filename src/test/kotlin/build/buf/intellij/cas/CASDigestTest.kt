@@ -25,13 +25,13 @@ import java.util.concurrent.ThreadLocalRandom
 class CASDigestTest {
     @Test
     fun testDigestParse() {
-        val randomDigestBytes = ByteArray(CASDigestType.SHAKE_256.length)
+        val randomDigestBytes = ByteArray(CASDigestType.SHAKE256.length)
         ThreadLocalRandom.current().nextBytes(randomDigestBytes)
         val hex = Hex.encodeHexString(randomDigestBytes)
         val digestStr = "shake256:$hex"
         val digest = CASDigest.parse(digestStr).getOrThrow()
         assertEquals(digestStr, digest.toString())
-        assertEquals(CASDigestType.SHAKE_256, digest.digestType)
+        assertEquals(CASDigestType.SHAKE256, digest.digestType)
         assertEquals(hex, digest.hex)
         assertArrayEquals(randomDigestBytes, digest.value())
         for (expectedFailure in listOf("othertype:$hex", "shake256:${hex.substring(0, 64)}", "$hex")) {

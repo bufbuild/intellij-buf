@@ -19,7 +19,7 @@ package build.buf.intellij.module
  */
 data class ModuleDigest(val digestType: ModuleDigestType, val hex: String) {
     private val casDigest: build.buf.intellij.cas.CASDigest =
-        build.buf.intellij.cas.CASDigest(build.buf.intellij.cas.CASDigestType.SHAKE_256, hex)
+        build.buf.intellij.cas.CASDigest(build.buf.intellij.cas.CASDigestType.SHAKE256, hex)
 
     /**
      * Returns the underlying digest value (parsed from [hex]).

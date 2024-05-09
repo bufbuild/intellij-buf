@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom
 class ModuleDigestTest {
     @Test
     fun testDigest() {
-        val randomDigestBytes = ByteArray(CASDigestType.SHAKE_256.length)
+        val randomDigestBytes = ByteArray(CASDigestType.SHAKE256.length)
         ThreadLocalRandom.current().nextBytes(randomDigestBytes)
         val hex = Hex.encodeHexString(randomDigestBytes)
         val digestStr = "b5:$hex"
