@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build.buf.intellij.resolve
+package build.buf.intellij.module
 
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.nio.file.Path
+import java.util.UUID
 
-class BufRootsProviderTest {
+class UUIDUtilsTest {
     @Test
-    fun testCacheFolderBufCacheDir() {
-        val env = mapOf(Pair("BUF_CACHE_DIR", "/a/b/c"))
-        assertEquals(Path.of("/a/b/c"), BufRootsProvider.getBufCacheFolderBase(env))
+    fun testDashless() {
+        val uuid = UUID.randomUUID()
+        val dashless = uuid.toDashless()
+        Assertions.assertFalse(dashless.contains('-'))
+        Assertions.assertEquals(32, dashless.length)
+        Assertions.assertEquals(uuid, UUIDUtils.fromDashless(dashless).getOrThrow())
     }
 }
