@@ -15,7 +15,7 @@
 package build.buf.intellij.cas
 
 /**
- * [CASDigestType] defines supported digest types in the v2 Buf cache [Manifest] file format.
+ * Defines supported digest types in the v2 Buf cache [Manifest] file format.
  * Equivalent to `bufcas.DigestType` in the Buf CLI codebase.
  * Only the `shake256` digest type is supported.
  */

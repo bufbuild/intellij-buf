@@ -38,7 +38,7 @@ import java.io.DataInput
 import java.io.DataOutput
 
 /**
- * [BufModuleKeyIndex] indexes the dependencies found in `buf.lock` files as [ModuleKey].
+ * Indexes the dependencies found in `buf.lock` files as [ModuleKey] instances.
  */
 class BufModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
     companion object {

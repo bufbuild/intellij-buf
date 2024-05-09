@@ -19,7 +19,7 @@ import org.apache.commons.codec.binary.Hex
 import java.io.Reader
 
 /**
- * Creates a [CASDigest] consisting of a [CASDigestType] and its hex representation.
+ * Creates a CAS digest consisting of a [CASDigestType] and its hex representation.
  * Equivalent to `bufcas.Digest` in the Buf CLI codebase.
  */
 data class CASDigest(

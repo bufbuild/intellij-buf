@@ -15,7 +15,7 @@
 package build.buf.intellij.module
 
 /**
- * [ModuleDigest] is equivalent to `bufmodule.Digest` in the Buf CLI.
+ * A module digest is equivalent to `bufmodule.Digest` in the Buf CLI.
  */
 data class ModuleDigest(val digestType: ModuleDigestType, val hex: String) {
     private val casDigest: build.buf.intellij.cas.CASDigest =

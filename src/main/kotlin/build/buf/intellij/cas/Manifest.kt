@@ -18,7 +18,7 @@ import java.io.Reader
 import java.io.StringReader
 
 /**
- * A [Manifest] contains a list of unique [FileNode] objects by path.
+ * A manifest contains a list of unique [FileNode] objects by path.
  * There is a standard representation of a manifest - use [Manifest.toString] to encode it as a string.
  * The [Manifest.parse] methods can be used to read a [Manifest] from a string or from a [Reader].
  * In the Buf CLI v2 cache file format, files are stored as a CAS.

@@ -26,7 +26,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import kotlin.io.path.absolutePathString
 
 /**
- * [BufRootsProvider] configures monitoring of BSR cached modules and external libraries for each BSR module foudn in
+ * Configures monitoring of BSR cached modules and external libraries for each BSR module found in
  * `buf.lock` files in the [Project].
  */
 class BufRootsProvider : AdditionalLibraryRootsProvider() {

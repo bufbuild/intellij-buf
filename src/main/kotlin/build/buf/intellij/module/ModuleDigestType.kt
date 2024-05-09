@@ -15,16 +15,16 @@
 package build.buf.intellij.module
 
 /**
- * [ModuleDigestType] defines the supported digest types for Buf modules.
+ * A module digest type defines the supported digest types for Buf modules.
  * This is not to be confused with [build.buf.intellij.cas.CASDigestType].
  *
  * This is equivalent to `bufmodule.DigestType` in the Buf CLI codebase.
  */
 enum class ModuleDigestType(private val digestType: String) {
-    /** The [B4] digest type is used in v1 Buf modules. */
+    /** The B4 digest type used in v1 Buf modules. */
     B4("shake256"),
 
-    /** The [B5] digest type is used in v2 Buf modules. */
+    /** The B5 digest type used in v2 Buf modules. */
     B5("b5"),
     ;
 

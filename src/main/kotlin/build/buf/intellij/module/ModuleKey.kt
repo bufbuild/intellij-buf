@@ -18,7 +18,7 @@ import java.util.Objects
 import java.util.UUID
 
 /**
- * [ModuleKey] represents the data stored for a dependency in the `buf.lock` file.
+ * A module key represents the data stored for a dependency in the `buf.lock` file.
  * This is equivalent to the `bufmodule.ModuleKey` type in the Buf CLI.
  */
 data class ModuleKey(val moduleFullName: ModuleFullName, val commitID: UUID, val digest: ModuleDigest? = null) {

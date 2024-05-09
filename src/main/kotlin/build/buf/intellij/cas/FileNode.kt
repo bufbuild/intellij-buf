@@ -18,7 +18,7 @@ import java.io.File
 import java.nio.file.Path
 
 /**
- * Represents a [FileNode] (an entry in a [Manifest]).
+ * Represents a file entry in a [Manifest].
  * Equivalent to `bufcas.FileNode` in the Buf CLI codebase.
  */
 data class FileNode(val path: String, val digest: CASDigest) {
