@@ -14,12 +14,14 @@
 
 package build.buf.intellij.module
 
+import build.buf.intellij.cas.CASDigest
+import build.buf.intellij.cas.CASDigestType
+
 /**
  * A module digest is equivalent to `bufmodule.Digest` in the Buf CLI.
  */
 data class ModuleDigest(val digestType: ModuleDigestType, val hex: String) {
-    private val casDigest: build.buf.intellij.cas.CASDigest =
-        build.buf.intellij.cas.CASDigest(build.buf.intellij.cas.CASDigestType.SHAKE256, hex)
+    private val casDigest: CASDigest = CASDigest(CASDigestType.SHAKE256, hex)
 
     /**
      * Returns the underlying digest value (parsed from [hex]).
