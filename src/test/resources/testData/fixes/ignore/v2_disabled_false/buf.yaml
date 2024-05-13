@@ -1,0 +1,6 @@
+version: v2
+name: buf.build/intellij/testing
+lint:
+  use:
+    - DEFAULT
+  disallow_comment_ignores: false

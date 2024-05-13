@@ -26,7 +26,10 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
 
     override fun setUp() {
         super.setUp()
-        val cliPath = System.getProperty("BUF_CLI", "build/gobin/buf")
+        configureCLI()
+    }
+
+    fun configureCLI(cliPath: String = System.getProperty("BUF_CLI", "build/gobin/buf")) {
         val cliFile = File(cliPath)
         if (!cliFile.isFile) {
             throw IllegalStateException("invalid buf CLI: ${cliFile.absolutePath}")
