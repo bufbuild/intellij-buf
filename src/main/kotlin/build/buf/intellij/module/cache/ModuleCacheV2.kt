@@ -22,7 +22,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.util.io.delete
 import java.io.IOException
@@ -32,6 +31,7 @@ import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import kotlin.io.path.bufferedReader
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
 
@@ -45,12 +45,11 @@ internal class ModuleCacheV2(env: Map<String, String> = System.getenv()) : BaseM
     override fun moduleDataRoot(): Path = Path.of(SYSTEM_BUF_MOD_CACHE)
 
     override fun moduleDataPathForModuleKey(key: ModuleKey): Path {
-        // First check if we've already copied the CAS based cache to the IDE system directory
         val fullNamePath = "${key.moduleFullName}"
-        val bufModuleCachePath = "$bufCacheDir/v2/module/$fullNamePath"
+        val bufModuleCachePath = Path.of("$bufCacheDir/v2/module/$fullNamePath")
         val modcachePath = moduleDataRoot().resolve("$fullNamePath/${key.commitID.toDashless()}")
         try {
-            copyFromV2ModuleCacheToSystemDir(key, Path.of(bufModuleCachePath), modcachePath)
+            copyFromV2ModuleCacheToSystemDir(key, bufModuleCachePath, modcachePath)
         } catch (e: Exception) {
             LOG.warn("failed to copy buf v2 cache module $key: $e")
         }
@@ -114,17 +113,12 @@ internal class ModuleCacheV2(env: Map<String, String> = System.getenv()) : BaseM
 
     private fun manifestForModuleKey(key: ModuleKey): Result<Manifest> {
         val bufModuleCachePath = "$bufCacheDir/v2/module/${key.moduleFullName}"
-        val fs = LocalFileSystem.getInstance()
         return try {
-            val commitIDPath = "$bufModuleCachePath/commits/${key.commitID.toDashless()}"
-            val commitIDFile = fs.findFileByPath(commitIDPath)
-            require(commitIDFile != null) { "unable to find $commitIDPath for $key" }
-            commitIDFile.inputStream.reader().use { CASDigest.parse(it) }
+            val commitIDPath = Path.of("$bufModuleCachePath/commits/${key.commitID.toDashless()}")
+            commitIDPath.bufferedReader().use { CASDigest.parse(it) }
                 .map { manifestDigest ->
-                    val manifestPath = "$bufModuleCachePath/${digestToBlobPath(manifestDigest)}"
-                    val manifestFile = fs.findFileByPath(manifestPath)
-                    require(manifestFile != null) { "unable to find $manifestPath for $key" }
-                    return manifestFile.inputStream.reader().use { Manifest.parse(it) }
+                    val manifestPath = Path.of("$bufModuleCachePath/${digestToBlobPath(manifestDigest)}")
+                    return manifestPath.bufferedReader().use { Manifest.parse(it) }
                 }
         } catch (e: Exception) {
             Result.failure(e)

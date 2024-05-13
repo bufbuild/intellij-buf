@@ -30,11 +30,6 @@ class ModuleCacheService {
     private val cacheV3 = ModuleCacheV3()
 
     /**
-     * Returns all of the module data roots of each cache version to be watched for changes.
-     */
-    fun moduleDataRoots(): List<Path> = listOf(cacheV1, cacheV2, cacheV3).map { it.moduleDataRoot() }
-
-    /**
      * Returns the first cache non-empty directory for the [ModuleKey] searching across all cache versions.
      * Returns null if the module isn't in any of the CLI caches.
      */

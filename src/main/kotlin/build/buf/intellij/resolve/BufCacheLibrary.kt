@@ -22,16 +22,14 @@ import com.intellij.navigation.ItemPresentation
 import com.intellij.openapi.roots.SyntheticLibrary
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
-import java.nio.file.Path
-import java.util.Objects
 import javax.swing.Icon
 
 /**
- * Represents a BSR module as an external in the IntelliJ [com.intellij.openapi.project.Project].
+ * Represents a BSR module as an external library in the IntelliJ [com.intellij.openapi.project.Project].
  */
-class BufCacheLibrary(private val moduleKey: ModuleKey, private val sourceRoot: String) :
+class BufCacheLibrary(private val moduleKey: ModuleKey, private val sourceRootUrl: String) :
     SyntheticLibrary(
-        "BufCacheLibrary($moduleKey,$sourceRoot)",
+        "BufCacheLibrary($sourceRootUrl)",
         null,
     ),
     ItemPresentation {
@@ -41,12 +39,12 @@ class BufCacheLibrary(private val moduleKey: ModuleKey, private val sourceRoot: 
 
     override fun equals(other: Any?): Boolean {
         val otherLibrary = other as? BufCacheLibrary ?: return false
-        return moduleKey == otherLibrary.moduleKey && sourceRoot == otherLibrary.sourceRoot
+        return sourceRootUrl == otherLibrary.sourceRootUrl
     }
 
-    override fun hashCode(): Int = Objects.hash(moduleKey, sourceRoot)
+    override fun hashCode(): Int = sourceRootUrl.hashCode()
 
     override fun getSourceRoots(): Collection<VirtualFile> = listOfNotNull(
-        VirtualFileManager.getInstance().findFileByNioPath(Path.of(sourceRoot)),
+        VirtualFileManager.getInstance().findFileByUrl(sourceRootUrl),
     )
 }
