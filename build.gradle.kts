@@ -163,7 +163,6 @@ tasks {
         dependsOn("downloadBufBeta")
         description = "Installs the Buf CLI."
         File(buf.asPath).setExecutable(true)
-        bufBeta.setExecutable(true)
     }
 
     check {
