@@ -35,7 +35,6 @@ import org.jetbrains.yaml.psi.YAMLSequenceItem
 import org.jetbrains.yaml.psi.YamlRecursivePsiElementVisitor
 import java.io.DataInput
 import java.io.DataOutput
-import java.util.Objects
 
 /**
  * Indexes the dependencies found in `buf.lock` files as [ModuleKey] instances.
@@ -104,9 +103,9 @@ class ModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
 }
 
 object ModuleKeyIndexEntryKeyDescriptor : KeyDescriptor<ModuleKey> {
-    override fun getHashCode(value: ModuleKey): Int = Objects.hash(value.moduleFullName, value.commitID)
+    override fun getHashCode(value: ModuleKey): Int = value.hashCode()
 
-    override fun isEqual(a: ModuleKey, b: ModuleKey): Boolean = a.moduleFullName == b.moduleFullName && a.commitID == b.commitID
+    override fun isEqual(a: ModuleKey, b: ModuleKey): Boolean = a == b
 
     override fun save(out: DataOutput, value: ModuleKey) {
         IOUtil.writeStringList(out, listOf(value.toString(), value.digest?.toString().orEmpty()))

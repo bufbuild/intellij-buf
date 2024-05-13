@@ -30,20 +30,19 @@ object BufIndexes {
     /**
      * Returns all [BufModuleConfig] instances parsed from `buf.yaml` files in the [Project].
      */
-    fun getProjectBufModuleConfigs(project: Project): Collection<BufModuleConfig> {
-        val scope = GlobalSearchScope.allScope(project)
-        return FileBasedIndex.getInstance().getAllKeys(BUF_MODULE_CONFIG_INDEX_ID, project).filter {
-            FileBasedIndex.getInstance().getContainingFiles(BUF_MODULE_CONFIG_INDEX_ID, it, scope).isNotEmpty()
-        }
-    }
+    fun getProjectBufModuleConfigs(project: Project): Collection<BufModuleConfig> = getProjectIndexKeys(BUF_MODULE_CONFIG_INDEX_ID, project)
 
     /**
      * Returns all [ModuleKey] instances parsed from `buf.lock` files in the [Project].
      */
-    fun getProjectModuleKeys(project: Project): Collection<ModuleKey> {
+    fun getProjectModuleKeys(project: Project): Collection<ModuleKey> = getProjectIndexKeys(MODULE_KEY_INDEX_ID, project)
+
+    private fun <K : Any> getProjectIndexKeys(indexId: ID<K, Void>, project: Project): Collection<K> {
         val scope = GlobalSearchScope.allScope(project)
-        return FileBasedIndex.getInstance().getAllKeys(MODULE_KEY_INDEX_ID, project).filter {
-            FileBasedIndex.getInstance().getContainingFiles(MODULE_KEY_INDEX_ID, it, scope).isNotEmpty()
+        return FileBasedIndex.getInstance().getAllKeys(indexId, project).filter {
+            // NOTE: getAllKeys(..., project) isn't actually filtering out keys that only exist in the project.
+            // Filter the results to ensure that we only return keys that were indexed from the project's files.
+            FileBasedIndex.getInstance().getContainingFiles(indexId, it, scope).isNotEmpty()
         }
     }
 }
