@@ -132,7 +132,7 @@ object BufAnalyzeUtils {
             val lintIssues =
                 if (project.bufSettings.state.backgroundLintingEnabled) {
                     runBufCommand(project, owner, workingDirectory, listOf("lint", "--error-format=json"))
-                        .mapNotNull { BufIssue.fromJSON(it) }
+                        .mapNotNull { BufIssue.fromJSON(it).getOrNull() }
                 } else {
                     emptyList()
                 }
@@ -153,7 +153,7 @@ object BufAnalyzeUtils {
                         owner,
                         workingDirectory,
                         listOf("breaking", "--error-format=json") + breakingArguments,
-                    ).mapNotNull { BufIssue.fromJSON(it) }
+                    ).mapNotNull { BufIssue.fromJSON(it).getOrNull() }
                 } else {
                     emptyList()
                 }

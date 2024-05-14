@@ -38,7 +38,7 @@ object BufIndexes {
     fun getProjectModuleKeys(project: Project): Collection<ModuleKey> = getProjectIndexKeys(MODULE_KEY_INDEX_ID, project)
 
     private fun <K : Any> getProjectIndexKeys(indexId: ID<K, Void>, project: Project): Collection<K> {
-        val scope = GlobalSearchScope.allScope(project)
+        val scope = GlobalSearchScope.projectScope(project)
         return FileBasedIndex.getInstance().getAllKeys(indexId, project).filter {
             // NOTE: getAllKeys(..., project) isn't actually filtering out keys that only exist in the project.
             // Filter the results to ensure that we only return keys that were indexed from the project's files.
