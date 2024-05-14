@@ -32,7 +32,7 @@ class BufIssueTest {
                 "message": "some message"
             }
             """.trimIndent(),
-        )
+        ).getOrNull()
         assertNotNull(issue!!, "failed to deserialize issue from JSON")
         assertEquals(1, issue.startLine)
         assertEquals(2, issue.endLine)
