@@ -1,3 +1,4 @@
+import de.undercouch.gradle.tasks.download.Download
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
@@ -12,6 +13,7 @@ plugins {
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
     alias(libs.plugins.kover) // Gradle Kover Plugin
+    alias(libs.plugins.download)
     alias(libs.plugins.osdetector)
     alias(libs.plugins.spotless)
 }
@@ -20,6 +22,7 @@ group = properties("pluginGroup").get()
 version = properties("pluginVersion").get()
 
 val buf: Configuration by configurations.creating
+val bufBeta = project.layout.buildDirectory.file("buf-${bufOS()}-${bufArch()}${bufExt()}").get().asFile
 val bufLicenseHeaderCLIFile = project.layout.buildDirectory.file("gobin/license-header").get().asFile
 val bufLicenseHeaderCLIPath: String = bufLicenseHeaderCLIFile.absolutePath
 
@@ -88,6 +91,25 @@ spotless {
     }
 }
 
+fun bufOS(): String = when (osdetector.os) {
+    "osx" -> "Darwin"
+    "linux" -> "Linux"
+    "windows" -> "Windows"
+    else -> osdetector.os
+}
+
+fun bufArch(): String {
+    return when (osdetector.arch) {
+        "aarch_64" -> "arm64"
+        else -> return osdetector.arch
+    }
+}
+
+fun bufExt(): String = when (osdetector.os) {
+    "windows" -> ".exe"
+    else -> ""
+}
+
 tasks {
     register<Exec>("licenseHeaderInstall") {
         description = "Installs the bufbuild/buf license-header CLI to build/gobin."
@@ -130,7 +152,15 @@ tasks {
         )
     }
 
+    register<Download>("downloadBufBeta") {
+        description = "Download beta version of the Buf CLI."
+        src("https://github.com/bufbuild/buf/releases/download/v1.32.0-beta.1/buf-${bufOS()}-${bufArch()}${bufExt()}")
+        dest(bufBeta.parent)
+        overwrite(false)
+    }
+
     register("configureBuf") {
+        dependsOn("downloadBufBeta")
         description = "Installs the Buf CLI."
         File(buf.asPath).setExecutable(true)
     }
@@ -144,6 +174,7 @@ tasks {
         environment("BUF_CACHE_DIR", File(project.projectDir.path + "/src/test/resources/testData/cachev1").absolutePath)
         systemProperty("NO_FS_ROOTS_ACCESS_CHECK", "true") // weird issue on linux
         systemProperty("BUF_CLI", buf.asPath)
+        systemProperty("BUF_BETA_CLI", bufBeta.path)
         useJUnitPlatform()
     }
 

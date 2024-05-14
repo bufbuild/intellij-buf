@@ -24,9 +24,12 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.psi.PsiManager
 import com.intellij.psi.codeStyle.CodeStyleManager
+import org.jetbrains.yaml.YAMLElementGenerator
 import org.jetbrains.yaml.YAMLLanguage
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLMapping
+import org.jetbrains.yaml.psi.YAMLScalar
+import org.jetbrains.yaml.psi.YAMLSequence
 
 class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
     override fun getFamilyName(): String = BufBundle.getMessage("buf.quickfix.family")
@@ -47,11 +50,39 @@ class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
         val yamlRootMapping = bufConfigFile.children.firstOrNull()?.children?.find {
             it is YAMLMapping
         } as? YAMLMapping ?: return
-        val lintNode = yamlRootMapping.getKeyValueByKey("lint")
-        if (lintNode is YAMLMapping && lintNode.getKeyValueByKey("allow_comment_ignores") != null) {
+        val version = yamlRootMapping.getKeyValueByKey("version")?.valueText ?: return
+        when (version) {
+            "v2" -> enableCommentIgnoresV2(yamlRootMapping)
+            "v1", "v1beta1" -> enableCommentIgnoresV1(project, bufConfigFile, yamlRootMapping)
+            else -> return
+        }
+    }
+
+    private fun enableCommentIgnoresV2(yamlRootMapping: YAMLMapping) {
+        // Disable on all modules if overridden there.
+        val modules = yamlRootMapping.getKeyValueByKey("modules")?.value as? YAMLSequence
+        if (modules != null) {
+            for (module in modules.items) {
+                val moduleMapping = module?.value as? YAMLMapping ?: continue
+                enableCommentIgnoresV2(moduleMapping)
+            }
+        }
+        val lintNode = yamlRootMapping.getKeyValueByKey("lint") ?: return
+        val lintNodeValue = lintNode.value as YAMLMapping? ?: return
+        val disallowCommentIgnoresNode = lintNodeValue.getKeyValueByKey("disallow_comment_ignores") ?: return
+        val disallowCommentIgnores = disallowCommentIgnoresNode.value as? YAMLScalar ?: return
+        if (disallowCommentIgnores.textValue != "true") {
             return
         }
+        disallowCommentIgnoresNode.parentMapping?.deleteKeyValue(disallowCommentIgnoresNode)
+        if (lintNodeValue.keyValues.isEmpty()) {
+            yamlRootMapping.deleteKeyValue(lintNode)
+        }
+    }
+
+    private fun enableCommentIgnoresV1(project: Project, bufConfigFile: YAMLFile, yamlRootMapping: YAMLMapping) {
         val codeStyleManager = CodeStyleManager.getInstance(project)
+        val lintNode = yamlRootMapping.getKeyValueByKey("lint")
         if (lintNode == null) {
             val generateNode = PsiFileFactory.getInstance(project)
                 .createFileFromText(YAMLLanguage.INSTANCE, "\nlint:\n\tallow_comment_ignores: true")
@@ -59,14 +90,16 @@ class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
             yamlRootMapping.add(generateNode.firstChild)
             yamlRootMapping.add(generateNode.lastChild)
             codeStyleManager.reformatText(bufConfigFile, listOf(yamlRootMapping.textRange))
-        } else {
-            val generateNode = PsiFileFactory.getInstance(project)
-                .createFileFromText(YAMLLanguage.INSTANCE, "\nallow_comment_ignores: true")
-                .children.first()
-            lintNode.add(generateNode.firstChild)
-            lintNode.add(generateNode.lastChild)
-            codeStyleManager.reformatText(bufConfigFile, listOf(lintNode.textRange))
+            return
         }
+        val lintNodeValue = lintNode.value as? YAMLMapping ?: return
+        val allowCommentIgnoresNode = lintNodeValue.getKeyValueByKey("allow_comment_ignores")
+        if (allowCommentIgnoresNode?.valueText == "true") {
+            return
+        }
+        val newValue = YAMLElementGenerator.getInstance(project).createYamlKeyValue("allow_comment_ignores", "true")
+        lintNodeValue.putKeyValue(newValue)
+        codeStyleManager.reformatText(bufConfigFile, listOf(lintNode.textRange))
     }
 
     private fun findBufConfigFile(file: PsiFile): YAMLFile? {

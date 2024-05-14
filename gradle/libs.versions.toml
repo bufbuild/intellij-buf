@@ -7,6 +7,7 @@ junit = "5.10.2"
 # plugins
 kotlin = "1.9.24"
 changelog = "2.2.0"
+download = "5.6.0"
 gradleIntelliJPlugin = "1.17.3"
 qodana = "2024.1.4"
 kover = "0.7.6"
@@ -23,6 +24,7 @@ junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine" }
 
 [plugins]
 changelog = { id = "org.jetbrains.changelog", version.ref = "changelog" }
+download = { id = "de.undercouch.download", version.ref = "download" }
 gradleIntelliJPlugin = { id = "org.jetbrains.intellij", version.ref = "gradleIntelliJPlugin" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

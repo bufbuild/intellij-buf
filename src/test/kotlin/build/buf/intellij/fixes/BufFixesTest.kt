@@ -19,8 +19,116 @@ import build.buf.intellij.base.BufTestBase
 class BufFixesTest : BufTestBase() {
     override fun getBasePath(): String = "fixes"
 
-    fun testIgnore() {
-        configureByFolder("ignore", "foo.proto")
+    fun testIgnoreV1() {
+        runIgnoreQuickFix(
+            "ignore/v1",
+            """
+            version: v1
+            name: buf.build/intellij/testing
+            lint:
+              use:
+                - DEFAULT
+              allow_comment_ignores: true
+            
+            """.trimIndent(),
+        )
+    }
+
+    fun testIgnoreV1EnabledFalse() {
+        runIgnoreQuickFix(
+            "ignore/v1_enabled_false",
+            """
+            version: v1
+            name: buf.build/intellij/testing
+            lint:
+              use:
+                - DEFAULT
+              allow_comment_ignores: true
+            
+            """.trimIndent(),
+        )
+    }
+
+    fun testIgnoreV1EnabledTrue() {
+        runIgnoreQuickFix(
+            "ignore/v1_enabled_true",
+            """
+            version: v1
+            name: buf.build/intellij/testing
+            lint:
+              use:
+                - DEFAULT
+              allow_comment_ignores: true
+            
+            """.trimIndent(),
+        )
+    }
+
+    fun testIgnoreV2() {
+        configureCLI(System.getProperty("BUF_BETA_CLI"))
+        runIgnoreQuickFix(
+            "ignore/v2",
+            """
+            version: v2
+            name: buf.build/intellij/testing
+            lint:
+              use:
+                - DEFAULT
+            
+            """.trimIndent(),
+        )
+    }
+
+    fun testIgnoreV2DisabledFalse() {
+        configureCLI(System.getProperty("BUF_BETA_CLI"))
+        runIgnoreQuickFix(
+            "ignore/v2_disabled_false",
+            """
+            version: v2
+            name: buf.build/intellij/testing
+            lint:
+              use:
+                - DEFAULT
+              disallow_comment_ignores: false
+            
+            """.trimIndent(),
+        )
+    }
+
+    fun testIgnoreV2DisabledTrue() {
+        configureCLI(System.getProperty("BUF_BETA_CLI"))
+        runIgnoreQuickFix(
+            "ignore/v2_disabled_true",
+            """
+            version: v2
+            name: buf.build/intellij/testing
+            lint:
+              use:
+                - DEFAULT
+            
+            """.trimIndent(),
+        )
+    }
+
+    fun testIgnoreV2ModulesDisabledTrue() {
+        configureCLI(System.getProperty("BUF_BETA_CLI"))
+        runIgnoreQuickFix(
+            "ignore/v2_modules_disabled_true",
+            """
+            version: v2
+            modules:
+              - path: .
+                name: buf.build/intellij/testing
+                lint:
+                  use:
+                    - DEFAULT
+            
+            """.trimIndent(),
+        )
+    }
+
+    private fun runIgnoreQuickFix(relPath: String, expectedBufYaml: String) {
+        configureByFolder(relPath, "foo.proto")
         val intention = myFixture.findSingleIntention("Ignore")
         myFixture.launchAction(intention)
         myFixture.checkResult(
@@ -48,5 +156,6 @@ class BufFixesTest : BufTestBase() {
             
             """.trimIndent(),
         )
+        myFixture.checkResult("buf.yaml", expectedBufYaml, true)
     }
 }
