@@ -24,8 +24,8 @@ import com.intellij.util.indexing.ID
  * Contains utility methods to retrieve data from `buf.yaml` and `buf.lock` indexes.
  */
 object BufIndexes {
-    internal val BUF_MODULE_CONFIG_INDEX_ID = ID.create<BufModuleConfig, Void>("BufModuleConfigIndex")
-    internal val MODULE_KEY_INDEX_ID = ID.create<ModuleKey, Void>("BufModuleKeyIndex")
+    val BUF_MODULE_CONFIG_INDEX_ID = ID.create<BufModuleConfig, Void>("BufModuleConfigIndex")
+    val MODULE_KEY_INDEX_ID = ID.create<ModuleKey, Void>("BufModuleKeyIndex")
 
     /**
      * Returns all [BufModuleConfig] instances parsed from `buf.yaml` files in the [Project].

@@ -10,6 +10,7 @@
     <depends optional="true" config-file="kanro-protobuf-plugin-support.xml">io.kanro.idea.plugin.protobuf</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="build.buf.intellij.resolve.RefreshAdditionalBufRoots"/>
         <fileTypeOverrider implementation="build.buf.intellij.BufLockFileTypeOverrider"/>
         <fileBasedIndex implementation="build.buf.intellij.index.BufModuleConfigIndex"/>
         <fileBasedIndex implementation="build.buf.intellij.index.ModuleKeyIndex"/>
