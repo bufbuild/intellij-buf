@@ -14,10 +14,8 @@
 
 package build.buf.intellij.resolve
 
-import build.buf.intellij.index.BufIndexes
 import build.buf.intellij.module.cache.ModuleCacheService
 import com.intellij.openapi.components.service
-import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.AdditionalLibraryRootsProvider
 import com.intellij.openapi.roots.SyntheticLibrary
@@ -33,24 +31,18 @@ class BufRootsProvider : AdditionalLibraryRootsProvider() {
     private val moduleCacheService = service<ModuleCacheService>()
 
     override fun getRootsToWatch(project: Project): Collection<VirtualFile> {
-        if (DumbService.getInstance(project).isDumb) {
-            return emptyList()
-        }
+        val userData = project.getUserData(BufModuleKeysUserData.KEY) ?: return emptyList()
         val fs = VirtualFileManager.getInstance()
-        return BufIndexes.getProjectModuleKeys(project).mapNotNull {
+        return userData.moduleKeys.mapNotNull {
             val moduleDataPath = moduleCacheService.moduleDataPathForModuleKey(it) ?: return@mapNotNull null
             fs.findFileByNioPath(moduleDataPath)
         }
     }
 
     override fun getAdditionalProjectLibraries(project: Project): Collection<SyntheticLibrary> {
-        // We need to wait for indexing to be available to determine which module dependencies are used in the project.
-        // Short circuit here if running in dumb mode to avoid exceptions.
-        if (DumbService.getInstance(project).isDumb) {
-            return emptyList()
-        }
+        val userData = project.getUserData(BufModuleKeysUserData.KEY) ?: return emptyList()
         val fs = VirtualFileManager.getInstance()
-        return BufIndexes.getProjectModuleKeys(project)
+        return userData.moduleKeys
             .sortedBy { it.toString() }
             .mapNotNull {
                 val moduleDataPath = moduleCacheService.moduleDataPathForModuleKey(it) ?: return@mapNotNull null
