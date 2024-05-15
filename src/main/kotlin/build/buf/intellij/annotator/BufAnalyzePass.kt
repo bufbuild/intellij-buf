@@ -274,6 +274,7 @@ fun AnnotationHolder.createAnnotationsForFile(
     for (issue in filteredIssues) {
         val severity = if (issue.isCompileError) HighlightSeverity.ERROR else HighlightSeverity.WARNING
         val annotationBuilder = newAnnotation(severity, issue.message)
+            // TODO: Should handle file-level lint warnings here: https://github.com/bufbuild/intellij-buf/issues/215
             .range(issue.toTextRange(doc) ?: continue)
             .problemGroup { issue.type }
             .needsUpdateOnTyping(true)

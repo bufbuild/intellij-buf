@@ -65,6 +65,9 @@ object BufAnalyzeUtils {
     private val LOG: Logger = logger<BufAnalyzeUtils>()
     private val BUF_COMMAND_EXECUTION_TIMEOUT = Duration.ofMinutes(1)
 
+    // Exit code returned by the CLI when file annotations are printed (breaking/lint results).
+    private const val BUF_EXIT_CODE_FILE_ANNOTATION = 100
+
     fun checkLazily(
         project: Project,
         owner: Disposable,
@@ -131,7 +134,13 @@ object BufAnalyzeUtils {
         val issues = runBlocking {
             val lintIssues =
                 if (project.bufSettings.state.backgroundLintingEnabled) {
-                    runBufCommand(project, owner, workingDirectory, listOf("lint", "--error-format=json"))
+                    runBufCommand(
+                        project,
+                        owner,
+                        workingDirectory,
+                        listOf("lint", "--error-format=json"),
+                        expectedExitCodes = setOf(0, BUF_EXIT_CODE_FILE_ANNOTATION),
+                    )
                         .mapNotNull { BufIssue.fromJSON(it).getOrNull() }
                 } else {
                     emptyList()
@@ -153,6 +162,7 @@ object BufAnalyzeUtils {
                         owner,
                         workingDirectory,
                         listOf("breaking", "--error-format=json") + breakingArguments,
+                        expectedExitCodes = setOf(0, BUF_EXIT_CODE_FILE_ANNOTATION),
                     ).mapNotNull { BufIssue.fromJSON(it).getOrNull() }
                 } else {
                     emptyList()
@@ -191,6 +201,7 @@ object BufAnalyzeUtils {
         workingDirectory: Path,
         arguments: List<String>,
         preserveNewlines: Boolean = false,
+        expectedExitCodes: Set<Int> = setOf(0),
     ): Iterable<String> = withContext(Dispatchers.IO) {
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext emptyList()
         val cmd = AtomicReference<String>()
@@ -220,8 +231,8 @@ object BufAnalyzeUtils {
         handler.startNotify()
         if (handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())) {
             val code = exitCode.get()
-            if (code != 0) {
-                LOG.warn("${cmd.get() ?: "buf"} exit code: $code")
+            if (!expectedExitCodes.contains(code)) {
+                LOG.warn("${cmd.get() ?: "buf"} unexpected exit code: $code")
             }
         } else {
             // Process failed to complete within given timeout - stop it
