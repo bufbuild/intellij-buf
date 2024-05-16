@@ -109,11 +109,11 @@ class RefreshAdditionalBufRoots : StartupActivity {
                         disposable,
                         bufYaml.parent.toNioPath(),
                         listOf("build"),
-//                        expectedExitCodes = setOf(0, 1),
+                        expectedExitCodes = setOf(0, 1),
                     )
                 } finally {
                     val elapsed = System.nanoTime() - start
-                    LOG.warn("built ${bufYaml.path} in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms")
+                    LOG.debug("built ${bufYaml.path} in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms")
                     disposable.dispose()
                 }
             }
