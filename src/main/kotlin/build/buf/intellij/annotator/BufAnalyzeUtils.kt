@@ -46,6 +46,7 @@ import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import java.lang.StringBuilder
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
@@ -206,6 +207,7 @@ object BufAnalyzeUtils {
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext emptyList()
         val cmd = AtomicReference<String>()
         val stdout = LinkedList<String>()
+        val stderr = StringBuilder()
         val exitCode = AtomicInteger()
         val handler = ScriptRunnerUtil.execute(
             bufExecutable.absolutePath,
@@ -219,6 +221,7 @@ object BufAnalyzeUtils {
                     when (outputType) {
                         ProcessOutputType.SYSTEM -> cmd.set(event.text.trimEnd())
                         ProcessOutputType.STDOUT -> stdout.add(if (preserveNewlines) event.text else event.text.trimEnd())
+                        ProcessOutputType.STDERR -> stderr.append(event.text)
                     }
                 }
 
@@ -232,7 +235,7 @@ object BufAnalyzeUtils {
         if (handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())) {
             val code = exitCode.get()
             if (!expectedExitCodes.contains(code)) {
-                LOG.warn("${cmd.get() ?: "buf"} unexpected exit code: $code")
+                LOG.warn("${cmd.get() ?: "buf"} unexpected exit code: $code,\nstderr: ${stderr.trimEnd()}")
             }
         } else {
             // Process failed to complete within given timeout - stop it

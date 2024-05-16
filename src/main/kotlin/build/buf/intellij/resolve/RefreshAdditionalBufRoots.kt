@@ -14,19 +14,24 @@
 
 package build.buf.intellij.resolve
 
+import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.index.BufIndexes
 import build.buf.intellij.module.ModuleKey
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.RootsChangeRescanningInfo
 import com.intellij.openapi.roots.ex.ProjectRootManagerEx
 import com.intellij.openapi.startup.StartupActivity
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.EmptyRunnable
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.TimeUnit
 
 class RefreshAdditionalBufRoots : StartupActivity {
 
@@ -43,33 +48,65 @@ class RefreshAdditionalBufRoots : StartupActivity {
                         }
                     }
                     if (bufLockChanged) {
-                        updateUserRoots(project)
+                        updateUserRoots(project, false)
                     }
                 }
             },
         )
-        updateUserRoots(project)
+        updateUserRoots(project, true)
     }
 
-    private fun updateUserRoots(project: Project) {
-        DumbService.getInstance(project).runWhenSmart {
-            val existingModuleKeys = project.getUserData(BufModuleKeysUserData.KEY)?.moduleKeys ?: emptySet()
-            val newModuleKeys = hashSetOf<ModuleKey>()
-            // TODO: This still can return stale data after VFS changes.
-            // Unclear how to ensure we run this after indexing has completed.
-            // There don't appear to be any message bus changes that fire when indexing completes.
-            for (moduleKey in BufIndexes.getProjectModuleKeys(project)) {
-                newModuleKeys.add(moduleKey)
-            }
-            if (existingModuleKeys != newModuleKeys) {
-                project.putUserData(BufModuleKeysUserData.KEY, BufModuleKeysUserData(newModuleKeys))
-                ApplicationManager.getApplication().runWriteAction {
-                    ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(
-                        EmptyRunnable.getInstance(),
-                        RootsChangeRescanningInfo.RESCAN_DEPENDENCIES_IF_NEEDED,
-                    )
+    private fun updateUserRoots(project: Project, initial: Boolean) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            DumbService.getInstance(project).runWhenSmart {
+                if (initial) {
+                    // Trigger initial 'buf build' on all modules to trigger download of dependencies
+                    buildAllModules(project)
+                }
+                val existingModuleKeys = project.getUserData(BufModuleKeysUserData.KEY)?.moduleKeys ?: emptySet()
+                val newModuleKeys = hashSetOf<ModuleKey>()
+                // TODO: This still can return stale data after VFS changes.
+                // Unclear how to ensure we run this after indexing has completed.
+                // There don't appear to be any message bus changes that fire when indexing completes.
+                for (moduleKey in BufIndexes.getProjectModuleKeys(project)) {
+                    newModuleKeys.add(moduleKey)
+                }
+                if (existingModuleKeys != newModuleKeys) {
+                    project.putUserData(BufModuleKeysUserData.KEY, BufModuleKeysUserData(newModuleKeys))
+                    ApplicationManager.getApplication().runWriteAction {
+                        ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(
+                            EmptyRunnable.getInstance(),
+                            RootsChangeRescanningInfo.RESCAN_DEPENDENCIES_IF_NEEDED,
+                        )
+                    }
                 }
             }
         }
+    }
+
+    private fun buildAllModules(project: Project) {
+        for (bufModuleConfig in BufIndexes.getProjectBufModuleConfigs(project)) {
+            val bufYaml = VirtualFileManager.getInstance().findFileByUrl(bufModuleConfig.bufYamlUrl) ?: continue
+            runBlocking {
+                val disposable = Disposer.newDisposable()
+                val start = System.nanoTime()
+                try {
+                    BufAnalyzeUtils.runBufCommand(
+                        project,
+                        disposable,
+                        bufYaml.parent.toNioPath(),
+                        listOf("build"),
+                    )
+                } finally {
+                    val elapsed = System.nanoTime() - start
+                    LOG.debug("built ${bufYaml.path} in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms")
+                    disposable.dispose()
+                }
+            }
+        }
+    }
+
+    companion object {
+        private val LOG = logger<RefreshAdditionalBufRoots>()
     }
 }
