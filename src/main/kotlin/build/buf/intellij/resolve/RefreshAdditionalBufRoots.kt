@@ -97,7 +97,7 @@ class RefreshAdditionalBufRoots : StartupActivity {
             val bufLock = bufDir.findFileByRelativePath(BufConfig.BUF_LOCK) ?: continue
             val bufLockYamlFile = PsiManager.getInstance(project).findFile(bufLock) as? YAMLFile ?: continue
             val bufLockDeps = YAMLUtil.getQualifiedKeyInFile(bufLockYamlFile, "deps")?.value as? YAMLSequence ?: continue
-            if (bufLockDeps.items.isNotEmpty()) {
+            if (bufLockDeps.items.isEmpty()) {
                 continue
             }
             runBlocking {
@@ -109,11 +109,11 @@ class RefreshAdditionalBufRoots : StartupActivity {
                         disposable,
                         bufYaml.parent.toNioPath(),
                         listOf("build"),
-                        expectedExitCodes = setOf(0, 1),
+//                        expectedExitCodes = setOf(0, 1),
                     )
                 } finally {
                     val elapsed = System.nanoTime() - start
-                    LOG.debug("built ${bufYaml.path} in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms")
+                    LOG.warn("built ${bufYaml.path} in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms")
                     disposable.dispose()
                 }
             }
