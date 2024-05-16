@@ -36,6 +36,7 @@ import kotlinx.coroutines.runBlocking
 import org.jetbrains.yaml.YAMLUtil
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLSequence
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 class RefreshAdditionalBufRoots : StartupActivity {
@@ -82,11 +83,13 @@ class RefreshAdditionalBufRoots : StartupActivity {
             }
             if (existingModuleKeys != newModuleKeys) {
                 project.putUserData(BufModuleKeysUserData.KEY, BufModuleKeysUserData(newModuleKeys))
-                ApplicationManager.getApplication().runWriteAction {
-                    ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(
-                        EmptyRunnable.getInstance(),
-                        RootsChangeRescanningInfo.RESCAN_DEPENDENCIES_IF_NEEDED,
-                    )
+                ApplicationManager.getApplication().invokeLater {
+                    ApplicationManager.getApplication().runWriteAction {
+                        ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(
+                            EmptyRunnable.getInstance(),
+                            RootsChangeRescanningInfo.RESCAN_DEPENDENCIES_IF_NEEDED,
+                        )
+                    }
                 }
             }
         }
@@ -94,21 +97,25 @@ class RefreshAdditionalBufRoots : StartupActivity {
 
     private fun buildAllModules(project: Project) {
         val fs = VirtualFileManager.getInstance()
-        val projectBufModuleConfigs = DumbService.getInstance(project).runReadActionInSmartMode(
+        val moduleDirsToBuild = DumbService.getInstance(project).runReadActionInSmartMode(
             Computable {
-                BufIndexes.getProjectBufModuleConfigs(project)
+                val moduleDirs = arrayListOf<Path>()
+                for (bufModuleConfig in BufIndexes.getProjectBufModuleConfigs(project)) {
+                    val bufYaml = fs.findFileByUrl(bufModuleConfig.bufYamlUrl) ?: continue
+                    val bufDir = bufYaml.parent ?: continue
+                    // Skip projects with no dependencies
+                    val bufLock = bufDir.findFileByRelativePath(BufConfig.BUF_LOCK) ?: continue
+                    val bufLockYamlFile = PsiManager.getInstance(project).findFile(bufLock) as? YAMLFile ?: continue
+                    val bufLockDeps = YAMLUtil.getQualifiedKeyInFile(bufLockYamlFile, "deps")?.value as? YAMLSequence ?: continue
+                    if (bufLockDeps.items.isEmpty()) {
+                        continue
+                    }
+                    moduleDirs.add(bufDir.toNioPath())
+                }
+                moduleDirs
             },
         )
-        for (bufModuleConfig in projectBufModuleConfigs) {
-            val bufYaml = fs.findFileByUrl(bufModuleConfig.bufYamlUrl) ?: continue
-            val bufDir = bufYaml.parent ?: continue
-            // Skip projects with no dependencies
-            val bufLock = bufDir.findFileByRelativePath(BufConfig.BUF_LOCK) ?: continue
-            val bufLockYamlFile = PsiManager.getInstance(project).findFile(bufLock) as? YAMLFile ?: continue
-            val bufLockDeps = YAMLUtil.getQualifiedKeyInFile(bufLockYamlFile, "deps")?.value as? YAMLSequence ?: continue
-            if (bufLockDeps.items.isEmpty()) {
-                continue
-            }
+        for (moduleDir in moduleDirsToBuild) {
             runBlocking {
                 val disposable = Disposer.newDisposable()
                 val start = System.nanoTime()
@@ -116,13 +123,13 @@ class RefreshAdditionalBufRoots : StartupActivity {
                     BufAnalyzeUtils.runBufCommand(
                         project,
                         disposable,
-                        bufYaml.parent.toNioPath(),
+                        moduleDir,
                         listOf("build"),
                         expectedExitCodes = setOf(0, 1),
                     )
                 } finally {
                     val elapsed = System.nanoTime() - start
-                    LOG.debug("built ${bufYaml.path} in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms")
+                    LOG.debug("built $moduleDir in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms")
                     disposable.dispose()
                 }
             }
