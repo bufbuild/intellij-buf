@@ -85,10 +85,12 @@ class RefreshAdditionalBufRoots : StartupActivity {
                 project.putUserData(BufModuleKeysUserData.KEY, BufModuleKeysUserData(newModuleKeys))
                 ApplicationManager.getApplication().invokeLater {
                     ApplicationManager.getApplication().runWriteAction {
-                        ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(
-                            EmptyRunnable.getInstance(),
-                            RootsChangeRescanningInfo.RESCAN_DEPENDENCIES_IF_NEEDED,
-                        )
+                        if (!project.isDisposed) {
+                            ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(
+                                EmptyRunnable.getInstance(),
+                                RootsChangeRescanningInfo.RESCAN_DEPENDENCIES_IF_NEEDED,
+                            )
+                        }
                     }
                 }
             }
