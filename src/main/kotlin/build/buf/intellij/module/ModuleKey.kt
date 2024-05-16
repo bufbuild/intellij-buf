@@ -37,7 +37,7 @@ data class ModuleKey(val moduleFullName: ModuleFullName, val commitID: UUID, val
             val lastColon = moduleKey.lastIndexOf(':')
             require(lastColon > 0) { "invalid module key: $moduleKey" }
             ModuleFullName.parse(moduleKey.substring(0, lastColon)).map { fullName ->
-                val commitID = UUIDUtils.fromDashless(moduleKey.substring(lastColon+1)).getOrThrow()
+                val commitID = UUIDUtils.fromDashless(moduleKey.substring(lastColon + 1)).getOrThrow()
                 ModuleKey(fullName, commitID, digest = digest)
             }
         } catch (e: Exception) {
