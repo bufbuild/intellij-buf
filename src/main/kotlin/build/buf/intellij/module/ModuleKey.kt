@@ -34,10 +34,10 @@ data class ModuleKey(val moduleFullName: ModuleFullName, val commitID: UUID, val
 
     companion object {
         fun parse(moduleKey: String, digest: ModuleDigest? = null): Result<ModuleKey> = try {
-            val components = moduleKey.split(':')
-            require(components.size == 2) { "invalid module key: $moduleKey" }
-            ModuleFullName.parse(components[0]).map { fullName ->
-                val commitID = UUIDUtils.fromDashless(components[1]).getOrThrow()
+            val lastColon = moduleKey.lastIndexOf(':')
+            require(lastColon > 0) { "invalid module key: $moduleKey" }
+            ModuleFullName.parse(moduleKey.substring(0, lastColon)).map { fullName ->
+                val commitID = UUIDUtils.fromDashless(moduleKey.substring(lastColon + 1)).getOrThrow()
                 ModuleKey(fullName, commitID, digest = digest)
             }
         } catch (e: Exception) {

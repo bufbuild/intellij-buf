@@ -92,7 +92,7 @@ class ModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
             val commitID = UUIDUtils.fromDashless(commit).getOrThrow()
             ModuleKey(moduleFullName, commitID, digest = digest)
         } catch (e: Exception) {
-            LOG.warn("unable to parse dependency $bufModuleItem in $localFileURL", e)
+            LOG.warn("unable to parse dependency $bufModuleItem in $localFileURL: $e")
             return null
         }
     }
