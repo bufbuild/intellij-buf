@@ -105,7 +105,7 @@ internal class ModuleCacheV2(env: Map<String, String> = System.getenv()) : BaseM
                 try {
                     commitTempPath.delete(recursively = true)
                 } catch (e: IOException) {
-                    LOG.warn("failed to delete temporary dir: $commitTempPath", e)
+                    LOG.warn("failed to delete temporary dir $commitTempPath: $e")
                 }
             }
         }

@@ -48,4 +48,11 @@ class ModuleKeyTest {
             assertThrows<IllegalArgumentException> { ModuleKey.parse(invalid).getOrThrow() }
         }
     }
+
+    @Test
+    fun testKeyWithPort() {
+        val moduleKey = ModuleKey.parse("0.0.0.0:49524/user3/repo31:17b027e298f84498a101bb98402a08be").getOrThrow()
+        Assertions.assertEquals("0.0.0.0:49524/user3/repo31", moduleKey.moduleFullName.toString())
+        Assertions.assertEquals(UUIDUtils.fromDashless("17b027e298f84498a101bb98402a08be").getOrThrow(), moduleKey.commitID)
+    }
 }
