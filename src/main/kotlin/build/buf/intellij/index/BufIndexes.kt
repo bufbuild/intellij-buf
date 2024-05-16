@@ -16,6 +16,7 @@ package build.buf.intellij.index
 
 import build.buf.intellij.module.ModuleKey
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.indexing.ID
@@ -39,10 +40,13 @@ object BufIndexes {
 
     private fun <K : Any> getProjectIndexKeys(indexId: ID<K, Void>, project: Project): Collection<K> {
         val scope = GlobalSearchScope.projectScope(project)
-        return FileBasedIndex.getInstance().getAllKeys(indexId, project).filter {
+        val fileBasedIndex = FileBasedIndex.getInstance()
+        return fileBasedIndex.getAllKeys(indexId, project).filter {
             // NOTE: getAllKeys(..., project) isn't actually filtering out keys that only exist in the project.
             // Filter the results to ensure that we only return keys that were indexed from the project's files.
-            FileBasedIndex.getInstance().getContainingFiles(indexId, it, scope).isNotEmpty()
+            // Exclude any files found in directories which are marked as excluded.
+            fileBasedIndex.getContainingFiles(indexId, it, scope)
+                .any { file -> !ProjectRootManager.getInstance(project).fileIndex.isExcluded(file) }
         }
     }
 }
