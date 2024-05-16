@@ -30,7 +30,11 @@ import com.intellij.openapi.util.EmptyRunnable
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.psi.PsiManager
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.yaml.YAMLUtil
+import org.jetbrains.yaml.psi.YAMLFile
+import org.jetbrains.yaml.psi.YAMLSequence
 import java.util.concurrent.TimeUnit
 
 class RefreshAdditionalBufRoots : StartupActivity {
@@ -85,8 +89,17 @@ class RefreshAdditionalBufRoots : StartupActivity {
     }
 
     private fun buildAllModules(project: Project) {
+        val fs = VirtualFileManager.getInstance()
         for (bufModuleConfig in BufIndexes.getProjectBufModuleConfigs(project)) {
-            val bufYaml = VirtualFileManager.getInstance().findFileByUrl(bufModuleConfig.bufYamlUrl) ?: continue
+            val bufYaml = fs.findFileByUrl(bufModuleConfig.bufYamlUrl) ?: continue
+            val bufDir = bufYaml.parent ?: continue
+            // Skip projects with no dependencies
+            val bufLock = bufDir.findFileByRelativePath(BufConfig.BUF_LOCK) ?: continue
+            val bufLockYamlFile = PsiManager.getInstance(project).findFile(bufLock) as? YAMLFile ?: continue
+            val bufLockDeps = YAMLUtil.getQualifiedKeyInFile(bufLockYamlFile, "deps")?.value as? YAMLSequence ?: continue
+            if (bufLockDeps.items.isNotEmpty()) {
+                continue
+            }
             runBlocking {
                 val disposable = Disposer.newDisposable()
                 val start = System.nanoTime()
@@ -96,6 +109,7 @@ class RefreshAdditionalBufRoots : StartupActivity {
                         disposable,
                         bufYaml.parent.toNioPath(),
                         listOf("build"),
+                        expectedExitCodes = setOf(0, 1),
                     )
                 } finally {
                     val elapsed = System.nanoTime() - start
