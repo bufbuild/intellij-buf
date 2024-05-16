@@ -77,7 +77,7 @@ class ModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
         return try {
             val moduleFullName = bufModuleItem["name"].let { moduleFullName ->
                 if (moduleFullName != null) { // v2
-                    ModuleFullName.parse(moduleFullName).getOrThrow()
+                    ModuleFullName.parse(moduleFullName).getOrNull() ?: return null
                 } else { // v1 or v1beta1
                     val registry = bufModuleItem["remote"] ?: return null
                     val owner = bufModuleItem["owner"] ?: return null
@@ -89,7 +89,7 @@ class ModuleKeyIndex : ScalarIndexExtension<ModuleKey>() {
             val digest = bufModuleItem["digest"]?.let {
                 ModuleDigest.parse(it).getOrNull()
             }
-            val commitID = UUIDUtils.fromDashless(commit).getOrThrow()
+            val commitID = UUIDUtils.fromDashless(commit).getOrNull() ?: return null
             ModuleKey(moduleFullName, commitID, digest = digest)
         } catch (e: Exception) {
             LOG.warn("unable to parse dependency $bufModuleItem in $localFileURL", e)
