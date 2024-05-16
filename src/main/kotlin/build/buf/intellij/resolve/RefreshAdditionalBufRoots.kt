@@ -25,6 +25,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.RootsChangeRescanningInfo
 import com.intellij.openapi.roots.ex.ProjectRootManagerEx
 import com.intellij.openapi.startup.StartupActivity
+import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.EmptyRunnable
 import com.intellij.openapi.vfs.VirtualFileManager
@@ -62,27 +63,30 @@ class RefreshAdditionalBufRoots : StartupActivity {
 
     private fun updateUserRoots(project: Project, initial: Boolean) {
         ApplicationManager.getApplication().executeOnPooledThread {
-            DumbService.getInstance(project).runWhenSmart {
-                if (initial) {
-                    // Trigger initial 'buf build' on all modules to trigger download of dependencies
-                    buildAllModules(project)
-                }
-                val existingModuleKeys = project.getUserData(BufModuleKeysUserData.KEY)?.moduleKeys ?: emptySet()
-                val newModuleKeys = hashSetOf<ModuleKey>()
-                // TODO: This still can return stale data after VFS changes.
-                // Unclear how to ensure we run this after indexing has completed.
-                // There don't appear to be any message bus changes that fire when indexing completes.
-                for (moduleKey in BufIndexes.getProjectModuleKeys(project)) {
-                    newModuleKeys.add(moduleKey)
-                }
-                if (existingModuleKeys != newModuleKeys) {
-                    project.putUserData(BufModuleKeysUserData.KEY, BufModuleKeysUserData(newModuleKeys))
-                    ApplicationManager.getApplication().runWriteAction {
-                        ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(
-                            EmptyRunnable.getInstance(),
-                            RootsChangeRescanningInfo.RESCAN_DEPENDENCIES_IF_NEEDED,
-                        )
-                    }
+            if (initial) {
+                // Trigger initial 'buf build' on all modules to trigger download of dependencies
+                buildAllModules(project)
+            }
+            val existingModuleKeys = project.getUserData(BufModuleKeysUserData.KEY)?.moduleKeys ?: emptySet()
+            val newModuleKeys = hashSetOf<ModuleKey>()
+            // TODO: This still can return stale data after VFS changes.
+            // Unclear how to ensure we run this after indexing has completed.
+            // There don't appear to be any message bus changes that fire when indexing completes.
+            val projectModuleKeys = DumbService.getInstance(project).runReadActionInSmartMode(
+                Computable {
+                    BufIndexes.getProjectModuleKeys(project)
+                },
+            )
+            for (moduleKey in projectModuleKeys) {
+                newModuleKeys.add(moduleKey)
+            }
+            if (existingModuleKeys != newModuleKeys) {
+                project.putUserData(BufModuleKeysUserData.KEY, BufModuleKeysUserData(newModuleKeys))
+                ApplicationManager.getApplication().runWriteAction {
+                    ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(
+                        EmptyRunnable.getInstance(),
+                        RootsChangeRescanningInfo.RESCAN_DEPENDENCIES_IF_NEEDED,
+                    )
                 }
             }
         }
@@ -90,7 +94,12 @@ class RefreshAdditionalBufRoots : StartupActivity {
 
     private fun buildAllModules(project: Project) {
         val fs = VirtualFileManager.getInstance()
-        for (bufModuleConfig in BufIndexes.getProjectBufModuleConfigs(project)) {
+        val projectBufModuleConfigs = DumbService.getInstance(project).runReadActionInSmartMode(
+            Computable {
+                BufIndexes.getProjectBufModuleConfigs(project)
+            },
+        )
+        for (bufModuleConfig in projectBufModuleConfigs) {
             val bufYaml = fs.findFileByUrl(bufModuleConfig.bufYamlUrl) ?: continue
             val bufDir = bufYaml.parent ?: continue
             // Skip projects with no dependencies
