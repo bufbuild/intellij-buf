@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2024-05-16
+
+- Updates the plugin to work with the newly released Buf CLI [v1.32.0](https://github.com/bufbuild/buf/releases/tag/v1.32.0), including v2 config files and support for v2 multi-module workspaces.
+- Improved support for BSR module external libraries.
+- Support v2 buf.lock files and v3 cached modules by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/206
+- Create index of buf.yaml for v2 workspaces by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/207
+- Update ignore quick fix for v2 buf.yaml by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/212
+- Reduce scope to only search project files by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/213
+- Implement support for refreshing proto roots by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/214
+- Fix logging of expected exit codes by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/216
+- Run buf build on startup to prime cache by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/217
+- Allow module keys with ports in full name by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/219
+- Filter out files in excluded directories by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/220
+
 ## [0.3.1] - 2024-02-12
 
 - Preserve newlines with buf format by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/181
@@ -45,7 +59,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bufbuild/intellij-buf/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/bufbuild/intellij-buf/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/bufbuild/intellij-buf/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/bufbuild/intellij-buf/compare/v0.2.0...v0.2.1
