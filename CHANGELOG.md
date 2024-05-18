@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2024-05-18
+
+- Fix compatilbility issue with latest EAP by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/222
+
 ## [0.4.0] - 2024-05-16
 
 - Updates the plugin to work with the newly released Buf CLI [v1.32.0](https://github.com/bufbuild/buf/releases/tag/v1.32.0), including v2 config files and support for v2 multi-module workspaces.
@@ -59,7 +63,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/bufbuild/intellij-buf/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bufbuild/intellij-buf/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/bufbuild/intellij-buf/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/bufbuild/intellij-buf/compare/v0.2.1...v0.3.0
