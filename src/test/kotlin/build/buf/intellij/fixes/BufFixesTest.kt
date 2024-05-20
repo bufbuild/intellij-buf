@@ -65,7 +65,6 @@ class BufFixesTest : BufTestBase() {
     }
 
     fun testIgnoreV2() {
-        configureCLI(System.getProperty("BUF_BETA_CLI"))
         runIgnoreQuickFix(
             "ignore/v2",
             """
@@ -80,7 +79,6 @@ class BufFixesTest : BufTestBase() {
     }
 
     fun testIgnoreV2DisabledFalse() {
-        configureCLI(System.getProperty("BUF_BETA_CLI"))
         runIgnoreQuickFix(
             "ignore/v2_disabled_false",
             """
@@ -96,7 +94,6 @@ class BufFixesTest : BufTestBase() {
     }
 
     fun testIgnoreV2DisabledTrue() {
-        configureCLI(System.getProperty("BUF_BETA_CLI"))
         runIgnoreQuickFix(
             "ignore/v2_disabled_true",
             """
@@ -111,7 +108,6 @@ class BufFixesTest : BufTestBase() {
     }
 
     fun testIgnoreV2ModulesDisabledTrue() {
-        configureCLI(System.getProperty("BUF_BETA_CLI"))
         runIgnoreQuickFix(
             "ignore/v2_modules_disabled_true",
             """
