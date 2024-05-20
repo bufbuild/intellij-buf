@@ -10,7 +10,7 @@ changelog = "2.2.0"
 download = "5.6.0"
 gradleIntelliJPlugin = "1.17.3"
 qodana = "2024.1.5"
-kover = "0.7.6"
+kover = "0.8.0"
 osdetector = "1.7.3"
 spotless = "6.25.0"
 
