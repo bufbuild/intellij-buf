@@ -1,4 +1,3 @@
-import de.undercouch.gradle.tasks.download.Download
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
@@ -22,7 +21,6 @@ group = properties("pluginGroup").get()
 version = properties("pluginVersion").get()
 
 val buf: Configuration by configurations.creating
-val bufBeta = project.layout.buildDirectory.file("buf-${bufOS()}-${bufArch()}${bufExt()}").get().asFile
 val bufLicenseHeaderCLIFile = project.layout.buildDirectory.file("gobin/license-header").get().asFile
 val bufLicenseHeaderCLIPath: String = bufLicenseHeaderCLIFile.absolutePath
 
@@ -130,7 +128,7 @@ tasks {
             "--year-range",
             properties("buf.license.header.range").get(),
             "--ignore",
-            "/cachev",
+            "/testData/cache",
         )
     }
 
@@ -146,21 +144,13 @@ tasks {
             "--year-range",
             properties("buf.license.header.range").get(),
             "--ignore",
-            "/cachev",
+            "/testData/cache",
             "--diff",
             "--exit-code",
         )
     }
 
-    register<Download>("downloadBufBeta") {
-        description = "Download beta version of the Buf CLI."
-        src("https://github.com/bufbuild/buf/releases/download/v1.32.0-beta.1/buf-${bufOS()}-${bufArch()}${bufExt()}")
-        dest(bufBeta.parent)
-        overwrite(false)
-    }
-
     register("configureBuf") {
-        dependsOn("downloadBufBeta")
         description = "Installs the Buf CLI."
         File(buf.asPath).setExecutable(true)
     }
@@ -171,10 +161,9 @@ tasks {
 
     test {
         dependsOn("configureBuf")
-        environment("BUF_CACHE_DIR", File(project.projectDir.path + "/src/test/resources/testData/cachev1").absolutePath)
+        environment("BUF_CACHE_DIR", File(project.projectDir.path + "/src/test/resources/testData/cache").absolutePath)
         systemProperty("NO_FS_ROOTS_ACCESS_CHECK", "true") // weird issue on linux
         systemProperty("BUF_CLI", buf.asPath)
-        systemProperty("BUF_BETA_CLI", bufBeta.path)
         useJUnitPlatform()
     }
 
