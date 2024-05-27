@@ -5,7 +5,7 @@ buf = "1.32.1"
 junit = "5.10.2"
 
 # plugins
-kotlin = "1.9.24"
+kotlin = "2.0.0"
 changelog = "2.2.0"
 download = "5.6.0"
 gradleIntelliJPlugin = "1.17.3"
