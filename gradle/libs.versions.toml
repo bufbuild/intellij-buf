@@ -2,7 +2,7 @@
 # libraries
 annotations = "24.1.0"
 buf = "1.36.0"
-junit = "5.10.3"
+junit = "5.11.0"
 
 # plugins
 kotlin = "1.9.24"
