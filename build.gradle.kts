@@ -271,6 +271,7 @@ intellijPlatformTesting {
 
             plugins {
                 robotServerPlugin()
+                disablePlugins("io.kanro.idea.plugin.protobuf")
             }
         }
     }
