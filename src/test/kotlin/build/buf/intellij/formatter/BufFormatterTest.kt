@@ -72,4 +72,22 @@ class BufFormatterTest : BufTestBase() {
         val expected = findTestDataFolder().resolve("formatter/largeprotofile-after.proto").readText()
         myFixture.checkResult(expected)
     }
+
+    fun testSyntaxError() {
+        val file = myFixture.configureByText(
+            "user.proto",
+            """
+            syntax = "proto3";
+            package users.v1;
+            
+            message User {
+                string a =
+            }
+            """.trimIndent(),
+        )
+        WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
+            CodeStyleManager.getInstance(project).reformat(file)
+        })
+        myFixture.checkResult(file.text)
+    }
 }
