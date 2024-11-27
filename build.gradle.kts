@@ -240,6 +240,16 @@ tasks {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
 
+    prepareSandbox {
+        // Kanro plugin conflicts with Protocol Buffers plugin - disable it while running the IDE.
+        disabledPlugins = listOf("io.kanro.idea.plugin.protobuf")
+    }
+
+    prepareTestSandbox {
+        // Kanro plugin conflicts with Protocol Buffers plugin - disable it while testing.
+        disabledPlugins = listOf("io.kanro.idea.plugin.protobuf")
+    }
+
     publishPlugin {
         dependsOn(patchChangelog)
     }
