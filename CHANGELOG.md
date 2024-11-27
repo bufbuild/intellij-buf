@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.4.2] - 2024-11-27
+
+- Update to buf v1.32.0 by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/229
+- Avoid changing file contents if format failed by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/274
+
 ## [0.4.1] - 2024-05-18
 
 - Fix compatilbility issue with latest EAP by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/222
@@ -63,7 +68,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/bufbuild/intellij-buf/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/bufbuild/intellij-buf/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/bufbuild/intellij-buf/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/bufbuild/intellij-buf/compare/v0.3.0...v0.3.1
