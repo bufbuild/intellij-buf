@@ -46,16 +46,15 @@ import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import java.lang.StringBuilder
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.exists
 import kotlin.io.path.relativeTo
+import kotlin.text.StringBuilder
 
 /**
  * Inspired by Rust's RsExternalLinterUtils
@@ -141,8 +140,7 @@ object BufAnalyzeUtils {
                         workingDirectory,
                         listOf("lint", "--error-format=json"),
                         expectedExitCodes = setOf(0, BUF_EXIT_CODE_FILE_ANNOTATION),
-                    )
-                        .mapNotNull { BufIssue.fromJSON(it).getOrNull() }
+                    ).stdout.mapNotNull { BufIssue.fromJSON(it).getOrNull() }
                 } else {
                     emptyList()
                 }
@@ -164,7 +162,7 @@ object BufAnalyzeUtils {
                         workingDirectory,
                         listOf("breaking", "--error-format=json") + breakingArguments,
                         expectedExitCodes = setOf(0, BUF_EXIT_CODE_FILE_ANNOTATION),
-                    ).mapNotNull { BufIssue.fromJSON(it).getOrNull() }
+                    ).stdout.mapNotNull { BufIssue.fromJSON(it).getOrNull() }
                 } else {
                     emptyList()
                 }
@@ -203,12 +201,12 @@ object BufAnalyzeUtils {
         arguments: List<String>,
         preserveNewlines: Boolean = false,
         expectedExitCodes: Set<Int> = setOf(0),
-    ): Iterable<String> = withContext(Dispatchers.IO) {
-        val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext emptyList()
+    ): BufCmdResult = withContext(Dispatchers.IO) {
+        val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext BufCmdResult(-1, emptyList(), "")
         val cmd = AtomicReference<String>()
-        val stdout = LinkedList<String>()
+        val stdout = mutableListOf<String>()
         val stderr = StringBuilder()
-        val exitCode = AtomicInteger()
+        val exitCode = AtomicInteger(-1)
         val handler = ScriptRunnerUtil.execute(
             bufExecutable.absolutePath,
             workingDirectory.toString(),
@@ -241,7 +239,7 @@ object BufAnalyzeUtils {
             // Process failed to complete within given timeout - stop it
             handler.destroyProcess()
         }
-        stdout
+        BufCmdResult(exitCode = exitCode.get(), stdout = stdout, stderr = stderr.toString())
     }
 
     private val externalLinterLazyResultCache =
@@ -249,5 +247,7 @@ object BufAnalyzeUtils {
             PsiModificationTracker.MODIFICATION_COUNT
         }
 }
+
+data class BufCmdResult(val exitCode: Int, val stdout: List<String>, val stderr: String)
 
 data class BufAnalyzeResult(val workingDirectory: Path, val issue: List<BufIssue>)

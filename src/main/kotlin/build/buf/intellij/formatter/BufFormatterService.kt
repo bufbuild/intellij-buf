@@ -29,6 +29,7 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.psi.PsiFile
 import com.intellij.psi.formatter.FormatterUtil
 import kotlinx.coroutines.runBlocking
+import java.util.stream.Collectors
 
 class BufFormatterService : AsyncDocumentFormattingService() {
     override fun getFeatures(): Set<FormattingService.Feature> = emptySet()
@@ -49,7 +50,7 @@ class BufFormatterService : AsyncDocumentFormattingService() {
             private val disposable = Disposer.newDisposable()
 
             override fun run() {
-                val output = runBlocking {
+                val result = runBlocking {
                     BufAnalyzeUtils.runBufCommand(
                         project,
                         disposable,
@@ -58,14 +59,24 @@ class BufFormatterService : AsyncDocumentFormattingService() {
                         preserveNewlines = true,
                     )
                 }
-                if (output.firstOrNull()?.startsWith("unknown command") == true) {
+                if (result.exitCode == 0) {
+                    request.onTextReady(result.stdout.joinToString(""))
+                    return
+                }
+                if (result.stderr.startsWith("unknown command")) {
                     request.onError(
                         BufBundle.message("formatter.title"),
                         BufBundle.message("formatter.cli.version.not.supported"),
                     )
-                } else {
-                    request.onTextReady(output.joinToString(separator = ""))
+                    return
                 }
+                val stderrLimited = result.stderr.split(System.lineSeparator()).stream()
+                    .limit(10)
+                    .collect(Collectors.joining(System.lineSeparator()))
+                request.onError(
+                    BufBundle.message("formatter.title"),
+                    stderrLimited,
+                )
             }
 
             override fun cancel(): Boolean {
