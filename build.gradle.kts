@@ -257,5 +257,6 @@ tasks {
 
     runPluginVerifier {
         ideVersions.set(testIntellij.versions.versionList.get().split(',').map(String::trim).filter(String::isNotEmpty))
+        freeArgs = listOf("-mute", "TemplateWordInPluginId")
     }
 }
