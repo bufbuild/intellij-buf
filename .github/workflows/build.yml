@@ -29,7 +29,7 @@ jobs:
   # Prepare environment and build the plugin
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8-cores
     outputs:
       version: ${{ steps.properties.outputs.version }}
       changelog: ${{ steps.properties.outputs.changelog }}
@@ -97,7 +97,7 @@ jobs:
   test:
     name: Test
     needs: [ build ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8-cores
     steps:
 
       # Check out the current repository
@@ -153,7 +153,7 @@ jobs:
   inspectCode:
     name: Inspect code
     needs: [ build ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8-cores
     permissions:
       contents: write
       checks: write
