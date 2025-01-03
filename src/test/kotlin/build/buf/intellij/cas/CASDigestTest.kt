@@ -15,10 +15,8 @@
 package build.buf.intellij.cas
 
 import org.apache.commons.codec.binary.Hex
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.assertj.core.api.Assertions
+import org.junit.Test
 import java.io.StringReader
 import java.util.concurrent.ThreadLocalRandom
 
@@ -30,13 +28,13 @@ class CASDigestTest {
         val hex = Hex.encodeHexString(randomDigestBytes)
         val digestStr = "shake256:$hex"
         val digest = CASDigest.parse(digestStr).getOrThrow()
-        assertEquals(digestStr, digest.toString())
-        assertEquals(CASDigestType.SHAKE256, digest.digestType)
-        assertEquals(hex, digest.hex)
-        assertArrayEquals(randomDigestBytes, digest.value())
+        Assertions.assertThat(digest.toString()).isEqualTo(digestStr)
+        Assertions.assertThat(digest.digestType).isEqualTo(CASDigestType.SHAKE256)
+        Assertions.assertThat(digest.hex).isEqualTo(hex)
+        Assertions.assertThat(digest.value()).isEqualTo(randomDigestBytes)
         for (expectedFailure in listOf("othertype:$hex", "shake256:${hex.substring(0, 64)}", "$hex")) {
-            assertThrows<IllegalArgumentException> { CASDigest.parse(expectedFailure).getOrThrow() }
-            assertThrows<IllegalArgumentException> { CASDigest.parse(StringReader(expectedFailure)).getOrThrow() }
+            Assertions.assertThatThrownBy { CASDigest.parse(expectedFailure).getOrThrow() }.isInstanceOf(IllegalArgumentException::class.java)
+            Assertions.assertThatThrownBy { CASDigest.parse(StringReader(expectedFailure)).getOrThrow() }.isInstanceOf(IllegalArgumentException::class.java)
         }
     }
 }

@@ -14,18 +14,17 @@
 
 package build.buf.intellij.module
 
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.assertj.core.api.Assertions
+import org.junit.Test
 
 class ModuleFullNameTest {
     @Test
     fun testModuleFullName() {
         val fullName = ModuleFullName.parse("buf.build/bufbuild/buf").getOrThrow()
-        Assertions.assertEquals("buf.build", fullName.registry)
-        Assertions.assertEquals("bufbuild", fullName.owner)
-        Assertions.assertEquals("buf", fullName.name)
-        Assertions.assertEquals(fullName, ModuleFullName.parse(fullName.toString()).getOrThrow())
+        Assertions.assertThat(fullName.registry).isEqualTo("buf.build")
+        Assertions.assertThat(fullName.owner).isEqualTo("bufbuild")
+        Assertions.assertThat(fullName.name).isEqualTo("buf")
+        Assertions.assertThat(ModuleFullName.parse(fullName.toString()).getOrThrow()).isEqualTo(fullName)
 
         val invalidFullNames = listOf(
             "https://buf.build/bufbuild/buf",
@@ -36,7 +35,8 @@ class ModuleFullNameTest {
             "buf.build/ / ",
         )
         for (invalidFullName in invalidFullNames) {
-            assertThrows<IllegalArgumentException> { ModuleFullName.parse(invalidFullName).getOrThrow() }
+            Assertions.assertThatThrownBy { ModuleFullName.parse(invalidFullName).getOrThrow() }
+                .isInstanceOf(IllegalArgumentException::class.java)
         }
     }
 }

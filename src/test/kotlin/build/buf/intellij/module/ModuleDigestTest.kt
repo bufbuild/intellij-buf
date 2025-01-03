@@ -16,9 +16,8 @@ package build.buf.intellij.module
 
 import build.buf.intellij.cas.CASDigestType
 import org.apache.commons.codec.binary.Hex
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.assertj.core.api.Assertions
+import org.junit.Test
 import java.util.concurrent.ThreadLocalRandom
 
 class ModuleDigestTest {
@@ -29,12 +28,13 @@ class ModuleDigestTest {
         val hex = Hex.encodeHexString(randomDigestBytes)
         val digestStr = "b5:$hex"
         val digest = ModuleDigest.parse(digestStr).getOrThrow()
-        Assertions.assertEquals(digestStr, digest.toString())
-        Assertions.assertEquals(ModuleDigestType.B5, digest.digestType)
-        Assertions.assertEquals(hex, digest.hex)
-        Assertions.assertArrayEquals(randomDigestBytes, digest.value())
+        Assertions.assertThat(digest.toString()).isEqualTo(digestStr)
+        Assertions.assertThat(digest.digestType).isEqualTo(ModuleDigestType.B5)
+        Assertions.assertThat(digest.hex).isEqualTo(hex)
+        Assertions.assertThat(digest.value()).isEqualTo(randomDigestBytes)
         for (expectedFailure in listOf("b4:$hex", hex)) {
-            assertThrows<IllegalArgumentException> { ModuleDigest.parse(expectedFailure).getOrThrow() }
+            Assertions.assertThatThrownBy { ModuleDigest.parse(expectedFailure).getOrThrow() }
+                .isInstanceOf(IllegalArgumentException::class.java)
         }
     }
 }

@@ -16,9 +16,8 @@ package build.buf.intellij.module
 
 import build.buf.intellij.cas.CASDigestType
 import org.apache.commons.codec.binary.Hex
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.assertj.core.api.Assertions
+import org.junit.Test
 import java.util.UUID
 import java.util.concurrent.ThreadLocalRandom
 
@@ -28,12 +27,12 @@ class ModuleKeyTest {
         val fullName = "buf.build/someorg/somerepo"
         val commitID = UUID.randomUUID()
         val moduleKey = ModuleKey.parse("$fullName:${commitID.toDashless()}").getOrThrow()
-        Assertions.assertEquals(fullName, moduleKey.moduleFullName.toString())
-        Assertions.assertEquals(commitID, moduleKey.commitID)
-        Assertions.assertNull(moduleKey.digest)
+        Assertions.assertThat(moduleKey.moduleFullName.toString()).isEqualTo(fullName)
+        Assertions.assertThat(moduleKey.commitID).isEqualTo(commitID)
+        Assertions.assertThat(moduleKey.digest).isNull()
         val moduleKeyFromToString = ModuleKey.parse(moduleKey.toString()).getOrThrow()
-        Assertions.assertEquals(moduleKey, moduleKeyFromToString)
-        Assertions.assertEquals(moduleKey.hashCode(), moduleKeyFromToString.hashCode())
+        Assertions.assertThat(moduleKeyFromToString).isEqualTo(moduleKey)
+        Assertions.assertThat(moduleKeyFromToString.hashCode()).isEqualTo(moduleKey.hashCode())
 
         val randomDigestBytes = ByteArray(CASDigestType.SHAKE256.length)
         ThreadLocalRandom.current().nextBytes(randomDigestBytes)
@@ -41,18 +40,19 @@ class ModuleKeyTest {
         val moduleKeyWithDigest = moduleKey.copy(digest = digest)
         // Digests are optional in v1/v1beta1 lock files.
         // Ensure that equals()/hashCode() don't include optional digests.
-        Assertions.assertEquals(moduleKey, moduleKeyWithDigest)
-        Assertions.assertEquals(moduleKey.hashCode(), moduleKeyWithDigest.hashCode())
+        Assertions.assertThat(moduleKeyWithDigest).isEqualTo(moduleKey)
+        Assertions.assertThat(moduleKeyWithDigest.hashCode()).isEqualTo(moduleKey.hashCode())
 
         for (invalid in listOf("$commitID", "invalidfullname:${commitID.toDashless()}", "$fullName:$commitID")) {
-            assertThrows<IllegalArgumentException> { ModuleKey.parse(invalid).getOrThrow() }
+            Assertions.assertThatThrownBy { ModuleKey.parse(invalid).getOrThrow() }
+                .isInstanceOf(IllegalArgumentException::class.java)
         }
     }
 
     @Test
     fun testKeyWithPort() {
         val moduleKey = ModuleKey.parse("0.0.0.0:49524/user3/repo31:17b027e298f84498a101bb98402a08be").getOrThrow()
-        Assertions.assertEquals("0.0.0.0:49524/user3/repo31", moduleKey.moduleFullName.toString())
-        Assertions.assertEquals(UUIDUtils.fromDashless("17b027e298f84498a101bb98402a08be").getOrThrow(), moduleKey.commitID)
+        Assertions.assertThat(moduleKey.moduleFullName.toString()).isEqualTo("0.0.0.0:49524/user3/repo31")
+        Assertions.assertThat(moduleKey.commitID).isEqualTo(UUIDUtils.fromDashless("17b027e298f84498a101bb98402a08be").getOrThrow())
     }
 }

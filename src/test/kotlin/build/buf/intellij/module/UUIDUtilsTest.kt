@@ -14,8 +14,8 @@
 
 package build.buf.intellij.module
 
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
+import org.assertj.core.api.Assertions
+import org.junit.Test
 import java.util.UUID
 
 class UUIDUtilsTest {
@@ -23,8 +23,8 @@ class UUIDUtilsTest {
     fun testDashless() {
         val uuid = UUID.randomUUID()
         val dashless = uuid.toDashless()
-        Assertions.assertFalse(dashless.contains('-'))
-        Assertions.assertEquals(32, dashless.length)
-        Assertions.assertEquals(uuid, UUIDUtils.fromDashless(dashless).getOrThrow())
+        Assertions.assertThat(dashless).doesNotContain("-")
+            .hasSize(32)
+        Assertions.assertThat(UUIDUtils.fromDashless(dashless).getOrThrow()).isEqualTo(uuid)
     }
 }
