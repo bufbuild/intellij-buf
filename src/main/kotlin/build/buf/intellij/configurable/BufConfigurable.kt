@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Buf Technologies, Inc.
+// Copyright 2022-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package build.buf.intellij.configurable
 import build.buf.intellij.BufBundle
 import build.buf.intellij.settings.BufProjectSettingsService
 import build.buf.intellij.settings.bufSettings
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
@@ -46,7 +45,6 @@ class BufConfigurable(
             textFieldWithBrowseButton(
                 browseDialogTitle = BufBundle.message("settings.buf.cli.path"),
                 project = project,
-                fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor(),
             ).columns(COLUMNS_LARGE)
                 .align(Align.FILL)
                 .bindText(state::bufCLIPath)
