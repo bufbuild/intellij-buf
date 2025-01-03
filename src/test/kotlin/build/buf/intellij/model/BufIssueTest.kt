@@ -14,9 +14,8 @@
 
 package build.buf.intellij.model
 
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Test
+import org.assertj.core.api.Assertions
+import org.junit.Test
 
 class BufIssueTest {
     @Test
@@ -33,12 +32,12 @@ class BufIssueTest {
             }
             """.trimIndent(),
         ).getOrNull()
-        assertNotNull(issue!!, "failed to deserialize issue from JSON")
-        assertEquals(1, issue.startLine)
-        assertEquals(2, issue.endLine)
-        assertEquals(3, issue.startColumn)
-        assertEquals(4, issue.endColumn)
-        assertEquals("some type", issue.type)
-        assertEquals("some message", issue.message)
+        Assertions.assertThat(issue!!).isNotNull()
+        Assertions.assertThat(issue.startLine).isEqualTo(1)
+        Assertions.assertThat(issue.endLine).isEqualTo(2)
+        Assertions.assertThat(issue.startColumn).isEqualTo(3)
+        Assertions.assertThat(issue.endColumn).isEqualTo(4)
+        Assertions.assertThat(issue.type).isEqualTo("some type")
+        Assertions.assertThat(issue.message).isEqualTo("some message")
     }
 }

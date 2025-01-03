@@ -18,7 +18,7 @@ import build.buf.intellij.settings.bufSettings
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
-import org.junit.jupiter.api.Assertions
+import org.assertj.core.api.Assertions
 import java.io.File
 import java.nio.file.Path
 
@@ -53,7 +53,7 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
     protected fun findTestDataFolder(): Path {
         val result = Path.of(ClassLoader.getSystemResource("testData").toURI())
             .resolve(basePath)
-        Assertions.assertNotNull(result)
+        Assertions.assertThat(result).isNotNull()
         return result
     }
 

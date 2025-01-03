@@ -16,7 +16,7 @@ package build.buf.intellij.cas
 
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.jupiter.api.Assertions
+import org.assertj.core.api.Assertions
 import java.nio.file.Path
 
 class ManifestTest : BasePlatformTestCase() {
@@ -25,21 +25,21 @@ class ManifestTest : BasePlatformTestCase() {
     fun testManifest() {
         val cachePath = Path.of(ClassLoader.getSystemResource("testData").toURI())
             .resolve("cachev2/v2/module/buf.build/googleapis/googleapis")
-        Assertions.assertNotNull(cachePath)
+        Assertions.assertThat(cachePath).isNotNull()
         val repoPath = LocalFileSystem.getInstance().findFileByNioFile(cachePath)
-        Assertions.assertNotNull(repoPath)
+        Assertions.assertThat(repoPath).isNotNull()
         val commitPath = cachePath.resolve("commits/cc916c31859748a68fd229a3c8d7a2e8")
         val manifestDigest = CASDigest.parse(commitPath.toFile().readText().trim()).getOrThrow()
         val manifestPath = cachePath.resolve("blobs/${manifestDigest.hex.substring(0, 2)}/${manifestDigest.hex.substring(2)}")
         val manifest = Manifest.parse(manifestPath.toFile().readText()).getOrThrow()
-        Assertions.assertFalse(manifest.getFileNodes().isEmpty())
+        Assertions.assertThat(manifest.getFileNodes()).isNotEmpty()
         // Verify round tripping.
-        Assertions.assertEquals(manifest, Manifest.parse(manifest.toString()).getOrThrow())
+        Assertions.assertThat(Manifest.parse(manifest.toString()).getOrThrow()).isEqualTo(manifest)
         val moneyFileNode = manifest.getFileNode("google/type/money.proto")!!
-        Assertions.assertNotNull(moneyFileNode.digest)
-        Assertions.assertNotNull(moneyFileNode.path)
-        Assertions.assertEquals(moneyFileNode.digest, manifest.getDigest(moneyFileNode.path))
-        Assertions.assertNull(manifest.getFileNode("non/existing/file.proto"))
-        Assertions.assertNull(manifest.getDigest("non/existing/file.proto"))
+        Assertions.assertThat(moneyFileNode.digest).isNotNull()
+        Assertions.assertThat(moneyFileNode.path).isNotNull()
+        Assertions.assertThat(manifest.getDigest(moneyFileNode.path)).isEqualTo(moneyFileNode.digest)
+        Assertions.assertThat(manifest.getFileNode("non/existing/file.proto")).isNull()
+        Assertions.assertThat(manifest.getDigest("non/existing/file.proto")).isNull()
     }
 }

@@ -15,7 +15,7 @@
 package build.buf.intellij.completion
 
 import build.buf.intellij.base.BufTestBase
-import org.junit.jupiter.api.Assertions
+import org.assertj.core.api.Assertions
 
 class BufCompletionTest : BufTestBase() {
     override fun getBasePath(): String = "completion"
@@ -23,7 +23,7 @@ class BufCompletionTest : BufTestBase() {
     fun testExternalBufModule() {
         configureByFolder("external", "order.proto")
         val suggestions = myFixture.completeBasic()?.map { it.lookupString }
-        Assertions.assertNotNull(suggestions)
+        Assertions.assertThat(suggestions).isNotNull()
         assertTrue(suggestions?.contains("google/type/money.proto") ?: false)
     }
 }

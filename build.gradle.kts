@@ -40,11 +40,8 @@ repositories {
 dependencies {
     buf("build.buf:buf:${libs.versions.buf.get()}:${osdetector.classifier}@exe")
 
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter)
-    testRuntimeOnly(libs.junit.jupiter.engine)
-    testRuntimeOnly(libs.junit.vintage.engine)
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation(libs.assertj)
+    testImplementation(libs.junit)
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
@@ -60,7 +57,6 @@ dependencies {
         pluginVerifier()
         zipSigner()
         testFramework(TestFrameworkType.Platform)
-        testFramework(TestFrameworkType.JUnit5)
     }
 }
 
@@ -237,7 +233,6 @@ tasks {
         environment("BUF_CACHE_DIR", File(project.projectDir.path + "/src/test/resources/testData/cache").absolutePath)
         systemProperty("NO_FS_ROOTS_ACCESS_CHECK", "true") // weird issue on linux
         systemProperty("BUF_CLI", buf.asPath)
-        useJUnitPlatform()
     }
 
     wrapper {

@@ -15,9 +15,8 @@
 package build.buf.intellij.cas
 
 import org.apache.commons.codec.binary.Hex
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.assertj.core.api.Assertions
+import org.junit.Test
 import java.util.concurrent.ThreadLocalRandom
 
 class FileNodeTest {
@@ -28,9 +27,9 @@ class FileNodeTest {
         val digestStr = "shake256:${Hex.encodeHexString(randomDigestBytes)}"
         val fileNodeStr = "$digestStr  path/to/file.proto"
         val fileNode = FileNode.parse(fileNodeStr).getOrThrow()
-        assertEquals("path/to/file.proto", fileNode.path)
-        assertEquals(digestStr, fileNode.digest.toString())
-        assertEquals(fileNodeStr, fileNode.toString())
+        Assertions.assertThat(fileNode.path).isEqualTo("path/to/file.proto")
+        Assertions.assertThat(fileNode.digest.toString()).isEqualTo(digestStr)
+        Assertions.assertThat(fileNode.toString()).isEqualTo(fileNodeStr)
         val invalidNodeStrs = listOf(
             "$digestStr  ",
             "$digestStr  /file.proto",
@@ -40,7 +39,8 @@ class FileNodeTest {
             "shake256:abc  file.proto",
         )
         for (invalid in invalidNodeStrs) {
-            assertThrows<IllegalArgumentException>("invalid node: $invalid") { FileNode.parse(invalid).getOrThrow() }
+            Assertions.assertThatThrownBy { FileNode.parse(invalid).getOrThrow() }
+                .isInstanceOf(IllegalArgumentException::class.java)
         }
     }
 }

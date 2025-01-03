@@ -1,8 +1,9 @@
 [versions]
 # libraries
 annotations = "26.0.1"
+assertj = "3.27.1"
 buf = "1.48.0"
-junit = "5.11.4"
+junit = "4.13.2"
 
 # plugins
 kotlin = "1.9.25"
@@ -15,11 +16,9 @@ spotless = "6.25.0"
 
 [libraries]
 annotations = { group = "org.jetbrains", name = "annotations", version.ref = "annotations" }
+assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
 buf = { module = "build.buf:buf", version.ref = "buf" }
-junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
-junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
-junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine" }
+junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
 changelog = { id = "org.jetbrains.changelog", version.ref = "changelog" }
