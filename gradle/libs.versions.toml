@@ -2,7 +2,7 @@
 # libraries
 annotations = "26.0.1"
 assertj = "3.27.2"
-buf = "1.48.0"
+buf = "1.49.0"
 junit = "4.13.2"
 
 # plugins
