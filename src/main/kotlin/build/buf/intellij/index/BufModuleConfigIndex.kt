@@ -63,9 +63,11 @@ class BufModuleConfigIndex : ScalarIndexExtension<BufModuleConfig>() {
                     // NOTE: No support for roots/excludes. Unsupported so far in the plugin and users should move to v1/v2.
                     result.add(BufModuleConfig(bufYamlFile.url, modulePath.url, moduleFullName = name))
                 }
+
                 "v1" -> {
                     result.add(BufModuleConfig(bufYamlFile.url, modulePath.url, moduleFullName = name))
                 }
+
                 "v2" -> {
                     val modules = YAMLUtil.getQualifiedKeyInFile(yamlFile, "modules")?.value as? YAMLSequence
                     if (modules != null && modules.items.isNotEmpty()) {
@@ -81,6 +83,7 @@ class BufModuleConfigIndex : ScalarIndexExtension<BufModuleConfig>() {
                         result.add(BufModuleConfig(bufYamlFile.url, modulePath.url, moduleFullName = name))
                     }
                 }
+
                 else -> return@DataIndexer emptyMap()
             }
             return@DataIndexer result.associateWith { null }
