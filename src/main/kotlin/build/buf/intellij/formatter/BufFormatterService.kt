@@ -34,8 +34,7 @@ import java.util.stream.Collectors
 class BufFormatterService : AsyncDocumentFormattingService() {
     override fun getFeatures(): Set<FormattingService.Feature> = emptySet()
 
-    override fun canFormat(file: PsiFile): Boolean =
-        file.isProtobufFile() && file.project.bufSettings.state.useBufFormatter && getFormattingReason() == FormattingReason.ReformatCode
+    override fun canFormat(file: PsiFile): Boolean = file.isProtobufFile() && file.project.bufSettings.state.useBufFormatter && getFormattingReason() == FormattingReason.ReformatCode
 
     override fun createFormattingTask(request: AsyncFormattingRequest): FormattingTask? {
         val context = request.context
@@ -99,11 +98,10 @@ class BufFormatterService : AsyncDocumentFormattingService() {
             Implicit,
         }
 
-        private fun getFormattingReason(): FormattingReason =
-            when (CommandProcessor.getInstance().currentCommandName) {
-                ReformatCodeProcessor.getCommandName() -> FormattingReason.ReformatCode
-                FormatterUtil.getReformatBeforeCommitCommandName() -> FormattingReason.ReformatCodeBeforeCommit
-                else -> FormattingReason.Implicit
-            }
+        private fun getFormattingReason(): FormattingReason = when (CommandProcessor.getInstance().currentCommandName) {
+            ReformatCodeProcessor.getCommandName() -> FormattingReason.ReformatCode
+            FormatterUtil.getReformatBeforeCommitCommandName() -> FormattingReason.ReformatCodeBeforeCommit
+            else -> FormattingReason.Implicit
+        }
     }
 }

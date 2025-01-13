@@ -91,6 +91,7 @@ internal class ModuleCacheV2(env: Map<String, String> = System.getenv()) : BaseM
                     -> {
                         // This is expected if we raced with another process
                     }
+
                     else -> {
                         // This can happen in a race - DirectoryNotEmpty
                         val message = e.message ?: ""

@@ -26,6 +26,5 @@ import java.nio.file.Paths
 internal class ModuleCacheV1(env: Map<String, String> = System.getenv()) : BaseModuleCache(env) {
     override fun moduleDataRoot(): Path = Paths.get("$bufCacheDir/v1/module/data")
 
-    override fun moduleDataPathForModuleKey(key: ModuleKey): Path =
-        moduleDataRoot().resolve("${key.moduleFullName}/${key.commitID.toDashless()}")
+    override fun moduleDataPathForModuleKey(key: ModuleKey): Path = moduleDataRoot().resolve("${key.moduleFullName}/${key.commitID.toDashless()}")
 }
