@@ -2,7 +2,7 @@
 # libraries
 annotations = "26.0.1"
 assertj = "3.27.2"
-buf = "1.48.0"
+buf = "1.49.0"
 junit = "4.13.2"
 
 # plugins
@@ -10,7 +10,7 @@ kotlin = "1.9.25"
 changelog = "2.2.1"
 intelliJPlatform = "2.2.1"
 qodana = "2024.3.4"
-kover = "0.9.0"
+kover = "0.9.1"
 osdetector = "1.7.3"
 spotless = "7.0.1"
 
