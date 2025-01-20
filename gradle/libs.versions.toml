@@ -12,7 +12,7 @@ intelliJPlatform = "2.2.1"
 qodana = "2024.3.4"
 kover = "0.9.1"
 osdetector = "1.7.3"
-spotless = "7.0.1"
+spotless = "7.0.2"
 
 [libraries]
 annotations = { group = "org.jetbrains", name = "annotations", version.ref = "annotations" }
