@@ -19,13 +19,12 @@ import build.buf.intellij.config.BufConfig
 import build.buf.intellij.index.BufIndexes
 import build.buf.intellij.module.ModuleKey
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.smartReadAction
 import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.RootsChangeRescanningInfo
 import com.intellij.openapi.roots.ex.ProjectRootManagerEx
-import com.intellij.openapi.startup.StartupActivity
-import com.intellij.openapi.util.Computable
+import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.EmptyRunnable
 import com.intellij.openapi.vfs.VirtualFileManager
@@ -39,9 +38,9 @@ import org.jetbrains.yaml.psi.YAMLSequence
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
-class RefreshAdditionalBufRoots : StartupActivity {
+class RefreshAdditionalBufRoots : ProjectActivity {
 
-    override fun runActivity(project: Project) {
+    override suspend fun execute(project: Project) {
         project.messageBus.connect().subscribe(
             VirtualFileManager.VFS_CHANGES,
             object : BulkFileListener {
@@ -73,14 +72,12 @@ class RefreshAdditionalBufRoots : StartupActivity {
             // TODO: This still can return stale data after VFS changes.
             // Unclear how to ensure we run this after indexing has completed.
             // There don't appear to be any message bus changes that fire when indexing completes.
-            val projectModuleKeys = DumbService.getInstance(project).runReadActionInSmartMode(
-                Computable {
+            val projectModuleKeys = runBlocking {
+                return@runBlocking smartReadAction(project) {
                     BufIndexes.getProjectModuleKeys(project)
-                },
-            )
-            for (moduleKey in projectModuleKeys) {
-                newModuleKeys.add(moduleKey)
+                }
             }
+            newModuleKeys.addAll(projectModuleKeys)
             if (existingModuleKeys != newModuleKeys) {
                 project.putUserData(BufModuleKeysUserData.KEY, BufModuleKeysUserData(newModuleKeys))
                 ApplicationManager.getApplication().invokeLater {
@@ -99,8 +96,8 @@ class RefreshAdditionalBufRoots : StartupActivity {
 
     private fun buildAllModules(project: Project) {
         val fs = VirtualFileManager.getInstance()
-        val moduleDirsToBuild = DumbService.getInstance(project).runReadActionInSmartMode(
-            Computable {
+        val moduleDirsToBuild = runBlocking {
+            smartReadAction(project) {
                 val moduleDirs = arrayListOf<Path>()
                 for (bufModuleConfig in BufIndexes.getProjectBufModuleConfigs(project)) {
                     val bufYaml = fs.findFileByUrl(bufModuleConfig.bufYamlUrl) ?: continue
@@ -115,8 +112,8 @@ class RefreshAdditionalBufRoots : StartupActivity {
                     moduleDirs.add(bufDir.toNioPath())
                 }
                 moduleDirs
-            },
-        )
+            }
+        }
         for (moduleDir in moduleDirsToBuild) {
             runBlocking {
                 val disposable = Disposer.newDisposable()
