@@ -30,7 +30,7 @@ enum class CASDigestType(private val digestType: String, val length: Int) {
          * Parses a [CASDigestType] from its [CASDigestType.toString] format.
          */
         fun parse(digest: String): Result<CASDigestType> = runCatching {
-            val digestType = values().find { it.digestType == digest }
+            val digestType = entries.find { it.digestType == digest }
             require(digestType != null) { "unknown digest type: $digest" }
             digestType
         }
