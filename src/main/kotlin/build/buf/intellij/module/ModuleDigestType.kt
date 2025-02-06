@@ -35,7 +35,7 @@ enum class ModuleDigestType(private val digestType: String) {
          * Parses a [ModuleDigestType] from its [ModuleDigestType.toString] format.
          */
         fun parse(digest: String): Result<ModuleDigestType> = runCatching {
-            val digestType = values().find { it.digestType == digest }
+            val digestType = entries.find { it.digestType == digest }
             require(digestType != null) { "unknown digest type: $digest" }
             digestType
         }
