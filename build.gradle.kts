@@ -117,7 +117,11 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            recommended()
+            select {
+                // Temporary workaround for https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/1882
+                // The Kanro optional dependency is causing failures to resolve required plugins in EAP 2025 tests.
+                untilBuild = providers.gradleProperty("pluginUntilVerifyBuild")
+            }
         }
         freeArgs = listOf(
             "-mute",
