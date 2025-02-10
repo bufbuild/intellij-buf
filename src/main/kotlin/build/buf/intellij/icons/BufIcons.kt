@@ -20,7 +20,7 @@ import com.intellij.util.IconUtil
 
 object BufIcons {
     @JvmField
-    val Logo = IconLoader.getIcon("/icons/logo.png", javaClass)
+    val Logo = IconLoader.getIcon("/icons/logo.svg", javaClass)
 
     @JvmField
     val LogoGrayscale = IconUtil.desaturate(Logo)
