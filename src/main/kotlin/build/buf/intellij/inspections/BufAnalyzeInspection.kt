@@ -18,17 +18,16 @@ import build.buf.intellij.BufBundle
 import build.buf.intellij.BufPluginService
 import build.buf.intellij.annotator.BufAnalyzeResult
 import build.buf.intellij.annotator.BufAnalyzeUtils
-import build.buf.intellij.annotator.createAnnotationsForFile
+import build.buf.intellij.annotator.addHighlightsForFile
 import build.buf.intellij.annotator.createDisposableOnAnyPsiChange
 import build.buf.intellij.vendor.isProtobufFile
-import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
+import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.codeInspection.GlobalInspectionContext
 import com.intellij.codeInspection.GlobalSimpleInspectionTool
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.ProblemDescriptionsProcessor
 import com.intellij.codeInspection.ProblemDescriptorUtil
 import com.intellij.codeInspection.ProblemsHolder
-import com.intellij.lang.annotation.AnnotationSession
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
@@ -71,16 +70,13 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
 
         val result = ApplicationManager.getApplication().executeOnPooledThread<BufAnalyzeResult?> {
             lazyResult.value
-        }.get()
+        }.get() ?: return
 
-        @Suppress("UnstableApiUsage", "DEPRECATION")
-        val annotationHolder = AnnotationHolderImpl(AnnotationSession(file), false)
-        @Suppress("UnstableApiUsage")
-        annotationHolder.runAnnotatorWithContext(file) { _, holder ->
-            holder.createAnnotationsForFile(file, result)
-        }
+        val highlightInfos = mutableListOf<HighlightInfo>()
+        highlightInfos.addHighlightsForFile(file, result)
 
-        for (descriptor in ProblemDescriptorUtil.convertToProblemDescriptors(annotationHolder, file)) {
+        val problemDescriptors = highlightInfos.mapNotNull { ProblemDescriptorUtil.toProblemDescriptor(file, it) }
+        for (descriptor in problemDescriptors) {
             val element = descriptor.psiElement ?: continue
             val refElement =
                 globalContext.refManager.getReference(element) ?: globalContext.refManager.getReference(file)
