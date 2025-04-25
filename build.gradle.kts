@@ -117,11 +117,7 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            select {
-                // Temporary workaround for https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/1882
-                // The Kanro optional dependency is causing failures to resolve required plugins in EAP 2025 tests.
-                untilBuild = providers.gradleProperty("pluginUntilVerifyBuild")
-            }
+            recommended()
         }
         freeArgs = listOf(
             "-mute",
@@ -164,25 +160,6 @@ spotless {
         )
         target("**/*.kts")
     }
-}
-
-fun bufOS(): String = when (osdetector.os) {
-    "osx" -> "Darwin"
-    "linux" -> "Linux"
-    "windows" -> "Windows"
-    else -> osdetector.os
-}
-
-fun bufArch(): String {
-    return when (osdetector.arch) {
-        "aarch_64" -> "arm64"
-        else -> return osdetector.arch
-    }
-}
-
-fun bufExt(): String = when (osdetector.os) {
-    "windows" -> ".exe"
-    else -> ""
 }
 
 tasks {

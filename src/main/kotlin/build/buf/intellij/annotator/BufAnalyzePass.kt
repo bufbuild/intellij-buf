@@ -23,15 +23,13 @@ import com.intellij.codeHighlighting.DirtyScopeTrackingHighlightingPassFactory
 import com.intellij.codeHighlighting.MainHighlightingPassFactory
 import com.intellij.codeHighlighting.TextEditorHighlightingPass
 import com.intellij.codeHighlighting.TextEditorHighlightingPassRegistrar
-import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
 import com.intellij.codeInsight.daemon.impl.DaemonCodeAnalyzerEx
 import com.intellij.codeInsight.daemon.impl.FileStatusMap
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.codeInsight.daemon.impl.HighlightInfoProcessor
+import com.intellij.codeInsight.daemon.impl.HighlightInfoType
 import com.intellij.codeInsight.daemon.impl.UpdateHighlightersUtil
 import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
-import com.intellij.lang.annotation.AnnotationHolder
-import com.intellij.lang.annotation.AnnotationSession
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -69,8 +67,7 @@ class BufAnalyzePass(
     DumbAware {
     private val appService = service<BufPluginService>()
 
-    @Suppress("UnstableApiUsage", "DEPRECATION")
-    private val annotationHolder: AnnotationHolderImpl = AnnotationHolderImpl(AnnotationSession(file), false)
+    private val highlights = mutableListOf<HighlightInfo>()
 
     @Volatile
     private var annotationInfo: Lazy<BufAnalyzeResult?>? = null
@@ -80,7 +77,7 @@ class BufAnalyzePass(
     private var disposable: Disposable = appService
 
     override fun doCollectInformation(progress: ProgressIndicator) {
-        annotationHolder.clear()
+        highlights.clear()
         if (!file.isProtobufFile()) return
         if (!myProject.bufSettings.state.backgroundLintingEnabled && !myProject.bufSettings.state.backgroundBreakingEnabled) return
 
@@ -101,9 +98,7 @@ class BufAnalyzePass(
             annotationResult
         }.get() ?: return emptyList()
         doApply(bufAnalyzeResult)
-        return annotationHolder.map {
-            HighlightInfo.fromAnnotation(it)
-        }
+        return highlights
     }
 
     override fun doApplyInformationToEditor() {
@@ -147,10 +142,7 @@ class BufAnalyzePass(
     private fun doApply(annotationResult: BufAnalyzeResult) {
         if (!file.isProtobufFile() || !file.isValid) return
         try {
-            @Suppress("UnstableApiUsage")
-            annotationHolder.runAnnotatorWithContext(file) { _, holder ->
-                holder.createAnnotationsForFile(file, annotationResult)
-            }
+            highlights.addHighlightsForFile(file, annotationResult)
         } catch (t: Throwable) {
             if (t is ProcessCanceledException) throw t
             LOG.error(t)
@@ -172,9 +164,6 @@ class BufAnalyzePass(
             DaemonCodeAnalyzerEx.getInstanceEx(myProject).fileStatusMap.markFileUpToDate(document, id)
         }
     }
-
-    private val highlights: List<HighlightInfo>
-        get() = annotationHolder.map(HighlightInfo::fromAnnotation)
 
     companion object {
         private val LOG: Logger = logger<BufAnalyzePass>()
@@ -261,7 +250,7 @@ fun MessageBus.createDisposableOnAnyPsiChange(): Disposable {
     return disposable
 }
 
-fun AnnotationHolder.createAnnotationsForFile(
+fun MutableList<HighlightInfo>.addHighlightsForFile(
     file: PsiFile,
     annotationResult: BufAnalyzeResult,
 ) {
@@ -273,14 +262,16 @@ fun AnnotationHolder.createAnnotationsForFile(
         .filter { it.path == file.virtualFile.toNioPath().relativeToOrNull(wd)?.toString() }
     for (issue in filteredIssues) {
         val severity = if (issue.isCompileError) HighlightSeverity.ERROR else HighlightSeverity.WARNING
-        val annotationBuilder = newAnnotation(severity, issue.message)
+        val type = if (severity == HighlightSeverity.ERROR) HighlightInfoType.ERROR else HighlightInfoType.WARNING
+        val highlightBuilder = HighlightInfo.newHighlightInfo(type)
+            .severity(severity)
+            .descriptionAndTooltip(issue.message)
             // TODO: Should handle file-level lint warnings here: https://github.com/bufbuild/intellij-buf/issues/215
             .range(issue.toTextRange(doc) ?: continue)
             .problemGroup { issue.type }
             .needsUpdateOnTyping(true)
-            .withFix(IgnoreBufIssueQuickFix(issue.type))
-
-        annotationBuilder.create()
+            .registerFix(IgnoreBufIssueQuickFix(issue.type), null, null, null, null)
+        highlightBuilder.create()?.let(::add)
     }
 }
 
