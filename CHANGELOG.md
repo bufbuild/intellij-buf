@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-04-25
+
+- Update Buf logo by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/310
+- Fix linting in IntelliJ plugin by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/322
+
 ## [0.5.0] - 2025-02-07
 
 - Support 2025 EAP builds.
@@ -73,7 +78,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/bufbuild/intellij-buf/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bufbuild/intellij-buf/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/bufbuild/intellij-buf/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/bufbuild/intellij-buf/compare/v0.4.0...v0.4.1
