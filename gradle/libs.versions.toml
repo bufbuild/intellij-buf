@@ -1,7 +1,7 @@
 [versions]
 # libraries
 assertj = "3.27.3"
-buf = "1.50.0"
+buf = "1.52.1"
 junit = "4.13.2"
 
 # plugins
@@ -11,7 +11,7 @@ intelliJPlatform = "2.5.0"
 qodana = "2024.3.4"
 kover = "0.9.1"
 osdetector = "1.7.3"
-spotless = "7.0.2"
+spotless = "7.0.3"
 
 [libraries]
 assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
