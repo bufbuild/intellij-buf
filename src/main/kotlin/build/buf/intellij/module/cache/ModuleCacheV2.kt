@@ -23,6 +23,7 @@ import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.util.EnvironmentUtil
 import com.intellij.util.io.delete
 import java.io.IOException
 import java.nio.file.DirectoryNotEmptyException
@@ -40,7 +41,7 @@ import kotlin.io.path.isDirectory
  * This differs from v1/v3 in that the files are stored as a content-addressable storage (CAS).
  * To work with the IDE, we need to copy the files to a file layout based on the paths within a module.
  */
-internal class ModuleCacheV2(env: Map<String, String> = System.getenv()) : BaseModuleCache(env) {
+internal class ModuleCacheV2(env: Map<String, String> = EnvironmentUtil.getEnvironmentMap()) : BaseModuleCache(env) {
 
     override fun moduleDataRoot(): Path = Path.of(SYSTEM_BUF_MOD_CACHE)
 

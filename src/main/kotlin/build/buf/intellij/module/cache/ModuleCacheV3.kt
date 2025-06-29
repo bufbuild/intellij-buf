@@ -17,13 +17,14 @@ package build.buf.intellij.module.cache
 import build.buf.intellij.module.ModuleDigestType
 import build.buf.intellij.module.ModuleKey
 import build.buf.intellij.module.toDashless
+import com.intellij.util.EnvironmentUtil
 import java.nio.file.Path
 
 /**
  * Cache implementation for the v3 Buf CLI cache layout.
  * Modules are cached to `${BUF_CACHE_DIR}/v3/modules/${digestType}/${registry}/${owner}/${name}/${commit}/files`.
  */
-internal class ModuleCacheV3(env: Map<String, String> = System.getenv()) : BaseModuleCache(env) {
+internal class ModuleCacheV3(env: Map<String, String> = EnvironmentUtil.getEnvironmentMap()) : BaseModuleCache(env) {
     override fun moduleDataRoot(): Path = Path.of("$bufCacheDir/v3/modules")
 
     override fun moduleDataPathForModuleKey(key: ModuleKey): Path {

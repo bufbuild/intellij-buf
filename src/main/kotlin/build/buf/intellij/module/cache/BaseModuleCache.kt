@@ -15,9 +15,10 @@
 package build.buf.intellij.module.cache
 
 import com.intellij.openapi.util.SystemInfoRt
+import com.intellij.util.EnvironmentUtil
 import com.intellij.util.SystemProperties
 
-internal abstract class BaseModuleCache(env: Map<String, String> = System.getenv()) : ModuleCache {
+internal abstract class BaseModuleCache(env: Map<String, String> = EnvironmentUtil.getEnvironmentMap()) : ModuleCache {
 
     protected val bufCacheDir by lazy { getBufCacheDir(env) }
 
