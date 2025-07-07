@@ -5,7 +5,6 @@
 ## [0.6.1] - 2025-07-07
 
 - Use EnvironmentUtil helpers for module cache by @dillon-giacoppo in https://github.com/bufbuild/intellij-buf/pull/334
-- @dillon-giacoppo made their first contribution in https://github.com/bufbuild/intellij-buf/pull/334
 
 ## [0.6.0] - 2025-04-25
 
