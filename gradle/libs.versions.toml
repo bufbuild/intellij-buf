@@ -1,6 +1,6 @@
 [versions]
 # libraries
-assertj = "3.27.4"
+assertj = "3.27.6"
 buf = "1.57.2"
 junit = "4.13.2"
 
