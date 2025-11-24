@@ -11,7 +11,7 @@ intelliJPlatform = "2.10.4"
 qodana = "2025.2.1"
 kover = "0.9.3"
 osdetector = "1.7.3"
-spotless = "8.0.0"
+spotless = "8.1.0"
 
 [libraries]
 assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
