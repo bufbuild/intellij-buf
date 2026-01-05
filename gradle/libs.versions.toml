@@ -1,7 +1,7 @@
 [versions]
 # libraries
 assertj = "3.27.6"
-buf = "1.61.0"
+buf = "1.62.1"
 junit = "4.13.2"
 
 # plugins
