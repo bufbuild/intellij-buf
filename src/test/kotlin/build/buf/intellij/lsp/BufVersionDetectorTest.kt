@@ -84,6 +84,57 @@ class BufVersionDetectorTest {
         assertThat(result).isTrue()
     }
 
+    @Test
+    fun testVersionParsing() {
+        val version = BufVersion.parse("1.40.0")
+        assertThat(version).isNotNull()
+        assertThat(version!!.major).isEqualTo(1)
+        assertThat(version.minor).isEqualTo(40)
+        assertThat(version.patch).isEqualTo(0)
+    }
+
+    @Test
+    fun testVersionParsingWithV() {
+        val version = BufVersion.parse("v1.40.0")
+        assertThat(version).isNotNull()
+        assertThat(version!!.major).isEqualTo(1)
+    }
+
+    @Test
+    fun testVersionComparison_equal() {
+        val v1 = BufVersion.parse("1.40.0")
+        val v2 = BufVersion.parse("1.40.0")
+        assertThat(v1).isEqualTo(v2)
+    }
+
+    @Test
+    fun testVersionComparison_greaterMajor() {
+        val v1 = BufVersion.parse("2.0.0")!!
+        val v2 = BufVersion.parse("1.99.99")!!
+        assertThat(v1 > v2).isTrue()
+    }
+
+    @Test
+    fun testVersionComparison_greaterMinor() {
+        val v1 = BufVersion.parse("1.41.0")!!
+        val v2 = BufVersion.parse("1.40.99")!!
+        assertThat(v1 > v2).isTrue()
+    }
+
+    @Test
+    fun testVersionComparison_greaterPatch() {
+        val v1 = BufVersion.parse("1.40.1")!!
+        val v2 = BufVersion.parse("1.40.0")!!
+        assertThat(v1 > v2).isTrue()
+    }
+
+    @Test
+    fun testVersionComparison_lessThan() {
+        val v1 = BufVersion.parse("1.39.0")!!
+        val v2 = BufVersion.parse("1.40.0")!!
+        assertThat(v1 < v2).isTrue()
+    }
+
     /**
      * Helper method to test the private isVersionSupported method using reflection.
      */

@@ -140,27 +140,9 @@ object BufVersionDetector {
     }
 
     private fun isVersionSupported(versionOutput: String): Boolean {
-        // Parse version from output like "1.40.0" or "v1.40.0"
-        val versionRegex = Regex("""v?(\d+)\.(\d+)\.(\d+)""")
-        val match = versionRegex.find(versionOutput) ?: return false
-
-        val (major, minor, patch) = match.destructured
-        val version = Triple(major.toInt(), minor.toInt(), patch.toInt())
-
-        // Parse minimum version
-        val minMatch = versionRegex.find(MINIMUM_LSP_VERSION) ?: return false
-        val (minMajor, minMinor, minPatch) = minMatch.destructured
-        val minVersion = Triple(minMajor.toInt(), minMinor.toInt(), minPatch.toInt())
-
-        // Compare versions
-        return when {
-            version.first > minVersion.first -> true
-            version.first < minVersion.first -> false
-            version.second > minVersion.second -> true
-            version.second < minVersion.second -> false
-            version.third >= minVersion.third -> true
-            else -> false
-        }
+        val version = BufVersion.parse(versionOutput) ?: return false
+        val minVersion = BufVersion.parse(MINIMUM_LSP_VERSION) ?: return false
+        return version >= minVersion
     }
 
     /**
@@ -192,5 +174,33 @@ object BufVersionDetector {
             .getServersForProvider(build.buf.intellij.lsp.BufLspServerSupportProvider::class.java)
 
         return lspServers.isNotEmpty()
+    }
+}
+
+/**
+ * Represents a semantic version for comparison.
+ * Internal visibility allows testing without reflection.
+ */
+internal data class BufVersion(
+    val major: Int,
+    val minor: Int,
+    val patch: Int,
+) : Comparable<BufVersion> {
+
+    override fun compareTo(other: BufVersion): Int =
+        compareValuesBy(this, other, { it.major }, { it.minor }, { it.patch })
+
+    companion object {
+        private val VERSION_REGEX = Regex("""v?(\d+)\.(\d+)\.(\d+)""")
+
+        /**
+         * Parses a version string like "1.40.0" or "v1.40.0".
+         * Returns null if the string cannot be parsed.
+         */
+        fun parse(versionString: String): BufVersion? {
+            val match = VERSION_REGEX.find(versionString) ?: return null
+            val (major, minor, patch) = match.destructured
+            return BufVersion(major.toInt(), minor.toInt(), patch.toInt())
+        }
     }
 }
