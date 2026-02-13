@@ -82,20 +82,8 @@ class BufConfigurable(
             row {
                 lspEnabled = checkBox("Use Language Server (buf lsp)")
                     .bindSelected(state::useLspServer)
-                    .comment("Provides enhanced IDE features including faster diagnostics, code completion, and go-to-definition. Requires buf v1.40+")
+                    .comment("Provides enhanced IDE features including faster diagnostics, code completion, and go-to-definition. Requires buf v1.59.0+")
             }
-            indent {
-                row {
-                    checkBox("Enable LSP debug logging")
-                        .bindSelected(state::lspServerDebug)
-                        .comment("Enables verbose logging for troubleshooting LSP issues")
-                }
-                row {
-                    checkBox("Fallback to CLI diagnostics if LSP unavailable")
-                        .bindSelected(state::fallbackToCliDiagnostics)
-                        .comment("Automatically use CLI-based diagnostics when LSP server is unavailable or fails")
-                }
-            }.enabledIf(lspEnabled.selected)
         }
     }
 
@@ -105,8 +93,6 @@ class BufConfigurable(
         state.backgroundLintingEnabled = project.bufSettings.state.backgroundLintingEnabled
         state.backgroundBreakingEnabled = project.bufSettings.state.backgroundBreakingEnabled
         state.useLspServer = project.bufSettings.state.useLspServer
-        state.lspServerDebug = project.bufSettings.state.lspServerDebug
-        state.fallbackToCliDiagnostics = project.bufSettings.state.fallbackToCliDiagnostics
         super.reset()
     }
 

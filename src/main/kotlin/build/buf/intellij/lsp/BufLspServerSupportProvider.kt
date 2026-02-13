@@ -97,7 +97,7 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
     private fun showLspUnavailableNotification(project: Project) {
         val versionInfo = BufVersionDetector.getVersionInfo(project)
         val message = if (versionInfo != null) {
-            "Buf Language Server requires buf v1.43+. Current version: ${versionInfo.version}. " +
+            "Buf Language Server requires buf v1.59.0+. Current version: ${versionInfo.version}. " +
                 "Falling back to CLI-based diagnostics."
         } else {
             "Buf CLI not found or version could not be detected. " +

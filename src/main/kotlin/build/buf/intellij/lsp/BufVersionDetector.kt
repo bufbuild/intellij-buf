@@ -35,9 +35,7 @@ object BufVersionDetector {
     private val log = logger<BufVersionDetector>()
 
     // Version history for buf LSP:
-    // - 1.43.0+: LSP available via `buf beta lsp` (beta command)
-    // - 1.59.0+: LSP available via `buf lsp serve` (stable, non-beta)
-    private const val MINIMUM_BETA_LSP_VERSION = "1.43.0"
+    // - 1.59.0+: LSP available via `buf lsp serve`
     private const val MINIMUM_LSP_VERSION = "1.59.0"
 
     private val VERSION_CACHE_KEY = Key.create<VersionInfo>("buf.version.info")
@@ -45,7 +43,6 @@ object BufVersionDetector {
     data class VersionInfo(
         val version: String,
         val supportsLsp: Boolean,
-        val useBetaCommand: Boolean, // true if should use 'buf beta lsp', false for 'buf lsp serve'
     )
 
     /**
@@ -90,18 +87,16 @@ object BufVersionDetector {
         }
 
         val parsedVersion = BufVersion.parse(version)
-        val minBetaVersion = BufVersion.parse(MINIMUM_BETA_LSP_VERSION)
-        val minStableVersion = BufVersion.parse(MINIMUM_LSP_VERSION)
+        val minVersion = BufVersion.parse(MINIMUM_LSP_VERSION)
 
-        val supportsLsp = parsedVersion != null && minBetaVersion != null && parsedVersion >= minBetaVersion
-        val useBetaCommand = parsedVersion != null && minStableVersion != null && parsedVersion < minStableVersion
+        val supportsLsp = parsedVersion != null && minVersion != null && parsedVersion >= minVersion
 
-        val info = VersionInfo(version, supportsLsp, useBetaCommand)
+        val info = VersionInfo(version, supportsLsp)
 
         // Cache the result
         project.putUserData(VERSION_CACHE_KEY, info)
 
-        log.info("Detected buf version: $version, LSP supported: $supportsLsp, use beta: $useBetaCommand")
+        log.info("Detected buf version: $version, LSP supported: $supportsLsp")
         return info
     }
 
@@ -197,7 +192,7 @@ internal data class BufVersion(
     override fun compareTo(other: BufVersion): Int = compareValuesBy(this, other, { it.major }, { it.minor }, { it.patch })
 
     companion object {
-        private val VERSION_REGEX = Regex("""v?(\d+)\.(\d+)\.(\d+)""")
+        private val VERSION_REGEX = Regex("""^v?(\d+)\.(\d+)\.(\d+)$""")
 
         /**
          * Parses a version string like "1.40.0" or "v1.40.0".

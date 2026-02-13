@@ -2,15 +2,6 @@
 
 ## [Unreleased]
 
-### Added
-- Language Server Protocol (LSP) support for enhanced IDE features (requires buf v1.43.0+)
-  - Fast diagnostics, go-to-definition, code completion, hover documentation, and find references
-  - Automatic fallback to CLI diagnostics when LSP unavailable
-  - Configurable in Settings → Tools → Buf (enable/disable LSP, debug logging, fallback behavior)
-
-### Changed
-- CLI diagnostics automatically disabled when LSP is running to avoid duplication
-
 ## [0.6.1] - 2025-07-07
 
 - Use EnvironmentUtil helpers for module cache by @dillon-giacoppo in https://github.com/bufbuild/intellij-buf/pull/334

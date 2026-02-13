@@ -28,7 +28,7 @@ import java.io.File
 /**
  * LSP server descriptor for the Buf Language Server.
  * Manages the lifecycle of the buf LSP server process.
- * Uses `buf beta lsp` for buf 1.43.0-1.58.x and `buf lsp serve` for buf 1.59.0+.
+ * Uses `buf lsp serve` for buf 1.59.0+.
  */
 class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(project, "Buf") {
     private val log = logger<BufLspServerDescriptor>()
@@ -52,28 +52,10 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         val bufExe = BufCLIUtils.getConfiguredBufExecutable(project)
             ?: throw IllegalStateException("Buf CLI not found. Please configure the Buf CLI path in settings.")
 
-        // Determine which command to use based on buf version
-        val versionInfo = BufVersionDetector.getVersionInfo(project, checkIfMissing = false)
-        val useBetaCommand = versionInfo?.useBetaCommand ?: false
-
         val cmd = GeneralCommandLine()
         cmd.exePath = bufExe.absolutePath
-
-        // Use 'buf beta lsp' for 1.43.0-1.58.x, 'buf lsp serve' for 1.59.0+
-        if (useBetaCommand) {
-            cmd.addParameter("beta")
-            cmd.addParameter("lsp")
-            log.info("Using 'buf beta lsp' for version ${versionInfo?.version}")
-        } else {
-            cmd.addParameter("lsp")
-            cmd.addParameter("serve")
-            log.info("Using 'buf lsp serve' for version ${versionInfo?.version}")
-        }
-
-        // Add debug flag if enabled in settings
-        if (project.bufSettings.state.lspServerDebug) {
-            cmd.addParameter("--debug")
-        }
+        cmd.addParameter("lsp")
+        cmd.addParameter("serve")
 
         // Set working directory to buf workspace root
         val projectBasePath = project.basePath
@@ -81,6 +63,7 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
             cmd.withWorkDirectory(File(projectBasePath))
         }
 
+        log.info("Starting buf lsp serve")
         return cmd
     }
 
