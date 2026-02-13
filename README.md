@@ -6,26 +6,18 @@
 
 <!-- Plugin description -->
 This plugin extends Protocol Buffer support in the IDE by integrating with [Buf](https://buf.build).
+It provides fast diagnostics, go-to-definition, code completion, hover documentation, and find references
+through the [Buf Language Server](https://buf.build/docs/cli/editors-lsp/)
+(requires buf CLI v1.43.0+ and IntelliJ 2025.1+).
+The plugin automatically falls back to CLI-based diagnostics when the language server is unavailable.
 
 Buf CLI provides advanced linting and detection of potentially breaking changes in your Proto messages and services.
-Integration with Buf Schema Registry helps manage, discover and share API definitions.
+The plugin also supports code formatting with `buf format`,
+background linting with `buf lint`,
+breaking change detection with `buf breaking`,
+and integration with Buf Schema Registry to help manage, discover and share API definitions.
+Configure all features in **Settings → Tools → Buf**.
 <!-- Plugin description end -->
-
-## Features
-
-### Language Server Protocol (LSP) Support
-
-Integrates with [Buf Language Server](https://buf.build/docs/cli/editors-lsp/) for enhanced IDE features:
-- Fast diagnostics, go-to-definition, code completion, hover docs, and find references
-- Requires buf CLI v1.43.0+ and IntelliJ 2025.1+
-- Configure in **Settings → Tools → Buf**
-- Automatic fallback to CLI diagnostics when unavailable
-
-### CLI-Based Features
-
-- Background linting (`buf lint`) and breaking change detection (`buf breaking`)
-- Code formatting with `buf format`
-- BSR module resolution and indexing
 
 ## Development Guide
 
