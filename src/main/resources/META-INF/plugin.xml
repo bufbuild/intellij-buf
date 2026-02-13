@@ -10,6 +10,8 @@
     <depends optional="true" config-file="kanro-protobuf-plugin-support.xml">io.kanro.idea.plugin.protobuf</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="Buf" displayType="BALLOON"/>
+
         <postStartupActivity implementation="build.buf.intellij.resolve.RefreshAdditionalBufRoots"/>
         <postStartupActivity implementation="build.buf.intellij.lsp.BufLspStartupActivity"/>
         <fileTypeOverrider implementation="build.buf.intellij.BufLockFileTypeOverrider"/>
