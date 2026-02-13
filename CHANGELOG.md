@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- Language Server Protocol (LSP) support via `buf lsp serve` for enhanced IDE features (requires buf v1.40.0+)
+- Language Server Protocol (LSP) support for enhanced IDE features (requires buf v1.43.0+)
   - Fast diagnostics, go-to-definition, code completion, hover documentation, and find references
   - Automatic fallback to CLI diagnostics when LSP unavailable
   - Configurable in Settings → Tools → Buf (enable/disable LSP, debug logging, fallback behavior)

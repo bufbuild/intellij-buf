@@ -32,13 +32,20 @@ import java.util.concurrent.atomic.AtomicReference
  * Caches results per project to avoid repeated executions.
  */
 object BufVersionDetector {
-    private val LOG = logger<BufVersionDetector>()
-    private const val MINIMUM_LSP_VERSION = "1.40.0"
+    private val log = logger<BufVersionDetector>()
+
+    // Version history for buf LSP:
+    // - 1.43.0+: LSP available via `buf beta lsp` (beta command)
+    // - 1.59.0+: LSP available via `buf lsp serve` (stable, non-beta)
+    private const val MINIMUM_BETA_LSP_VERSION = "1.43.0"
+    private const val MINIMUM_LSP_VERSION = "1.59.0"
+
     private val VERSION_CACHE_KEY = Key.create<VersionInfo>("buf.version.info")
 
     data class VersionInfo(
         val version: String,
         val supportsLsp: Boolean,
+        val useBetaCommand: Boolean, // true if should use 'buf beta lsp', false for 'buf lsp serve'
     )
 
     /**
@@ -72,23 +79,29 @@ object BufVersionDetector {
         // Execute buf --version
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project)
         if (bufExecutable == null) {
-            LOG.debug("Buf CLI not found, LSP not supported")
+            log.debug("Buf CLI not found, LSP not supported")
             return null
         }
 
         val version = executeVersionCommand(bufExecutable.absolutePath)
         if (version == null) {
-            LOG.warn("Failed to execute buf --version")
+            log.warn("Failed to execute buf --version")
             return null
         }
 
-        val supportsLsp = isVersionSupported(version)
-        val info = VersionInfo(version, supportsLsp)
+        val parsedVersion = BufVersion.parse(version)
+        val minBetaVersion = BufVersion.parse(MINIMUM_BETA_LSP_VERSION)
+        val minStableVersion = BufVersion.parse(MINIMUM_LSP_VERSION)
+
+        val supportsLsp = parsedVersion != null && minBetaVersion != null && parsedVersion >= minBetaVersion
+        val useBetaCommand = parsedVersion != null && minStableVersion != null && parsedVersion < minStableVersion
+
+        val info = VersionInfo(version, supportsLsp, useBetaCommand)
 
         // Cache the result
         project.putUserData(VERSION_CACHE_KEY, info)
 
-        LOG.info("Detected buf version: $version, LSP supported: $supportsLsp")
+        log.info("Detected buf version: $version, LSP supported: $supportsLsp, use beta: $useBetaCommand")
         return info
     }
 
@@ -130,19 +143,13 @@ object BufVersionDetector {
                 }
             } else {
                 handler.destroyProcess()
-                LOG.warn("buf --version timed out")
+                log.warn("buf --version timed out")
             }
         } catch (e: Exception) {
-            LOG.warn("Failed to execute buf --version", e)
+            log.warn("Failed to execute buf --version", e)
         }
 
         return null
-    }
-
-    private fun isVersionSupported(versionOutput: String): Boolean {
-        val version = BufVersion.parse(versionOutput) ?: return false
-        val minVersion = BufVersion.parse(MINIMUM_LSP_VERSION) ?: return false
-        return version >= minVersion
     }
 
     /**
@@ -187,8 +194,7 @@ internal data class BufVersion(
     val patch: Int,
 ) : Comparable<BufVersion> {
 
-    override fun compareTo(other: BufVersion): Int =
-        compareValuesBy(this, other, { it.major }, { it.minor }, { it.patch })
+    override fun compareTo(other: BufVersion): Int = compareValuesBy(this, other, { it.major }, { it.minor }, { it.patch })
 
     companion object {
         private val VERSION_REGEX = Regex("""v?(\d+)\.(\d+)\.(\d+)""")

@@ -17,7 +17,7 @@ Integration with Buf Schema Registry helps manage, discover and share API defini
 
 Integrates with [Buf Language Server](https://buf.build/docs/cli/editors-lsp/) for enhanced IDE features:
 - Fast diagnostics, go-to-definition, code completion, hover docs, and find references
-- Requires buf CLI v1.40.0+ and IntelliJ 2025.1+
+- Requires buf CLI v1.43.0+ and IntelliJ 2025.1+
 - Configure in **Settings → Tools → Buf**
 - Automatic fallback to CLI diagnostics when unavailable
 

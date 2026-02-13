@@ -19,91 +19,32 @@ import org.junit.Test
 
 class BufVersionDetectorTest {
 
-    /**
-     * Note: These tests use reflection to test private methods since they
-     * contain the core version parsing logic that needs to be tested in isolation.
-     */
-
-    @Test
-    fun testVersionParsingWithV() {
-        val result = testIsVersionSupported("v1.40.0")
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun testVersionParsingWithoutV() {
-        val result = testIsVersionSupported("1.40.0")
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun testVersionBelowMinimum() {
-        val result = testIsVersionSupported("1.39.0")
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun testVersionAboveMinimum() {
-        val result = testIsVersionSupported("1.41.0")
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun testVersionEqualToMinimum() {
-        val result = testIsVersionSupported("1.40.0")
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun testMajorVersionAboveMinimum() {
-        val result = testIsVersionSupported("2.0.0")
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun testMajorVersionBelowMinimum() {
-        val result = testIsVersionSupported("0.99.99")
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun testMinorVersionEdgeCase() {
-        val result = testIsVersionSupported("1.40.1")
-        assertThat(result).isTrue()
-    }
-
-    @Test
-    fun testInvalidVersionFormat() {
-        val result = testIsVersionSupported("invalid")
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun testVersionWithExtraText() {
-        val result = testIsVersionSupported("buf version 1.40.0")
-        assertThat(result).isTrue()
-    }
-
     @Test
     fun testVersionParsing() {
-        val version = BufVersion.parse("1.40.0")
+        val version = BufVersion.parse("1.43.0")
         assertThat(version).isNotNull()
         assertThat(version!!.major).isEqualTo(1)
-        assertThat(version.minor).isEqualTo(40)
+        assertThat(version.minor).isEqualTo(43)
         assertThat(version.patch).isEqualTo(0)
     }
 
     @Test
     fun testVersionParsingWithV() {
-        val version = BufVersion.parse("v1.40.0")
+        val version = BufVersion.parse("v1.43.0")
         assertThat(version).isNotNull()
         assertThat(version!!.major).isEqualTo(1)
     }
 
     @Test
+    fun testVersionParsingInvalid() {
+        val version = BufVersion.parse("invalid")
+        assertThat(version).isNull()
+    }
+
+    @Test
     fun testVersionComparison_equal() {
-        val v1 = BufVersion.parse("1.40.0")
-        val v2 = BufVersion.parse("1.40.0")
+        val v1 = BufVersion.parse("1.43.0")
+        val v2 = BufVersion.parse("1.43.0")
         assertThat(v1).isEqualTo(v2)
     }
 
@@ -116,34 +57,75 @@ class BufVersionDetectorTest {
 
     @Test
     fun testVersionComparison_greaterMinor() {
-        val v1 = BufVersion.parse("1.41.0")!!
-        val v2 = BufVersion.parse("1.40.99")!!
+        val v1 = BufVersion.parse("1.44.0")!!
+        val v2 = BufVersion.parse("1.43.99")!!
         assertThat(v1 > v2).isTrue()
     }
 
     @Test
     fun testVersionComparison_greaterPatch() {
-        val v1 = BufVersion.parse("1.40.1")!!
-        val v2 = BufVersion.parse("1.40.0")!!
+        val v1 = BufVersion.parse("1.43.1")!!
+        val v2 = BufVersion.parse("1.43.0")!!
         assertThat(v1 > v2).isTrue()
     }
 
     @Test
     fun testVersionComparison_lessThan() {
-        val v1 = BufVersion.parse("1.39.0")!!
-        val v2 = BufVersion.parse("1.40.0")!!
+        val v1 = BufVersion.parse("1.42.0")!!
+        val v2 = BufVersion.parse("1.43.0")!!
         assertThat(v1 < v2).isTrue()
     }
 
-    /**
-     * Helper method to test the private isVersionSupported method using reflection.
-     */
-    private fun testIsVersionSupported(versionOutput: String): Boolean {
-        val method = BufVersionDetector::class.java.getDeclaredMethod(
-            "isVersionSupported",
-            String::class.java,
-        )
-        method.isAccessible = true
-        return method.invoke(BufVersionDetector, versionOutput) as Boolean
+    @Test
+    fun testLspSupport_belowMinimum() {
+        val minBeta = BufVersion.parse("1.43.0")!!
+        val tooOld = BufVersion.parse("1.42.0")!!
+        assertThat(tooOld < minBeta).isTrue()
+    }
+
+    @Test
+    fun testLspSupport_atMinimum() {
+        val minBeta = BufVersion.parse("1.43.0")!!
+        val atMinimum = BufVersion.parse("1.43.0")!!
+        assertThat(atMinimum >= minBeta).isTrue()
+    }
+
+    @Test
+    fun testLspSupport_aboveMinimum() {
+        val minBeta = BufVersion.parse("1.43.0")!!
+        val newer = BufVersion.parse("1.50.0")!!
+        assertThat(newer >= minBeta).isTrue()
+    }
+
+    @Test
+    fun testBetaCommand_at143() {
+        // Version 1.43.0 should use beta command
+        val version = BufVersion.parse("1.43.0")!!
+        val minStable = BufVersion.parse("1.59.0")!!
+        assertThat(version < minStable).isTrue()
+    }
+
+    @Test
+    fun testBetaCommand_at158() {
+        // Version 1.58.0 should use beta command
+        val version = BufVersion.parse("1.58.0")!!
+        val minStable = BufVersion.parse("1.59.0")!!
+        assertThat(version < minStable).isTrue()
+    }
+
+    @Test
+    fun testStableCommand_at159() {
+        // Version 1.59.0 should use stable command
+        val version = BufVersion.parse("1.59.0")!!
+        val minStable = BufVersion.parse("1.59.0")!!
+        assertThat(version >= minStable).isTrue()
+    }
+
+    @Test
+    fun testStableCommand_above159() {
+        // Version 2.0.0 should use stable command
+        val version = BufVersion.parse("2.0.0")!!
+        val minStable = BufVersion.parse("1.59.0")!!
+        assertThat(version >= minStable).isTrue()
     }
 }

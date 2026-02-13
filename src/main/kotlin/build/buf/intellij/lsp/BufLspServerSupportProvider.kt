@@ -30,7 +30,7 @@ import com.intellij.platform.lsp.api.LspServerSupportProvider
  * This class is the entry point for registering and starting the Buf Language Server.
  */
 class BufLspServerSupportProvider : LspServerSupportProvider {
-    private val LOG = logger<BufLspServerSupportProvider>()
+    private val log = logger<BufLspServerSupportProvider>()
     private val notifiedProjects = mutableSetOf<Project>()
 
     override fun fileOpened(
@@ -64,9 +64,9 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
             // Version supports LSP, start the server
             try {
                 serverStarter.ensureServerStarted(BufLspServerDescriptor(project))
-                LOG.info("Buf LSP server started for ${file.name}")
+                log.info("Buf LSP server started for ${file.name}")
             } catch (e: Exception) {
-                LOG.error("Failed to start Buf LSP server", e)
+                log.error("Failed to start Buf LSP server", e)
                 showLspErrorNotification(project, e.message ?: "Unknown error")
             }
         } else {
@@ -85,9 +85,9 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
 
                     // Version supports LSP, start the server
                     serverStarter.ensureServerStarted(BufLspServerDescriptor(project))
-                    LOG.info("Buf LSP server started for ${file.name}")
+                    log.info("Buf LSP server started for ${file.name}")
                 } catch (e: Exception) {
-                    LOG.error("Failed to start Buf LSP server", e)
+                    log.error("Failed to start Buf LSP server", e)
                     showLspErrorNotification(project, e.message ?: "Unknown error")
                 }
             }
@@ -97,7 +97,7 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
     private fun showLspUnavailableNotification(project: Project) {
         val versionInfo = BufVersionDetector.getVersionInfo(project)
         val message = if (versionInfo != null) {
-            "Buf Language Server requires buf v1.40+. Current version: ${versionInfo.version}. " +
+            "Buf Language Server requires buf v1.43+. Current version: ${versionInfo.version}. " +
                 "Falling back to CLI-based diagnostics."
         } else {
             "Buf CLI not found or version could not be detected. " +

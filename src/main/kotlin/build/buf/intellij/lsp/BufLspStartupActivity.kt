@@ -25,7 +25,7 @@ import com.intellij.openapi.startup.StartupActivity
  * This ensures LSP can start quickly when the first .proto file is opened.
  */
 class BufLspStartupActivity : StartupActivity {
-    private val LOG = logger<BufLspStartupActivity>()
+    private val log = logger<BufLspStartupActivity>()
 
     override fun runActivity(project: Project) {
         // Only run if LSP is enabled
@@ -38,12 +38,12 @@ class BufLspStartupActivity : StartupActivity {
             try {
                 val versionInfo = BufVersionDetector.getVersionInfo(project, checkIfMissing = true)
                 if (versionInfo != null) {
-                    LOG.info("Cached buf version ${versionInfo.version} on startup, LSP supported: ${versionInfo.supportsLsp}")
+                    log.info("Cached buf version ${versionInfo.version} on startup, LSP supported: ${versionInfo.supportsLsp}")
                 } else {
-                    LOG.debug("Buf CLI not found during startup version check")
+                    log.debug("Buf CLI not found during startup version check")
                 }
             } catch (e: Exception) {
-                LOG.warn("Failed to detect buf version on startup", e)
+                log.warn("Failed to detect buf version on startup", e)
             }
         }
     }
