@@ -13,7 +13,7 @@
         <notificationGroup id="Buf" displayType="BALLOON"/>
 
         <postStartupActivity implementation="build.buf.intellij.resolve.RefreshAdditionalBufRoots"/>
-        <postStartupActivity implementation="build.buf.intellij.lsp.BufLspStartupActivity"/>
+        <projectActivity implementation="build.buf.intellij.lsp.BufLspStartupActivity"/>
         <fileTypeOverrider implementation="build.buf.intellij.BufLockFileTypeOverrider"/>
         <fileBasedIndex implementation="build.buf.intellij.index.BufModuleConfigIndex"/>
         <fileBasedIndex implementation="build.buf.intellij.index.ModuleKeyIndex"/>
