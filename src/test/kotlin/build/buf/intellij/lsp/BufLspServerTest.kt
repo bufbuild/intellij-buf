@@ -24,6 +24,12 @@ import org.assertj.core.api.Assertions.assertThat
 class BufLspServerTest : BufTestBase() {
     override fun getBasePath(): String = "lsp"
 
+    override fun setUp() {
+        super.setUp()
+        // Re-enable LSP for this test
+        System.setProperty("buf.test.disableLsp", "false")
+    }
+
     fun testLspServerConfiguration() {
         // Configure test files
         configureByFolder("configuration", "test.proto")

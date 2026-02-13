@@ -37,6 +37,11 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
         file: VirtualFile,
         serverStarter: LspServerSupportProvider.LspServerStarter,
     ) {
+        // Skip LSP in test mode to avoid interference with CLI-based tests
+        if (System.getProperty("buf.test.disableLsp") == "true") {
+            return
+        }
+
         // Only handle .proto files
         if (file.extension != "proto") {
             return
