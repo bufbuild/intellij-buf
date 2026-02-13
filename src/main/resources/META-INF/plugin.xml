@@ -4,6 +4,7 @@
     <name>Buf for Protocol Buffers</name>
     <vendor>Buf</vendor>
 
+    <depends>com.intellij.modules.lsp</depends>
     <depends>com.intellij.modules.platform</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
     <depends optional="true" config-file="official-protobuf-plugin-support.xml">idea.plugin.protoeditor</depends>
