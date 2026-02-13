@@ -39,7 +39,6 @@ class BufConfigurable(
     private val state: BufProjectSettingsService.State = project.bufSettings.state.copy()
 
     private lateinit var breakingEnabled: Cell<JBCheckBox>
-    private lateinit var lspEnabled: Cell<JBCheckBox>
 
     override fun createPanel(): DialogPanel = panel {
         row(BufBundle.message("settings.buf.cli.path")) {
@@ -77,14 +76,6 @@ class BufConfigurable(
                     .comment("For example, --against .git#tag=v1.0.0. By default, breaking changes will be verified against uncommitted changes.")
             }
         }.enabledIf(breakingEnabled.selected)
-        separator()
-        group("Language Server") {
-            row {
-                lspEnabled = checkBox("Use Language Server (buf lsp)")
-                    .bindSelected(state::useLspServer)
-                    .comment("Provides enhanced IDE features including faster diagnostics, code completion, and go-to-definition. Requires buf v1.59.0+")
-            }
-        }
     }
 
     override fun reset() {
@@ -92,7 +83,6 @@ class BufConfigurable(
         state.useBufFormatter = project.bufSettings.state.useBufFormatter
         state.backgroundLintingEnabled = project.bufSettings.state.backgroundLintingEnabled
         state.backgroundBreakingEnabled = project.bufSettings.state.backgroundBreakingEnabled
-        state.useLspServer = project.bufSettings.state.useLspServer
         super.reset()
     }
 

@@ -23,7 +23,6 @@ interface BufProjectSettingsService {
         var breakingArgumentsOverride: List<String> = emptyList(),
         var useBufFormatter: Boolean = true,
         var bufCLIPath: String = "",
-        var useLspServer: Boolean = true,
     )
 
     var state: State

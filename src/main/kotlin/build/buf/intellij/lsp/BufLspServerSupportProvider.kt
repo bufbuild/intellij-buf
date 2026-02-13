@@ -15,7 +15,6 @@
 package build.buf.intellij.lsp
 
 import build.buf.intellij.BufBundle
-import build.buf.intellij.settings.bufSettings
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
@@ -38,11 +37,6 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
         file: VirtualFile,
         serverStarter: LspServerSupportProvider.LspServerStarter,
     ) {
-        // Check if LSP is enabled in settings
-        if (!project.bufSettings.state.useLspServer) {
-            return
-        }
-
         // Only handle .proto files
         if (file.extension != "proto") {
             return

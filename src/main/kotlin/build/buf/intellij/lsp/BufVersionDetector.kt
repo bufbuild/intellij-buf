@@ -15,7 +15,6 @@
 package build.buf.intellij.lsp
 
 import build.buf.intellij.settings.BufCLIUtils
-import build.buf.intellij.settings.bufSettings
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputType
@@ -157,14 +156,9 @@ object BufVersionDetector {
      * This is a consolidated method used by analyze passes, widgets, etc.
      *
      * @param checkIfMissing If false, only uses cached version info (fast, non-blocking)
-     * @return true if LSP is enabled, supported, and has running servers
+     * @return true if LSP is supported and has running servers
      */
     fun isLspActive(project: Project, checkIfMissing: Boolean = false): Boolean {
-        // Check if LSP is enabled in settings
-        if (!project.bufSettings.state.useLspServer) {
-            return false
-        }
-
         // Check if buf version supports LSP
         val versionInfo = getVersionInfo(project, checkIfMissing = checkIfMissing)
         if (versionInfo == null || !versionInfo.supportsLsp) {

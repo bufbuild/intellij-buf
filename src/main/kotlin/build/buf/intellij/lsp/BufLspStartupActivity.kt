@@ -14,7 +14,6 @@
 
 package build.buf.intellij.lsp
 
-import build.buf.intellij.settings.bufSettings
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -27,11 +26,6 @@ class BufLspStartupActivity : ProjectActivity {
     private val log = logger<BufLspStartupActivity>()
 
     override suspend fun execute(project: Project) {
-        // Only run if LSP is enabled
-        if (!project.bufSettings.state.useLspServer) {
-            return
-        }
-
         try {
             val versionInfo = BufVersionDetector.getVersionInfo(project, checkIfMissing = true)
             if (versionInfo != null) {
