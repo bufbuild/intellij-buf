@@ -46,17 +46,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884 # v5.0.1
 
-      # Cache IntelliJ Platform Dependencies
-      - name: Cache IntelliJ Platform Dependencies
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
-        with:
-          path: |
-            ~/.gradle/caches/modules-2/files-2.1
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-intellij-${{ hashFiles('gradle.properties', 'gradle/libs.versions.toml', 'build.gradle.kts') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-intellij-
-
       # Run IDEA prepared for UI testing
       - name: Run IDE
         run: ${{ matrix.runIde }}
