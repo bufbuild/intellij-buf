@@ -27,6 +27,11 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
     override fun setUp() {
         super.setUp()
         configureCLI()
+        // Disable LSP by default in tests to avoid interference with CLI-based tests
+        // LSP-specific tests can override this by setting useLspServer = true
+        project.bufSettings.state = project.bufSettings.state.copy(
+            useLspServer = false,
+        )
     }
 
     private fun configureCLI(cliPath: String = System.getProperty("BUF_CLI", "build/gobin/buf")) {
