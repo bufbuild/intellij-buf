@@ -17,6 +17,7 @@ package build.buf.intellij.status
 import build.buf.intellij.BufBundle
 import build.buf.intellij.configurable.BufConfigurable
 import build.buf.intellij.icons.BufIcons
+import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.settings.bufSettings
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
@@ -86,15 +87,33 @@ class BufCLIWidget(private val project: Project) :
         if (project.isDisposed) return
         UIUtil.invokeLaterIfNeeded {
             if (project.isDisposed) return@invokeLaterIfNeeded
-            text = BufBundle.message("name")
+
+            // Check if LSP is active (cached only, non-blocking for EDT)
+            val lspActive = BufVersionDetector.isLspActive(project, checkIfMissing = false)
+
+            text = when {
+                lspActive -> "Buf LSP"
+                else -> BufBundle.message("name")
+            }
+
             val analyzingEnabled = project.bufSettings.state.backgroundLintingEnabled ||
                 project.bufSettings.state.backgroundBreakingEnabled
+
             toolTipText = when {
+                lspActive -> {
+                    val versionInfo = BufVersionDetector.getVersionInfo(project, checkIfMissing = false)
+                    "Buf Language Server running (${versionInfo?.version ?: "unknown"}). Click to open settings."
+                }
+
                 !analyzingEnabled -> BufBundle.message("analyzing.disabled")
+
                 inProgress -> BufBundle.message("analyzing.in.progress")
+
                 else -> BufBundle.message("analyzing.done")
             }
+
             icon = when {
+                lspActive -> BufIcons.Logo
                 !analyzingEnabled -> BufIcons.LogoGrayscale
                 inProgress -> BufIcons.LogoAnimated
                 else -> BufIcons.Logo

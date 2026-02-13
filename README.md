@@ -11,6 +11,22 @@ Buf CLI provides advanced linting and detection of potentially breaking changes 
 Integration with Buf Schema Registry helps manage, discover and share API definitions.
 <!-- Plugin description end -->
 
+## Features
+
+### Language Server Protocol (LSP) Support
+
+Integrates with [Buf Language Server](https://buf.build/docs/cli/editors-lsp/) for enhanced IDE features:
+- Fast diagnostics, go-to-definition, code completion, hover docs, and find references
+- Requires buf CLI v1.40.0+ and IntelliJ 2025.1+
+- Configure in **Settings → Tools → Buf**
+- Automatic fallback to CLI diagnostics when unavailable
+
+### CLI-Based Features
+
+- Background linting (`buf lint`) and breaking change detection (`buf breaking`)
+- Code formatting with `buf format`
+- BSR module resolution and indexing
+
 ## Development Guide
 
 Please submit bug reports and feature requests via GitHub Issues and don't hesitate to contribute via PRs.

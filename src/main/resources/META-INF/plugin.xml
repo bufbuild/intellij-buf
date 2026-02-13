@@ -11,6 +11,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="build.buf.intellij.resolve.RefreshAdditionalBufRoots"/>
+        <postStartupActivity implementation="build.buf.intellij.lsp.BufLspStartupActivity"/>
         <fileTypeOverrider implementation="build.buf.intellij.BufLockFileTypeOverrider"/>
         <fileBasedIndex implementation="build.buf.intellij.index.BufModuleConfigIndex"/>
         <fileBasedIndex implementation="build.buf.intellij.index.ModuleKeyIndex"/>
@@ -42,5 +43,9 @@
 
         <!-- Auto-discovery of the plugin via features extractor https://github.com/JetBrains/intellij-plugin-verifier/tree/master/intellij-feature-extractor -->
         <dependencySupport kind="java" coordinate="com.google.protobuf:protobuf-java"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij.platform.lsp">
+        <serverSupportProvider implementation="build.buf.intellij.lsp.BufLspServerSupportProvider"/>
     </extensions>
 </idea-plugin>
