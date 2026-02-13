@@ -154,4 +154,14 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
             }
         }
     }
+
+    override fun createLspServerWidgetItem(
+        lspServer: com.intellij.platform.lsp.api.LspServer,
+        currentFile: VirtualFile?,
+    ) = com.intellij.platform.lsp.api.lsWidget.LspServerWidgetItem(
+        lspServer,
+        currentFile,
+        build.buf.intellij.icons.BufIcons.Logo,
+        build.buf.intellij.configurable.BufConfigurable::class.java,
+    )
 }
