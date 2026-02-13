@@ -16,6 +16,7 @@ package build.buf.intellij.annotator
 
 import build.buf.intellij.BufPluginService
 import build.buf.intellij.fixes.IgnoreBufIssueQuickFix
+import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.bufSettings
 import build.buf.intellij.vendor.isProtobufFile
@@ -79,6 +80,13 @@ class BufAnalyzePass(
     override fun doCollectInformation(progress: ProgressIndicator) {
         highlights.clear()
         if (!file.isProtobufFile()) return
+
+        // Check if LSP is handling diagnostics
+        if (BufVersionDetector.isLspActive(myProject)) {
+            // LSP is active, skip CLI diagnostics to avoid duplication
+            return
+        }
+
         if (!myProject.bufSettings.state.backgroundLintingEnabled && !myProject.bufSettings.state.backgroundBreakingEnabled) return
 
         val contentRootForFile = ProjectFileIndex.getInstance(myProject)
@@ -226,9 +234,17 @@ class BufAnalyzePassFactory(
             if (!file.isProtobufFile()) {
                 return false
             }
-            val analyzeModTracker = file.project.service<BufAnalyzeModificationTracker>()
+
+            val project = file.project
+
+            // Don't run if LSP is handling diagnostics
+            if (BufVersionDetector.isLspActive(project)) {
+                return false
+            }
+
+            val analyzeModTracker = project.service<BufAnalyzeModificationTracker>()
             val currentModCount = analyzeModTracker.modificationCount
-            val lastModCount = file.project.getUserData(LAST_ANALYZE_MOD_COUNT)
+            val lastModCount = project.getUserData(LAST_ANALYZE_MOD_COUNT)
             // No change to .proto/buf configuration since last analyze run.
             return lastModCount == null || currentModCount != lastModCount
         }
@@ -269,7 +285,6 @@ fun MutableList<HighlightInfo>.addHighlightsForFile(
             // TODO: Should handle file-level lint warnings here: https://github.com/bufbuild/intellij-buf/issues/215
             .range(issue.toTextRange(doc) ?: continue)
             .problemGroup { issue.type }
-            .needsUpdateOnTyping(true)
             .registerFix(IgnoreBufIssueQuickFix(issue.type), null, null, null, null)
         highlightBuilder.create()?.let(::add)
     }
