@@ -14,6 +14,7 @@
 
 package build.buf.intellij.lsp
 
+import build.buf.intellij.BufBundle
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
@@ -49,7 +50,7 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
 
     override fun createCommandLine(): GeneralCommandLine {
         val bufExe = BufCLIUtils.getConfiguredBufExecutable(project)
-            ?: throw IllegalStateException("Buf CLI not found. Please configure the Buf CLI path in settings.")
+            ?: throw IllegalStateException(BufBundle.message("lsp.cli.not.found"))
 
         val cmd = GeneralCommandLine()
         cmd.exePath = bufExe.absolutePath
