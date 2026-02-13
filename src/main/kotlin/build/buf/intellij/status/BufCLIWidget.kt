@@ -35,7 +35,7 @@ import javax.swing.JComponent
 
 class BufCLIWidgetFactory : StatusBarWidgetFactory {
     override fun getId(): String = BufCLIWidget.ID
-    override fun getDisplayName(): String = "Buf Linter"
+    override fun getDisplayName(): String = BufBundle.message("widget.display.name")
     override fun isAvailable(project: Project): Boolean = true
     override fun createWidget(project: Project): StatusBarWidget = BufCLIWidget(project)
     override fun disposeWidget(widget: StatusBarWidget) = Disposer.dispose(widget)
@@ -92,7 +92,7 @@ class BufCLIWidget(private val project: Project) :
             val lspActive = BufVersionDetector.isLspActive(project, checkIfMissing = false)
 
             text = when {
-                lspActive -> "Buf LSP"
+                lspActive -> BufBundle.message("widget.lsp.text")
                 else -> BufBundle.message("name")
             }
 

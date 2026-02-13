@@ -100,24 +100,22 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
     private fun showLspUnavailableNotification(project: Project) {
         val versionInfo = BufVersionDetector.getVersionInfo(project)
         val message = if (versionInfo != null) {
-            "Buf Language Server requires buf v1.59.0+. Current version: ${versionInfo.version}. " +
-                "Falling back to CLI-based diagnostics."
+            BufBundle.message("lsp.unavailable.version.too.old", versionInfo.version)
         } else {
-            "Buf CLI not found or version could not be detected. " +
-                "Falling back to CLI-based diagnostics."
+            BufBundle.message("lsp.unavailable.not.found")
         }
 
         ApplicationManager.getApplication().invokeLater {
             if (!project.isDisposed) {
                 NotificationGroupManager.getInstance()
-                    .getNotificationGroup(BufBundle.getMessage("name"))
+                    .getNotificationGroup(BufBundle.message("name"))
                     .createNotification(
-                        "Buf language server unavailable",
+                        BufBundle.message("lsp.unavailable.title"),
                         message,
                         NotificationType.WARNING,
                     )
                     .addAction(
-                        object : com.intellij.notification.NotificationAction("Open settings") {
+                        object : com.intellij.notification.NotificationAction(BufBundle.message("action.open.settings")) {
                             override fun actionPerformed(
                                 e: com.intellij.openapi.actionSystem.AnActionEvent,
                                 notification: com.intellij.notification.Notification,
@@ -136,15 +134,14 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
         ApplicationManager.getApplication().invokeLater {
             if (!project.isDisposed) {
                 NotificationGroupManager.getInstance()
-                    .getNotificationGroup(BufBundle.getMessage("name"))
+                    .getNotificationGroup(BufBundle.message("name"))
                     .createNotification(
-                        "Buf language server error",
-                        "Failed to start Buf Language Server: $errorMessage. " +
-                            "Using CLI-based diagnostics instead.",
+                        BufBundle.message("lsp.error.title"),
+                        BufBundle.message("lsp.error.failed.to.start", errorMessage),
                         NotificationType.ERROR,
                     )
                     .addAction(
-                        object : com.intellij.notification.NotificationAction("Open settings") {
+                        object : com.intellij.notification.NotificationAction(BufBundle.message("action.open.settings")) {
                             override fun actionPerformed(
                                 e: com.intellij.openapi.actionSystem.AnActionEvent,
                                 notification: com.intellij.notification.Notification,
