@@ -6,7 +6,6 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
-    <depends optional="true">com.intellij.modules.lsp</depends>
     <depends optional="true" config-file="official-protobuf-plugin-support.xml">idea.plugin.protoeditor</depends>
     <depends optional="true" config-file="kanro-protobuf-plugin-support.xml">io.kanro.idea.plugin.protobuf</depends>
 
