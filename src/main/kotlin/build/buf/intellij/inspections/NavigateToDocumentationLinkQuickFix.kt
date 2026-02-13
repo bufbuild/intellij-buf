@@ -21,9 +21,9 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
 
 class NavigateToDocumentationLinkQuickFix(private val link: String) : LocalQuickFix {
-    override fun getFamilyName(): String = BufBundle.getMessage("buf.quickfix.family")
+    override fun getFamilyName(): String = BufBundle.message("buf.quickfix.family")
 
-    override fun getName(): String = BufBundle.getMessage("buf.quickfix.navigate.to.documentation")
+    override fun getName(): String = BufBundle.message("buf.quickfix.navigate.to.documentation")
 
     override fun availableInBatchMode(): Boolean = false
 

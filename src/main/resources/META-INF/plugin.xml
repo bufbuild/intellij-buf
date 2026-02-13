@@ -32,7 +32,8 @@
         <projectConfigurable instance="build.buf.intellij.configurable.BufConfigurable"
                              groupId="tools"
                              id="tools.buf"
-                             displayName="Buf"/>
+                             bundle="messages.BufBundle"
+                             key="settings.buf.title"/>
 
         <localInspection language="protobuf" shortName="BufCLINotInstalled" bundle="messages.BufBundle"
                          key="buf.inspection.cli.not.installed"
@@ -40,7 +41,7 @@
                          implementationClass="build.buf.intellij.inspections.BufNotInstalledInspection"/>
 
         <globalInspection language="protobuf" groupBundle="messages.BufBundle" groupKey="buf.inspections.group.name"
-                          shortName="BufAnalyze" displayName="Buf Analyze"
+                          shortName="BufAnalyze" bundle="messages.BufBundle" key="buf.inspection.analyze.display.name"
                           enabledByDefault="true" level="ERROR"
                           implementationClass="build.buf.intellij.inspections.BufAnalyzeInspection"/>
 

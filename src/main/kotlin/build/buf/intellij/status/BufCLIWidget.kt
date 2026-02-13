@@ -35,7 +35,7 @@ import javax.swing.JComponent
 
 class BufCLIWidgetFactory : StatusBarWidgetFactory {
     override fun getId(): String = BufCLIWidget.ID
-    override fun getDisplayName(): String = "Buf Linter"
+    override fun getDisplayName(): String = BufBundle.message("widget.display.name")
     override fun isAvailable(project: Project): Boolean = true
     override fun createWidget(project: Project): StatusBarWidget = BufCLIWidget(project)
     override fun disposeWidget(widget: StatusBarWidget) = Disposer.dispose(widget)
@@ -92,7 +92,7 @@ class BufCLIWidget(private val project: Project) :
             val lspActive = BufVersionDetector.isLspActive(project, checkIfMissing = false)
 
             text = when {
-                lspActive -> "Buf LSP"
+                lspActive -> BufBundle.message("widget.lsp.text")
                 else -> BufBundle.message("name")
             }
 
@@ -102,7 +102,8 @@ class BufCLIWidget(private val project: Project) :
             toolTipText = when {
                 lspActive -> {
                     val versionInfo = BufVersionDetector.getVersionInfo(project, checkIfMissing = false)
-                    "Buf Language Server running (${versionInfo?.version ?: "unknown"}). Click to open settings."
+                    val version = versionInfo?.version ?: BufBundle.message("widget.lsp.version.unknown")
+                    BufBundle.message("widget.lsp.tooltip", version)
                 }
 
                 !analyzingEnabled -> BufBundle.message("analyzing.disabled")

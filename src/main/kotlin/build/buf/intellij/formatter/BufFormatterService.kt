@@ -87,9 +87,9 @@ class BufFormatterService : AsyncDocumentFormattingService() {
         }
     }
 
-    override fun getNotificationGroupId(): String = BufBundle.getMessage("name")
+    override fun getNotificationGroupId(): String = BufBundle.message("name")
 
-    override fun getName(): String = BufBundle.getMessage("format.name")
+    override fun getName(): String = BufBundle.message("format.name")
 
     companion object {
         private enum class FormattingReason {

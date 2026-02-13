@@ -67,13 +67,13 @@ class BufConfigurable(
                 .bindSelected(state::backgroundBreakingEnabled)
         }
         indent {
-            row("buf breaking") {
+            row(BufBundle.message("settings.buf.background.breaking.arguments.label")) {
                 textField().bindText(
                     { state.breakingArgumentsOverride.joinToString(separator = " ") },
                     { text -> state.breakingArgumentsOverride = text.split("\\s+".toRegex()).filter { it.isNotBlank() } },
                 ).columns(COLUMNS_LARGE)
                     .align(Align.FILL)
-                    .comment("For example, --against .git#tag=v1.0.0. By default, breaking changes will be verified against uncommitted changes.")
+                    .comment(BufBundle.message("settings.buf.background.breaking.arguments.comment"))
             }
         }.enabledIf(breakingEnabled.selected)
     }

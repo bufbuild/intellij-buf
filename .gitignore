@@ -3,3 +3,5 @@
 /.intellijPlatform/
 /.qodana/
 /build/
+/src/test/resources/testData/cache/v3/
+/.kotlin/
