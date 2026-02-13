@@ -15,6 +15,8 @@
 package build.buf.intellij.lsp
 
 import build.buf.intellij.BufBundle
+import build.buf.intellij.configurable.BufConfigurable
+import build.buf.intellij.icons.BufIcons
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
@@ -22,7 +24,9 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.platform.lsp.api.LspServer
 import com.intellij.platform.lsp.api.LspServerSupportProvider
+import com.intellij.platform.lsp.api.lsWidget.LspServerWidgetItem
 
 /**
  * Provides LSP server support for Buf Protocol Buffer files.
@@ -63,7 +67,7 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
             // Version supports LSP, start the server
             try {
                 serverStarter.ensureServerStarted(BufLspServerDescriptor(project))
-                log.info("Buf LSP server started for ${file.name}")
+                log.info("Buf LSP server started for ${file.name} (cached version)")
             } catch (e: Exception) {
                 log.error("Failed to start Buf LSP server", e)
                 showLspErrorNotification(project, e.message ?: "Unknown error")
@@ -84,7 +88,7 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
 
                     // Version supports LSP, start the server
                     serverStarter.ensureServerStarted(BufLspServerDescriptor(project))
-                    log.info("Buf LSP server started for ${file.name}")
+                    log.info("Buf LSP server started for ${file.name} (after async version detection)")
                 } catch (e: Exception) {
                     log.error("Failed to start Buf LSP server", e)
                     showLspErrorNotification(project, e.message ?: "Unknown error")
@@ -108,12 +112,12 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
                 NotificationGroupManager.getInstance()
                     .getNotificationGroup(BufBundle.getMessage("name"))
                     .createNotification(
-                        "Buf Language Server Unavailable",
+                        "Buf language server unavailable",
                         message,
                         NotificationType.WARNING,
                     )
                     .addAction(
-                        object : com.intellij.notification.NotificationAction("Open Settings") {
+                        object : com.intellij.notification.NotificationAction("Open settings") {
                             override fun actionPerformed(
                                 e: com.intellij.openapi.actionSystem.AnActionEvent,
                                 notification: com.intellij.notification.Notification,
@@ -134,13 +138,13 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
                 NotificationGroupManager.getInstance()
                     .getNotificationGroup(BufBundle.getMessage("name"))
                     .createNotification(
-                        "Buf Language Server Error",
+                        "Buf language server error",
                         "Failed to start Buf Language Server: $errorMessage. " +
                             "Using CLI-based diagnostics instead.",
                         NotificationType.ERROR,
                     )
                     .addAction(
-                        object : com.intellij.notification.NotificationAction("Open Settings") {
+                        object : com.intellij.notification.NotificationAction("Open settings") {
                             override fun actionPerformed(
                                 e: com.intellij.openapi.actionSystem.AnActionEvent,
                                 notification: com.intellij.notification.Notification,
@@ -156,12 +160,12 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
     }
 
     override fun createLspServerWidgetItem(
-        lspServer: com.intellij.platform.lsp.api.LspServer,
+        lspServer: LspServer,
         currentFile: VirtualFile?,
-    ) = com.intellij.platform.lsp.api.lsWidget.LspServerWidgetItem(
+    ) = LspServerWidgetItem(
         lspServer,
         currentFile,
-        build.buf.intellij.icons.BufIcons.Logo,
-        build.buf.intellij.configurable.BufConfigurable::class.java,
+        BufIcons.Logo,
+        BufConfigurable::class.java,
     )
 }

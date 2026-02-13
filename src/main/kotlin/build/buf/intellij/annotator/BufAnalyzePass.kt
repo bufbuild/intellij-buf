@@ -285,7 +285,6 @@ fun MutableList<HighlightInfo>.addHighlightsForFile(
             // TODO: Should handle file-level lint warnings here: https://github.com/bufbuild/intellij-buf/issues/215
             .range(issue.toTextRange(doc) ?: continue)
             .problemGroup { issue.type }
-            .needsUpdateOnTyping(true)
             .registerFix(IgnoreBufIssueQuickFix(issue.type), null, null, null, null)
         highlightBuilder.create()?.let(::add)
     }

@@ -22,6 +22,7 @@ import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.platform.lsp.api.LspServerManager
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -43,15 +44,6 @@ object BufVersionDetector {
         val version: String,
         val supportsLsp: Boolean,
     )
-
-    /**
-     * Checks if the configured buf CLI supports LSP functionality.
-     * Results are cached per project.
-     */
-    fun isLspSupported(project: Project): Boolean {
-        val info = getVersionInfo(project) ?: return false
-        return info.supportsLsp
-    }
 
     /**
      * Gets version information for the configured buf CLI.
@@ -99,13 +91,6 @@ object BufVersionDetector {
         return info
     }
 
-    /**
-     * Clears the version cache for a project. Call this when settings change.
-     */
-    fun clearCache(project: Project) {
-        project.putUserData(VERSION_CACHE_KEY, null)
-    }
-
     private fun executeVersionCommand(bufPath: String): String? {
         val stdout = AtomicReference<String>()
         val exitCode = AtomicInteger(-1)
@@ -147,11 +132,6 @@ object BufVersionDetector {
     }
 
     /**
-     * Gets the buf version string for display purposes.
-     */
-    fun getVersionString(project: Project): String? = getVersionInfo(project)?.version
-
-    /**
      * Checks if the LSP server is currently active for the given project.
      * This is a consolidated method used by analyze passes, widgets, etc.
      *
@@ -166,8 +146,8 @@ object BufVersionDetector {
         }
 
         // Check if LSP servers are running
-        val lspServers = com.intellij.platform.lsp.api.LspServerManager.getInstance(project)
-            .getServersForProvider(build.buf.intellij.lsp.BufLspServerSupportProvider::class.java)
+        val lspServers = LspServerManager.getInstance(project)
+            .getServersForProvider(BufLspServerSupportProvider::class.java)
 
         return lspServers.isNotEmpty()
     }

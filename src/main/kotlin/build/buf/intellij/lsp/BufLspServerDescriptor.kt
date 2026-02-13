@@ -16,7 +16,6 @@ package build.buf.intellij.lsp
 
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.settings.BufCLIUtils
-import build.buf.intellij.settings.bufSettings
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
