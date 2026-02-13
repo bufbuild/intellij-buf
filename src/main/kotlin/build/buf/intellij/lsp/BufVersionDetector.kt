@@ -186,10 +186,11 @@ internal data class BufVersion(
     override fun compareTo(other: BufVersion): Int = compareValuesBy(this, other, { it.major }, { it.minor }, { it.patch })
 
     companion object {
-        private val VERSION_REGEX = Regex("""^v?(\d+)\.(\d+)\.(\d+)$""")
+        private val VERSION_REGEX = Regex("""^v?(\d+)\.(\d+)\.(\d+)(?:-.*)?$""")
 
         /**
-         * Parses a version string like "1.40.0" or "v1.40.0".
+         * Parses a version string like "1.40.0", "v1.40.0", or "1.65.1-dev".
+         * Pre-release identifiers (e.g., "-dev", "-rc1") are ignored.
          * Returns null if the string cannot be parsed.
          */
         fun parse(versionString: String): BufVersion? {

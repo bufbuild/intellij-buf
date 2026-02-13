@@ -36,6 +36,24 @@ class BufVersionDetectorTest {
     }
 
     @Test
+    fun testVersionParsingWithDevSuffix() {
+        val version = BufVersion.parse("1.65.1-dev")
+        assertThat(version).isNotNull()
+        assertThat(version!!.major).isEqualTo(1)
+        assertThat(version.minor).isEqualTo(65)
+        assertThat(version.patch).isEqualTo(1)
+    }
+
+    @Test
+    fun testVersionParsingWithRcSuffix() {
+        val version = BufVersion.parse("1.60.0-rc1")
+        assertThat(version).isNotNull()
+        assertThat(version!!.major).isEqualTo(1)
+        assertThat(version.minor).isEqualTo(60)
+        assertThat(version.patch).isEqualTo(0)
+    }
+
+    @Test
     fun testVersionParsingInvalid() {
         val version = BufVersion.parse("invalid")
         assertThat(version).isNull()
