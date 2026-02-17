@@ -32,9 +32,9 @@ import org.jetbrains.yaml.psi.YAMLScalar
 import org.jetbrains.yaml.psi.YAMLSequence
 
 class IgnoreBufIssueQuickFix(private val type: String) : BaseIntentionAction() {
-    override fun getFamilyName(): String = BufBundle.getMessage("buf.quickfix.family")
+    override fun getFamilyName(): String = BufBundle.message("buf.quickfix.family")
 
-    override fun getText(): String = BufBundle.getMessage("buf.quickfix.ignore.issue")
+    override fun getText(): String = BufBundle.message("buf.quickfix.ignore.issue")
 
     override fun isAvailable(project: Project, editor: Editor, file: PsiFile): Boolean = file.isProtobufFile()
 

@@ -44,7 +44,7 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
 
     override fun getShortName(): String = SHORT_NAME
 
-    override fun getDisplayName(): String = BufBundle.getMessage("buf.inspections.lint.name")
+    override fun getDisplayName(): String = BufBundle.message("buf.inspection.analyze.display.name")
 
     override fun isReadActionNeeded(): Boolean = false
 
