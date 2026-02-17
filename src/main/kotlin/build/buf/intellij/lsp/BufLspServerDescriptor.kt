@@ -61,6 +61,7 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         cmd.exePath = bufExe.absolutePath
         cmd.addParameter("lsp")
         cmd.addParameter("serve")
+        cmd.addParameter("--log-format=text")
 
         // Set working directory to buf workspace root
         val projectBasePath = project.basePath
