@@ -33,6 +33,11 @@ import java.io.File
 class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(project, "Buf") {
     private val log = logger<BufLspServerDescriptor>()
 
+    // Allow the bundled Protocol Buffers plugin to supply go-to--definition support;
+    // if we don't do this, Go-to-definition does not work properly with local definitions.
+    // See https://plugins.jetbrains.com/plugin/14004-protocol-buffers
+    override val lspGoToDefinitionSupport: Boolean = false
+
     override fun isSupportedFile(file: VirtualFile): Boolean {
         // Only support .proto files
         if (file.extension != "proto") {
