@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-02-18
+
+This release integrates intellij-buf with [Buf's Language Server](https://buf.build/docs/cli/editors-lsp) (buf lsp serve), which supplies enhanced completion, hover, diagnostics, semantic syntax highlighting and code actions. Let us know if you see any issues!
+
+- Add LSP support by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/414
+- Move user-facing strings to bundle by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/416
+- Fix go-to-definition with LSP by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/419
+- Run `buf lsp serve` with `log-format=text` by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/420
+- Opt in to LSP semantic highlighting by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/421
+- @stefanvanburen made their first contribution in https://github.com/bufbuild/intellij-buf/pull/415
+
 ## [0.6.1] - 2025-07-07
 
 - Use EnvironmentUtil helpers for module cache by @dillon-giacoppo in https://github.com/bufbuild/intellij-buf/pull/334
@@ -82,7 +93,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/bufbuild/intellij-buf/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/bufbuild/intellij-buf/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/bufbuild/intellij-buf/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bufbuild/intellij-buf/compare/v0.4.2...v0.5.0
