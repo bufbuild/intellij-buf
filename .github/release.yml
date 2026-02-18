@@ -4,3 +4,5 @@ changelog:
       - ignore-for-release
     authors:
       - dependabot
+      - dependabot[bot]
+      - github-actions[bot]
