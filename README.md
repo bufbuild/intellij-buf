@@ -40,7 +40,7 @@ use `build/distributions/intellij-buf-*.zip` for sharing and [installing from di
 ## Publishing the plugin
 
 Process of publishing the plugin to JetBrains Marketplace is automated via GitHub Releases:
-    
+
 * Update `pluginVersion` in `gradle.properties`.
 * Add a new entry to `CHANGELOG.md` for the new version.
 * Create a GitHub Release which will automatically submit the plugin for a review.
