@@ -23,6 +23,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
+import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import java.io.File
 
 /**
@@ -37,6 +38,12 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
     // if we don't do this, Go-to-definition does not work properly with local definitions.
     // See https://plugins.jetbrains.com/plugin/14004-protocol-buffers
     override val lspGoToDefinitionSupport: Boolean = false
+
+    // Use LSP semantic tokens for syntax highlighting, which takes precedence over
+    // the lexer-based highlighting from the bundled Protocol Buffers plugin.
+    override val lspSemanticTokensSupport: LspSemanticTokensSupport = object : LspSemanticTokensSupport() {
+        override fun shouldAskServerForSemanticTokens(psiFile: com.intellij.psi.PsiFile): Boolean = psiFile.virtualFile?.extension == "proto"
+    }
 
     override fun isSupportedFile(file: VirtualFile): Boolean {
         // Only support .proto files
