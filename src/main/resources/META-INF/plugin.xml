@@ -25,8 +25,6 @@
                                 implementation="build.buf.intellij.status.BufCLIWidgetFactory"
                                 order="first"/>
 
-        <formattingService implementation="build.buf.intellij.formatter.BufFormatterService"/>
-
         <projectService serviceInterface="build.buf.intellij.settings.BufProjectSettingsService"
                         serviceImplementation="build.buf.intellij.settings.impl.BufProjectSettingsServiceImpl"/>
         <projectConfigurable instance="build.buf.intellij.configurable.BufConfigurable"

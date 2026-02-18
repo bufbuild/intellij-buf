@@ -21,7 +21,6 @@ interface BufProjectSettingsService {
         var backgroundLintingEnabled: Boolean = true,
         var backgroundBreakingEnabled: Boolean = true,
         var breakingArgumentsOverride: List<String> = emptyList(),
-        var useBufFormatter: Boolean = true,
         var bufCLIPath: String = "",
     )
 

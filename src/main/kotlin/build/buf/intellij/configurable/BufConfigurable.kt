@@ -55,10 +55,6 @@ class BufConfigurable(
                 }
         }
         row {
-            checkBox(BufBundle.message("settings.buf.use.formatter"))
-                .bindSelected(state::useBufFormatter)
-        }
-        row {
             checkBox(BufBundle.message("settings.buf.background.linting.enabled"))
                 .bindSelected(state::backgroundLintingEnabled)
         }
@@ -80,7 +76,6 @@ class BufConfigurable(
 
     override fun reset() {
         state.bufCLIPath = project.bufSettings.state.bufCLIPath
-        state.useBufFormatter = project.bufSettings.state.useBufFormatter
         state.backgroundLintingEnabled = project.bufSettings.state.backgroundLintingEnabled
         state.backgroundBreakingEnabled = project.bufSettings.state.backgroundBreakingEnabled
         super.reset()
