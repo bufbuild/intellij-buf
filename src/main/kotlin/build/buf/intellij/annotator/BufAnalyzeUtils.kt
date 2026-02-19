@@ -15,6 +15,7 @@
 package build.buf.intellij.annotator
 
 import build.buf.intellij.cache.ProjectCache
+import build.buf.intellij.config.BufConfig
 import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
@@ -26,13 +27,16 @@ import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -79,6 +83,12 @@ object BufAnalyzeUtils {
         workingDirectory: Path,
     ): BufAnalyzeResult {
         ProgressManager.checkCanceled()
+        WriteAction.computeAndWait<Unit, Throwable> {
+            FileDocumentManager.getInstance().saveDocuments { document ->
+                val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@saveDocuments false
+                psiFile.isProtobufFile() || BufConfig.CONFIG_FILES.contains(psiFile.name)
+            }
+        }
         val started = Instant.now()
 
         val issues = runBlocking {
