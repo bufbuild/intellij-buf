@@ -21,10 +21,6 @@
         <additionalLibraryRootsProvider implementation="build.buf.intellij.resolve.BufRootsProvider"/>
 
         <highlightingPassFactory implementation="build.buf.intellij.annotator.BufAnalyzePassFactoryRegistrar"/>
-        <statusBarWidgetFactory id="bufLintWidget"
-                                implementation="build.buf.intellij.status.BufCLIWidgetFactory"
-                                order="first"/>
-
         <formattingService implementation="build.buf.intellij.formatter.BufFormatterService"/>
 
         <projectService serviceInterface="build.buf.intellij.settings.BufProjectSettingsService"
