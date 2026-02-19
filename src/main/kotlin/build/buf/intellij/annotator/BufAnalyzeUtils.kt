@@ -14,13 +14,11 @@
 
 package build.buf.intellij.annotator
 
-import build.buf.intellij.BufBundle
 import build.buf.intellij.cache.ProjectCache
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
-import build.buf.intellij.status.BufCLIWidget
 import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
@@ -35,12 +33,8 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.progress.EmptyProgressIndicator
-import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.WindowManager
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +43,6 @@ import kotlinx.coroutines.withContext
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.exists
@@ -72,55 +65,15 @@ object BufAnalyzeUtils {
         project: Project,
         owner: Disposable,
         workingDirectory: Path,
-        withWidget: Boolean = true,
     ): Lazy<BufAnalyzeResult?> {
         check(ApplicationManager.getApplication().isReadAccessAllowed)
         return externalLinterLazyResultCache.getOrPut(project, workingDirectory) {
             lazy {
                 // This code will be executed out of read action in background thread
                 if (!isUnitTestMode) check(!ApplicationManager.getApplication().isReadAccessAllowed)
-                if (withWidget) {
-                    checkWrapped(project, owner, workingDirectory)
-                } else {
-                    check(project, owner, workingDirectory)
-                }
+                check(project, owner, workingDirectory)
             }
         }
-    }
-
-    private fun checkWrapped(
-        project: Project,
-        owner: Disposable,
-        workingDirectory: Path,
-    ): BufAnalyzeResult? {
-        val widget = WriteAction.computeAndWait<BufCLIWidget?, Throwable> {
-            FileDocumentManager.getInstance()
-                .saveDocuments { document ->
-                    val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@saveDocuments false
-                    psiFile.isProtobufFile() || BufConfig.CONFIG_FILES.contains(psiFile.name)
-                }
-            val statusBar = WindowManager.getInstance().getStatusBar(project)
-            statusBar?.getWidget(BufCLIWidget.ID) as? BufCLIWidget
-        }
-
-        val future = CompletableFuture<BufAnalyzeResult?>()
-        val task = object : Task.Backgroundable(project, BufBundle.message("analyzing.in.progress"), false) {
-
-            override fun run(indicator: ProgressIndicator) {
-                widget?.inProgress = true
-                try {
-                    future.complete(check(project, owner, workingDirectory))
-                } catch (th: Throwable) {
-                    future.complete(null)
-                }
-            }
-
-            override fun onFinished() {
-                widget?.inProgress = false
-            }
-        }
-        ProgressManager.getInstance().runProcessWithProgressAsynchronously(task, EmptyProgressIndicator())
-        return future.get()
     }
 
     private fun check(
@@ -129,6 +82,12 @@ object BufAnalyzeUtils {
         workingDirectory: Path,
     ): BufAnalyzeResult {
         ProgressManager.checkCanceled()
+        WriteAction.computeAndWait<Unit, Throwable> {
+            FileDocumentManager.getInstance().saveDocuments { document ->
+                val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@saveDocuments false
+                psiFile.isProtobufFile() || BufConfig.CONFIG_FILES.contains(psiFile.name)
+            }
+        }
         val started = Instant.now()
 
         val issues = runBlocking {

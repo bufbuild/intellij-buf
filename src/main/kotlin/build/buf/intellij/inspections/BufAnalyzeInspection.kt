@@ -64,8 +64,7 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
             .getContentRootForFile(file.virtualFile) ?: return
 
         val lazyResult = runReadAction {
-            // no need to show a widget we are already "in" a progress bar
-            BufAnalyzeUtils.checkLazily(project, disposable, contentRootForFile.toNioPath(), false)
+            BufAnalyzeUtils.checkLazily(project, disposable, contentRootForFile.toNioPath())
         }
 
         val result = ApplicationManager.getApplication().executeOnPooledThread<BufAnalyzeResult?> {

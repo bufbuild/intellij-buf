@@ -15,7 +15,6 @@
 package build.buf.intellij.lsp
 
 import build.buf.intellij.base.BufTestBase
-import com.intellij.platform.lsp.api.LspServerManager
 import org.assertj.core.api.Assertions.assertThat
 
 /**
