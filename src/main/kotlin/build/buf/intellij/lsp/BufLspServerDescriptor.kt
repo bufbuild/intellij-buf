@@ -20,7 +20,6 @@ import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
 import com.intellij.platform.lsp.api.customization.LspFormattingSupport
@@ -59,12 +58,12 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
             return false
         }
 
-        // File must be in project content
-        if (!ProjectFileIndex.getInstance(project).isInContent(file)) {
-            return false
-        }
-
-        // File must be in a buf workspace (have a buf.yaml or buf.work.yaml in parent hierarchy)
+        // File must be in a buf workspace (have a buf.yaml or buf.work.yaml in parent hierarchy).
+        // Note: we intentionally do not call ProjectFileIndex.isInContent here because
+        // isSupportedFile is called from the EDT (e.g. via LspFormattingService.canFormat),
+        // and isInContent triggers a slow workspace index update that is prohibited on EDT.
+        // The buf workspace check is sufficient: files outside the project won't have a
+        // buf.yaml ancestor, and the LSP server is project-scoped regardless.
         return findBufWorkspaceRoot(file) != null
     }
 
