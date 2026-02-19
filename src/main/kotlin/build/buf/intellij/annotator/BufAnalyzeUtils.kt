@@ -14,9 +14,7 @@
 
 package build.buf.intellij.annotator
 
-import build.buf.intellij.BufBundle
 import build.buf.intellij.cache.ProjectCache
-import build.buf.intellij.config.BufConfig
 import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
@@ -28,18 +26,13 @@ import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
-import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.progress.EmptyProgressIndicator
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -47,7 +40,6 @@ import kotlinx.coroutines.withContext
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.exists
@@ -76,36 +68,9 @@ object BufAnalyzeUtils {
             lazy {
                 // This code will be executed out of read action in background thread
                 if (!isUnitTestMode) check(!ApplicationManager.getApplication().isReadAccessAllowed)
-                checkWrapped(project, owner, workingDirectory)
+                check(project, owner, workingDirectory)
             }
         }
-    }
-
-    private fun checkWrapped(
-        project: Project,
-        owner: Disposable,
-        workingDirectory: Path,
-    ): BufAnalyzeResult? {
-        WriteAction.runAndWait<Throwable> {
-            FileDocumentManager.getInstance()
-                .saveDocuments { document ->
-                    val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@saveDocuments false
-                    psiFile.isProtobufFile() || BufConfig.CONFIG_FILES.contains(psiFile.name)
-                }
-        }
-
-        val future = CompletableFuture<BufAnalyzeResult?>()
-        val task = object : Task.Backgroundable(project, BufBundle.message("analyzing.in.progress"), false) {
-            override fun run(indicator: ProgressIndicator) {
-                try {
-                    future.complete(check(project, owner, workingDirectory))
-                } catch (th: Throwable) {
-                    future.complete(null)
-                }
-            }
-        }
-        ProgressManager.getInstance().runProcessWithProgressAsynchronously(task, EmptyProgressIndicator())
-        return future.get()
     }
 
     private fun check(
