@@ -23,6 +23,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
+import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import java.io.File
 
@@ -43,6 +44,13 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
     // the lexer-based highlighting from the bundled Protocol Buffers plugin.
     override val lspSemanticTokensSupport: LspSemanticTokensSupport = object : LspSemanticTokensSupport() {
         override fun shouldAskServerForSemanticTokens(psiFile: com.intellij.psi.PsiFile): Boolean = psiFile.virtualFile?.extension == "proto"
+    }
+
+    // Use LSP formatting for .proto files, which takes precedence over the bundled
+    // Protocol Buffers plugin's formatter. Without this override, the IDE defers to
+    // the bundled plugin because it can format .proto files itself.
+    override val lspFormattingSupport: LspFormattingSupport = object : LspFormattingSupport() {
+        override fun shouldFormatThisFileExclusivelyByServer(file: VirtualFile, ideCanFormatThisFileItself: Boolean, serverExplicitlyWantsToFormatThisFile: Boolean): Boolean = file.extension == "proto"
     }
 
     override fun isSupportedFile(file: VirtualFile): Boolean {
