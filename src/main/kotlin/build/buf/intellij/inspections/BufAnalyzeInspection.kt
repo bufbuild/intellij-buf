@@ -1,4 +1,4 @@
-// Copyright 2022-2025 Buf Technologies, Inc.
+// Copyright 2022-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,8 +64,7 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
             .getContentRootForFile(file.virtualFile) ?: return
 
         val lazyResult = runReadAction {
-            // no need to show a widget we are already "in" a progress bar
-            BufAnalyzeUtils.checkLazily(project, disposable, contentRootForFile.toNioPath(), false)
+            BufAnalyzeUtils.checkLazily(project, disposable, contentRootForFile.toNioPath())
         }
 
         val result = ApplicationManager.getApplication().executeOnPooledThread<BufAnalyzeResult?> {

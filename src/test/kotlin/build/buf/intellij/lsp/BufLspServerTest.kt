@@ -1,4 +1,4 @@
-// Copyright 2022-2025 Buf Technologies, Inc.
+// Copyright 2022-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
 package build.buf.intellij.lsp
 
 import build.buf.intellij.base.BufTestBase
-import com.intellij.platform.lsp.api.LspServerManager
-import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import org.assertj.core.api.Assertions.assertThat
 
 /**

@@ -1,4 +1,4 @@
-// Copyright 2022-2025 Buf Technologies, Inc.
+// Copyright 2022-2026 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,7 +63,6 @@ class BufAnalyzePass(
     private val factory: BufAnalyzePassFactory,
     private val file: PsiFile,
     document: Document,
-    private val withWidget: Boolean = true,
 ) : TextEditorHighlightingPass(file.project, document),
     DumbAware {
     private val appService = service<BufPluginService>()
@@ -95,7 +94,7 @@ class BufAnalyzePass(
         disposable = myProject.messageBus.createDisposableOnAnyPsiChange()
             .also { Disposer.register(appService, it) }
 
-        annotationInfo = BufAnalyzeUtils.checkLazily(myProject, disposable, contentRootForFile.toNioPath(), withWidget)
+        annotationInfo = BufAnalyzeUtils.checkLazily(myProject, disposable, contentRootForFile.toNioPath())
     }
 
     override fun getInfos(): List<HighlightInfo> {
@@ -211,7 +210,7 @@ class BufAnalyzePassFactory(
         if (!shouldRunPass(file)) {
             return null
         }
-        return BufAnalyzePass(this, file, document, false)
+        return BufAnalyzePass(this, file, document)
     }
 
     override fun createHighlightingPass(file: PsiFile, editor: Editor): TextEditorHighlightingPass? {
