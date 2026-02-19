@@ -155,7 +155,7 @@ spotless {
     kotlin {
         ktlint().editorConfigOverride(
             mapOf(
-                "ktlint_experimental" to "enabled",
+                "ktlint_standard_no-unused-imports" to "enabled",
             ),
         )
         target("**/*.kt")
@@ -163,7 +163,7 @@ spotless {
     kotlinGradle {
         ktlint().editorConfigOverride(
             mapOf(
-                "ktlint_experimental" to "enabled",
+                "ktlint_standard_no-unused-imports" to "enabled",
             ),
         )
         target("**/*.kts")
