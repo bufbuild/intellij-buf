@@ -16,6 +16,8 @@ package build.buf.intellij.lsp
 
 import build.buf.intellij.base.BufTestBase
 import com.intellij.platform.lsp.api.LspServerManager
+import com.intellij.platform.lsp.api.customization.LspFormattingCustomizer
+import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import org.assertj.core.api.Assertions.assertThat
 
 /**
@@ -56,5 +58,16 @@ class BufLspServerTest : BufTestBase() {
         val params = commandLine.parametersList.parameters
         assertThat(params).contains("lsp")
         assertThat(params).contains("serve")
+    }
+
+    fun testLspFormattingEnabled() {
+        configureByFolder("configuration", "test.proto")
+
+        val descriptor = BufLspServerDescriptor(project)
+
+        // Verify LSP formatting support is enabled (not overridden to null/disabled).
+        // This ensures formatting is delegated to the LSP server via textDocument/formatting.
+        assertThat(descriptor.lspCustomization.formattingCustomizer).isNotNull()
+        assertThat(descriptor.lspCustomization.formattingCustomizer).isInstanceOf(LspFormattingSupport::class.java)
     }
 }
