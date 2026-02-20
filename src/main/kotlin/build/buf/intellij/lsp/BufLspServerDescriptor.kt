@@ -20,9 +20,9 @@ import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
+import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import java.io.File
 
@@ -45,18 +45,25 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         override fun shouldAskServerForSemanticTokens(psiFile: com.intellij.psi.PsiFile): Boolean = psiFile.virtualFile?.extension == "proto"
     }
 
+    // Use LSP formatting for .proto files, which takes precedence over the bundled
+    // Protocol Buffers plugin's formatter. Without this override, the IDE defers to
+    // the bundled plugin because it can format .proto files itself.
+    override val lspFormattingSupport: LspFormattingSupport = object : LspFormattingSupport() {
+        override fun shouldFormatThisFileExclusivelyByServer(file: VirtualFile, ideCanFormatThisFileItself: Boolean, serverExplicitlyWantsToFormatThisFile: Boolean): Boolean = file.extension == "proto"
+    }
+
     override fun isSupportedFile(file: VirtualFile): Boolean {
         // Only support .proto files
         if (file.extension != "proto") {
             return false
         }
 
-        // File must be in project content
-        if (!ProjectFileIndex.getInstance(project).isInContent(file)) {
-            return false
-        }
-
-        // File must be in a buf workspace (have a buf.yaml or buf.work.yaml in parent hierarchy)
+        // File must be in a buf workspace (have a buf.yaml or buf.work.yaml in parent hierarchy).
+        // Note: we intentionally do not call ProjectFileIndex.isInContent here because
+        // isSupportedFile is called from the EDT (e.g. via LspFormattingService.canFormat),
+        // and isInContent triggers a slow workspace index update that is prohibited on EDT.
+        // The buf workspace check is sufficient: files outside the project won't have a
+        // buf.yaml ancestor, and the LSP server is project-scoped regardless.
         return findBufWorkspaceRoot(file) != null
     }
 

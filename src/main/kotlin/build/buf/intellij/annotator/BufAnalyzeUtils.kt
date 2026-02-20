@@ -35,6 +35,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
@@ -161,6 +162,9 @@ object BufAnalyzeUtils {
         preserveNewlines: Boolean = false,
         expectedExitCodes: Set<Int> = setOf(0),
     ): BufCmdResult = withContext(Dispatchers.IO) {
+        // PSI may have changed and disposed the owner before we even start. Bail early
+        // to avoid creating a process we can't track.
+        if (Disposer.isDisposed(owner)) return@withContext BufCmdResult(-1, emptyList(), "")
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(project) ?: return@withContext BufCmdResult(-1, emptyList(), "")
         val cmd = AtomicReference<String>()
         val stdout = mutableListOf<String>()
@@ -172,22 +176,29 @@ object BufAnalyzeUtils {
             null,
             arguments.toTypedArray(),
         )
-        handler.addProcessListener(
-            object : ProcessAdapter() {
-                override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
-                    when (outputType) {
-                        ProcessOutputType.SYSTEM -> cmd.set(event.text.trimEnd())
-                        ProcessOutputType.STDOUT -> stdout.add(if (preserveNewlines) event.text else event.text.trimEnd())
-                        ProcessOutputType.STDERR -> stderr.append(event.text)
+        try {
+            handler.addProcessListener(
+                object : ProcessAdapter() {
+                    override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
+                        when (outputType) {
+                            ProcessOutputType.SYSTEM -> cmd.set(event.text.trimEnd())
+                            ProcessOutputType.STDOUT -> stdout.add(if (preserveNewlines) event.text else event.text.trimEnd())
+                            ProcessOutputType.STDERR -> stderr.append(event.text)
+                        }
                     }
-                }
 
-                override fun processTerminated(event: ProcessEvent) {
-                    exitCode.set(event.exitCode)
-                }
-            },
-            owner,
-        )
+                    override fun processTerminated(event: ProcessEvent) {
+                        exitCode.set(event.exitCode)
+                    }
+                },
+                owner,
+            )
+        } catch (e: Exception) {
+            // owner was disposed between our check and addProcessListener (TOCTOU race):
+            // PSI changed, so this analysis pass is stale — abort and clean up.
+            handler.destroyProcess()
+            return@withContext BufCmdResult(-1, emptyList(), "")
+        }
         handler.startNotify()
         if (handler.waitFor(BUF_COMMAND_EXECUTION_TIMEOUT.toMillis())) {
             val code = exitCode.get()
