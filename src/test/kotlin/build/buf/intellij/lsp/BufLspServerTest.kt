@@ -82,11 +82,26 @@ class BufLspServerTest : BufTestBase() {
         val lspServer = waitForLspServer()
         assertThat(lspServer).isNotNull()
 
-        WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
-            CodeStyleManager.getInstance(project).reformat(myFixture.file)
-        })
-
         val expected = findTestDataFolder().resolve("formatting-expected/largeprotofile.proto").readText()
+
+        // There is a race between the LSP server reaching Running state and
+        // textDocument/didOpen being sent for already-open files: the background
+        // thread that sets state=Running may post the openExistingDocuments()
+        // invokeLater after waitForLspServer()'s dispatchAllInvocationEvents() returns.
+        // If formatting is attempted before didOpen is processed, the server returns
+        // an error and the file is left unchanged.  Retry via waitWithEventsDispatching
+        // so that EDT events (including the pending didOpen invokeLater) continue to be
+        // processed between attempts until the output matches.
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not produce expected formatting within 30 seconds",
+            {
+                WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
+                    CodeStyleManager.getInstance(project).reformat(myFixture.file)
+                })
+                myFixture.file.text == expected
+            },
+            30,
+        )
         myFixture.checkResult(expected)
     }
 
