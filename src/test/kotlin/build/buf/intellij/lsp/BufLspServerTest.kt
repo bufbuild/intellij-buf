@@ -15,7 +15,17 @@
 package build.buf.intellij.lsp
 
 import build.buf.intellij.base.BufTestBase
+import com.intellij.codeInsight.actions.ReformatCodeProcessor
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.platform.lsp.api.LspServer
+import com.intellij.platform.lsp.api.LspServerManager
+import com.intellij.platform.lsp.api.LspServerState
+import com.intellij.psi.codeStyle.CodeStyleManager
+import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.util.ui.UIUtil
 import org.assertj.core.api.Assertions.assertThat
+import kotlin.io.path.readText
 
 /**
  * Tests for Buf LSP server configuration and lifecycle.
@@ -25,6 +35,11 @@ class BufLspServerTest : BufTestBase() {
 
     override fun setUp() {
         super.setUp()
+        // Pre-cache the buf version so that fileOpened() takes the synchronous EDT path
+        // (calling ensureServerStarted directly) rather than the async pooled-thread path.
+        // The async path calls ensureServerStarted from a background thread, which creates
+        // the server object but never triggers the actual process launch.
+        BufVersionDetector.getVersionInfo(project, checkIfMissing = true)
         // Re-enable LSP for this test
         System.setProperty("buf.test.disableLsp", "false")
     }
@@ -57,6 +72,24 @@ class BufLspServerTest : BufTestBase() {
         assertThat(params).contains("serve")
     }
 
+    /**
+     * Tests that formatting a .proto file via the IDE routes through the Buf LSP server
+     * and produces correctly formatted output. This test actually starts `buf lsp serve`.
+     */
+    fun testLspFormatting() {
+        configureByFolder("formatting", "largeprotofile.proto")
+
+        val lspServer = waitForLspServer()
+        assertThat(lspServer).isNotNull()
+
+        WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
+            CodeStyleManager.getInstance(project).reformat(myFixture.file)
+        })
+
+        val expected = findTestDataFolder().resolve("formatting-expected/largeprotofile.proto").readText()
+        myFixture.checkResult(expected)
+    }
+
     fun testLspFormattingEnabled() {
         configureByFolder("configuration", "test.proto")
 
@@ -68,5 +101,32 @@ class BufLspServerTest : BufTestBase() {
         val formattingSupport = descriptor.lspFormattingSupport
         assertThat(formattingSupport).isNotNull()
         assertThat(formattingSupport.shouldFormatThisFileExclusivelyByServer(protoFile, ideCanFormatThisFileItself = true, serverExplicitlyWantsToFormatThisFile = false)).isTrue()
+    }
+
+    private fun waitForLspServer(): LspServer? {
+        var lspServer: LspServer? = null
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not reach Running state within 30 seconds",
+            {
+                val server = ApplicationManager.getApplication().runReadAction<LspServer?> {
+                    LspServerManager.getInstance(project)
+                        .getServersForProvider(BufLspServerSupportProvider::class.java)
+                        .firstOrNull()
+                }
+                if (server?.state == LspServerState.Running) {
+                    lspServer = server
+                    true
+                } else {
+                    false
+                }
+            },
+            30,
+        )
+        // Flush any pending EDT events queued when the server reached Running state.
+        // IntelliJ schedules textDocument/didOpen for already-open files at that point;
+        // this ensures those notifications are sent before the caller triggers any LSP
+        // requests (e.g. textDocument/formatting).
+        UIUtil.dispatchAllInvocationEvents()
+        return lspServer
     }
 }

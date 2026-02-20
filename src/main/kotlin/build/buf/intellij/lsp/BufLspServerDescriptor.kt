@@ -20,6 +20,7 @@ import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
 import com.intellij.platform.lsp.api.customization.LspFormattingSupport
@@ -77,10 +78,13 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         cmd.addParameter("serve")
         cmd.addParameter("--log-format=text")
 
-        // Set working directory to buf workspace root
-        val projectBasePath = project.basePath
-        if (projectBasePath != null) {
-            cmd.withWorkDirectory(File(projectBasePath))
+        // Set working directory to an existing directory: prefer project.basePath, but in some
+        // environments (e.g. tests) project.basePath may not exist on disk, so fall back to the
+        // first content root, which is where project files are actually stored.
+        val workDir = project.basePath?.let { File(it) }?.takeIf { it.isDirectory }
+            ?: ProjectRootManager.getInstance(project).contentRoots.firstOrNull()?.let { File(it.path) }
+        if (workDir != null) {
+            cmd.withWorkDirectory(workDir)
         }
 
         log.info("Starting buf lsp serve")
