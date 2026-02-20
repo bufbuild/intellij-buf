@@ -25,6 +25,7 @@ import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.util.ui.UIUtil
 import org.assertj.core.api.Assertions.assertThat
+import java.io.File
 import kotlin.io.path.readText
 
 /**
@@ -35,6 +36,12 @@ class BufLspServerTest : BufTestBase() {
 
     override fun setUp() {
         super.setUp()
+        // In the test fixture, project.basePath is a path that may not exist on disk yet.
+        // BufLspServerDescriptor.createCommandLine() passes it as buf's working directory;
+        // create it now so the process launch does not fail with "Invalid working directory".
+        // buf lsp serve discovers the actual workspace from file URIs in LSP messages, so
+        // the working directory does not need to contain buf.yaml.
+        project.basePath?.let { File(it).mkdirs() }
         // Pre-cache the buf version so that fileOpened() takes the synchronous EDT path
         // (calling ensureServerStarted directly) rather than the async pooled-thread path.
         // The async path calls ensureServerStarted from a background thread, which creates
