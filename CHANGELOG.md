@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-02-23
+
+This is just a quick follow-up to fix the publishing of [`v0.7.1`](https://github.com/bufbuild/intellij-buf/releases/tag/v0.7.1).
+
+## [0.7.1] - 2026-02-23
+
+This release is a quick follow-up to v0.7.0 that drops our custom formatting code in favor of using the LSP for formatting (#426), which should handle cross-platform filepaths better, and drops our custom status bar widget in favor of integrating with IntelliJ's LSP widget (#425), which should remove certain cases in which we were showing multiple widgets in the status bar.
+
+- Drop custom status bar widget by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/425
+- Remove custom formatter (use LSP for formatting) by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/426
+
 ## [0.7.0] - 2026-02-18
 
 This release integrates intellij-buf with [Buf's Language Server](https://buf.build/docs/cli/editors-lsp) (buf lsp serve), which supplies enhanced completion, hover, diagnostics, semantic syntax highlighting and code actions. Let us know if you see any issues!
@@ -93,7 +104,9 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/bufbuild/intellij-buf/compare/v0.7.1...v0.7.2
+[0.7.1]: https://github.com/bufbuild/intellij-buf/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/bufbuild/intellij-buf/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/bufbuild/intellij-buf/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/bufbuild/intellij-buf/compare/v0.5.0...v0.6.0
