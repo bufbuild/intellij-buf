@@ -40,7 +40,7 @@ jobs:
       - name: Bump Plugin Version
         run: |
           VERSION="${{ github.event.release.tag_name }}"
-          sed -i "s/^pluginVersion = .*/pluginVersion = $VERSION/" gradle.properties
+          sed -i "s/^pluginVersion = .*/pluginVersion = ${VERSION#v}/" gradle.properties
 
       # Set environment variables
       - name: Export Properties
