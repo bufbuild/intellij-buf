@@ -24,7 +24,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
 import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
-import java.io.File
 
 /**
  * LSP server descriptor for the Buf Language Server.
@@ -76,12 +75,6 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         cmd.addParameter("lsp")
         cmd.addParameter("serve")
         cmd.addParameter("--log-format=text")
-
-        // Set working directory to buf workspace root
-        val projectBasePath = project.basePath
-        if (projectBasePath != null) {
-            cmd.withWorkDirectory(File(projectBasePath))
-        }
 
         log.info("Starting buf lsp serve")
         return cmd
