@@ -36,6 +36,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884 # v5.0.1
 
+      # Bump pluginVersion in gradle.properties to match the release tag
+      - name: Bump Plugin Version
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          sed -i "s/^pluginVersion = .*/pluginVersion = $VERSION/" gradle.properties
+
       # Set environment variables
       - name: Export Properties
         id: properties
@@ -75,7 +81,6 @@ jobs:
 
       # Create a pull request
       - name: Create Pull Request
-        if: ${{ steps.properties.outputs.changelog != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -89,7 +94,7 @@ jobs:
           git checkout -b $BRANCH
           git commit -am "Changelog update - $VERSION"
           git push --set-upstream origin $BRANCH
-          
+
           gh label create "$LABEL" \
             --description "Pull requests with release changelog update" \
             --force \
@@ -97,6 +102,6 @@ jobs:
 
           gh pr create \
             --title "Changelog update - \`$VERSION\`" \
-            --body "Current pull request contains patched \`CHANGELOG.md\` file for the \`$VERSION\` version." \
+            --body "Current pull request contains patched \`CHANGELOG.md\` file and bumped \`pluginVersion\` in \`gradle.properties\` for the \`$VERSION\` version." \
             --label "$LABEL" \
             --head $BRANCH
