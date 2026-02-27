@@ -19,7 +19,6 @@ import build.buf.intellij.base.BufTestBase
 import build.buf.intellij.settings.bufSettings
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Assume
 import java.nio.file.Path
 
 /**
@@ -39,12 +38,12 @@ import java.nio.file.Path
 class BufWslTest : BufTestBase() {
     override fun getBasePath(): String = "lsp"
 
+    // Whether this test is running on a Windows host. WSL tests are excluded from the regular
+    // test task via build.gradle.kts; this flag is a secondary guard for accidental local runs.
+    private val isWindows = System.getProperty("os.name", "").startsWith("Windows")
+
     override fun setUp() {
-        // These tests are Windows-only.
-        Assume.assumeTrue(
-            "WSL tests only run on Windows",
-            System.getProperty("os.name", "").startsWith("Windows"),
-        )
+        if (!isWindows) return
 
         super.setUp()
 
@@ -68,6 +67,8 @@ class BufWslTest : BufTestBase() {
      * `C:\Work\project` → `/mnt/c/Work/project`) before handing it to `ScriptRunnerUtil`.
      */
     fun testRunBufCommandWithWslBuf() {
+        if (!isWindows) return
+
         configureByFolder("configuration", "test.proto")
 
         val workingDirectory = Path.of(project.basePath!!)
