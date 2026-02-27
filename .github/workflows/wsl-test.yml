@@ -63,11 +63,11 @@ jobs:
         uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884 # v5.0.1
 
       # Run WSL-specific tests. -Pwsl removes the exclude added in build.gradle.kts so that
-      # the wsl package is included. BUF_WSL_CLI tells BufWslTest which Linux path to use.
+      # the wsl package is included. buf is discovered via IntelliJ's WSL-aware path detection
+      # (PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS) rather than an explicit path,
+      # which is what triggers IJent routing — the same code path the user hits.
       # These tests are expected to fail until the WSL path-handling bug is resolved.
       - name: Run WSL Tests
-        env:
-          BUF_WSL_CLI: /usr/local/bin/buf
         run: ./gradlew test --tests "build.buf.intellij.wsl.*" -Pwsl
 
       # Collect Tests Result on failure

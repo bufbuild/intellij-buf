@@ -47,11 +47,15 @@ class BufWslTest : BufTestBase() {
 
         super.setUp()
 
-        // Override the configured buf CLI path to the WSL Linux binary.
-        // We intentionally skip File.isFile here: a Linux path like /usr/local/bin/buf is not
-        // a valid Windows File path, so the check would always fail.
-        val wslBufPath = System.getenv("BUF_WSL_CLI") ?: "/usr/local/bin/buf"
-        project.bufSettings.state = project.bufSettings.state.copy(bufCLIPath = wslBufPath)
+        // Clear the explicit CLI path so BufCLIUtils falls back to
+        // PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf"). On a Windows host
+        // with WSL installed and buf inside WSL, IntelliJ's WSL-aware path detection returns
+        // a path that triggers IJent routing — which is exactly the code path the user hits.
+        // Setting the path manually to a raw Linux string (e.g. /usr/local/bin/buf) does NOT
+        // reproduce the bug: Java resolves it as C:\usr\local\bin\buf on Windows, so the
+        // process fails with a plain "file not found" rather than the IJent working-directory
+        // error we are trying to catch.
+        project.bufSettings.state = project.bufSettings.state.copy(bufCLIPath = "")
     }
 
     /**
