@@ -1,0 +1,79 @@
+# GitHub Actions Workflow for testing the Buf plugin in a WSL (Windows Subsystem for Linux)
+# environment. Installs buf inside WSL, then runs the WSL-specific integration tests on a
+# Windows runner to reproduce the class of issues reported in:
+# https://github.com/bufbuild/intellij-buf/issues/288
+#
+# The tests are expected to fail until the underlying WSL path-handling bug is fixed.
+
+name: Test (WSL)
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  test-wsl:
+    name: Test (WSL)
+    runs-on: windows-latest
+
+    steps:
+
+      # Check out the current repository
+      - name: Fetch Sources
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Set up WSL with Ubuntu 24.04. Generates a `wsl-bash` shell wrapper for
+      # subsequent steps that need to run commands inside WSL.
+      - name: Set up WSL (Ubuntu 24.04)
+        uses: Vampire/setup-wsl@63260e06cb1e1373bae3fbad3b4166b0392d175f # v6.0.0
+        with:
+          distribution: Ubuntu-24.04
+
+      # Extract the buf version from the version catalog so the WSL install stays in sync.
+      - name: Get buf version
+        id: versions
+        shell: bash
+        run: |
+          BUF_VERSION=$(grep '^buf = ' gradle/libs.versions.toml | sed 's/.*"\([^"]*\)".*/\1/' | head -1)
+          echo "buf=${BUF_VERSION}" >> "$GITHUB_OUTPUT"
+
+      # Install the Linux buf binary inside WSL at the standard system path.
+      - name: Install buf in WSL
+        shell: wsl-bash {0}
+        run: |
+          curl -sSL "https://github.com/bufbuild/buf/releases/download/v${{ steps.versions.outputs.buf }}/buf-Linux-x86_64" \
+            -o /usr/local/bin/buf
+          chmod +x /usr/local/bin/buf
+          buf --version
+
+      # Set up Java environment for the next steps
+      - name: Setup Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: zulu
+          java-version: 21
+
+      # Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884 # v5.0.1
+
+      # Run WSL-specific tests. -Pwsl removes the exclude added in build.gradle.kts so that
+      # the wsl package is included. buf is discovered via IntelliJ's WSL-aware path detection
+      # (PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS) rather than an explicit path,
+      # which is what triggers IJent routing — the same code path the user hits.
+      # These tests are expected to fail until the WSL path-handling bug is resolved.
+      - name: Run WSL Tests
+        run: ./gradlew test --tests "build.buf.intellij.wsl.*" -Pwsl
+
+      # Collect Tests Result on failure
+      - name: Collect Tests Result
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: wsl-tests-result
+          path: ${{ github.workspace }}/build/reports/tests

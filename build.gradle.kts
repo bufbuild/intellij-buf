@@ -226,6 +226,10 @@ tasks {
         environment("BUF_CACHE_DIR", File(project.projectDir.path + "/src/test/resources/testData/cache").absolutePath)
         systemProperty("NO_FS_ROOTS_ACCESS_CHECK", "true") // weird issue on linux
         systemProperty("BUF_CLI", buf.asPath)
+        // WSL tests require a Windows runner with WSL installed; they run via wsl-test.yml.
+        if (!project.hasProperty("wsl")) {
+            exclude("**/wsl/**")
+        }
     }
 
     wrapper {
