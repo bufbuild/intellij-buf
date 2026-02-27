@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-02-26
+
+This is a small release, just adding #430 to avoid errors being emitted from the plugin.
+
+- Remove working directory for running LSP server by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/430
+
 ## [0.7.2] - 2026-02-23
 
 This is just a quick follow-up to fix the publishing of [`v0.7.1`](https://github.com/bufbuild/intellij-buf/releases/tag/v0.7.1).
@@ -104,7 +110,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/bufbuild/intellij-buf/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/bufbuild/intellij-buf/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/bufbuild/intellij-buf/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/bufbuild/intellij-buf/compare/v0.6.1...v0.7.0
