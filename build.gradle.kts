@@ -159,6 +159,7 @@ spotless {
             ),
         )
         target("**/*.kt")
+        targetExclude("build/**/*.kt")
     }
     kotlinGradle {
         ktlint().editorConfigOverride(
@@ -167,6 +168,7 @@ spotless {
             ),
         )
         target("**/*.kts")
+        targetExclude("build/**/*.kts")
     }
 }
 
