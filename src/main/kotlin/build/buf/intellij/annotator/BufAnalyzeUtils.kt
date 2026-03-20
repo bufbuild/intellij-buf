@@ -244,9 +244,10 @@ object BufAnalyzeUtils {
         val cmd = GeneralCommandLine(wslExecutablePath)
         cmd.addParameters(arguments)
         val options = WSLCommandLineOptions()
-        // Translate the Windows working directory (C:\Work) to its WSL mount (/mnt/c/Work)
-        // so that wsl.exe --cd receives a path it can resolve inside the WSL filesystem.
-        options.setRemoteWorkingDirectory(windowsPathToWsl(workingDirectory))
+        // Use the distro's own getWslPath to translate the Windows working directory
+        // (e.g. C:\Work) to its WSL mount path (e.g. /mnt/c/Work). This respects any
+        // custom mount root configured in /etc/wsl.conf, unlike a hardcoded /mnt/ prefix.
+        options.setRemoteWorkingDirectory(distro.getWslPath(workingDirectory))
         distro.patchCommandLine(cmd, null, options)
         return OSProcessHandler(cmd)
     }
@@ -262,19 +263,6 @@ object BufAnalyzeUtils {
         val path = bufExecutable.path
         if (!path.startsWith("/") && !path.startsWith("\\")) return null
         return WslDistributionManager.getInstance().installedDistributions.firstOrNull()
-    }
-
-    // Converts a Windows absolute path (e.g. C:\Work\project) to its WSL mount-point
-    // equivalent (/mnt/c/Work/project). This mapping is defined by WSL and does not
-    // change across distros. Non-Windows paths are returned unchanged.
-    internal fun windowsPathToWsl(path: Path): String {
-        val str = path.toString()
-        // Windows absolute path: drive letter + colon (e.g. "C:\..." or "C:/...")
-        if (str.length >= 2 && str[1] == ':') {
-            val drive = str[0].lowercaseChar()
-            return "/mnt/$drive" + str.drop(2).replace('\\', '/')
-        }
-        return str
     }
 
     private val externalLinterLazyResultCache =

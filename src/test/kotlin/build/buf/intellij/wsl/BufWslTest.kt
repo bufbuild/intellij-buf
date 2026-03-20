@@ -63,17 +63,6 @@ class BufWslTest : BufTestBase() {
     }
 
     /**
-     * Verifies that the Windows→WSL path conversion produces the correct mount path.
-     * This is the core of the fix for https://github.com/bufbuild/intellij-buf/issues/288.
-     */
-    fun testWindowsPathToWslConversion() {
-        if (!isWindows) return
-
-        assertThat(BufAnalyzeUtils.windowsPathToWsl(Paths.get("C:\\Work\\project"))).isEqualTo("/mnt/c/Work/project")
-        assertThat(BufAnalyzeUtils.windowsPathToWsl(Paths.get("D:\\foo\\bar"))).isEqualTo("/mnt/d/foo/bar")
-    }
-
-    /**
      * Verifies that findWslDistro returns a distribution for a Linux-style buf path on Windows,
      * and null for a Windows-style path. This ensures the WSL detection logic is correct.
      */
@@ -123,7 +112,6 @@ class BufWslTest : BufTestBase() {
             .withFailMessage(
                 "buf lint did not run (exit ${result.exitCode}); buf may not have launched via wsl.exe.\n" +
                     "workingDirectory=$workingDirectory\n" +
-                    "wslWorkDir=${BufAnalyzeUtils.windowsPathToWsl(workingDirectory)}\n" +
                     "stderr: ${result.stderr}",
             )
             .isIn(0, 100)
