@@ -14,15 +14,20 @@
 
 package build.buf.intellij.lsp
 
+import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.settings.BufCLIUtils
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputType
 import com.intellij.execution.process.ScriptRunnerUtil
+import com.intellij.execution.wsl.WSLCommandLineOptions
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.platform.lsp.api.LspServerManager
+import java.io.File
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -71,7 +76,7 @@ object BufVersionDetector {
             return null
         }
 
-        val version = executeVersionCommand(bufExecutable.absolutePath)
+        val version = executeVersionCommand(bufExecutable)
         if (version == null) {
             log.warn("Failed to execute buf --version")
             return null
@@ -91,17 +96,26 @@ object BufVersionDetector {
         return info
     }
 
-    private fun executeVersionCommand(bufPath: String): String? {
+    private fun executeVersionCommand(bufExecutable: File): String? {
         val stdout = AtomicReference<String>()
         val exitCode = AtomicInteger(-1)
 
         try {
-            val handler = ScriptRunnerUtil.execute(
-                bufPath,
-                null, // working directory
-                null, // environment variables
-                arrayOf("--version"),
-            )
+            val distro = BufAnalyzeUtils.findWslDistro(bufExecutable)
+            val handler =
+                if (distro != null) {
+                    val wslPath = bufExecutable.path.replace('\\', '/')
+                    val cmd = GeneralCommandLine(wslPath, "--version")
+                    distro.patchCommandLine(cmd, null, WSLCommandLineOptions())
+                    OSProcessHandler(cmd)
+                } else {
+                    ScriptRunnerUtil.execute(
+                        bufExecutable.absolutePath,
+                        null, // working directory
+                        null, // environment variables
+                        arrayOf("--version"),
+                    )
+                }
 
             handler.addProcessListener(object : ProcessAdapter() {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {

@@ -20,10 +20,16 @@ import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
 import build.buf.intellij.vendor.isProtobufFile
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputType
 import com.intellij.execution.process.ScriptRunnerUtil
+import com.intellij.execution.wsl.WSLCommandLineOptions
+import com.intellij.execution.wsl.WSLDistribution
+import com.intellij.execution.wsl.WslDistributionManager
 import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -41,6 +47,7 @@ import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
@@ -170,12 +177,12 @@ object BufAnalyzeUtils {
         val stdout = mutableListOf<String>()
         val stderr = StringBuilder()
         val exitCode = AtomicInteger(-1)
-        val handler = ScriptRunnerUtil.execute(
-            bufExecutable.absolutePath,
-            workingDirectory.toString(),
-            null,
-            arguments.toTypedArray(),
-        )
+        val handler = try {
+            createProcessHandler(bufExecutable, workingDirectory, arguments)
+        } catch (e: Exception) {
+            LOG.warn("Failed to create buf process handler", e)
+            return@withContext BufCmdResult(-1, emptyList(), "")
+        }
         try {
             handler.addProcessListener(
                 object : ProcessAdapter() {
@@ -210,6 +217,52 @@ object BufAnalyzeUtils {
             handler.destroyProcess()
         }
         BufCmdResult(exitCode = exitCode.get(), stdout = stdout, stderr = stderr.toString())
+    }
+
+    // Creates the appropriate process handler for buf. When buf is a Linux-style path
+    // (e.g. /usr/local/bin/buf on a Windows host with WSL), we cannot pass the command
+    // directly to ProcessBuilder — it requires the process to run inside WSL. We use
+    // WslDistribution.patchCommandLine to convert the command to run via wsl.exe, with
+    // the working directory translated to its WSL mount path. For native buf executables
+    // (Windows .exe or macOS/Linux binary) we fall back to ScriptRunnerUtil.execute.
+    private fun createProcessHandler(
+        bufExecutable: File,
+        workingDirectory: Path,
+        arguments: List<String>,
+    ): ProcessHandler {
+        val distro = findWslDistro(bufExecutable) ?: return ScriptRunnerUtil.execute(
+            bufExecutable.absolutePath,
+            workingDirectory.toString(),
+            null,
+            arguments.toTypedArray(),
+        )
+        // Convert the Windows-normalized path ("\usr\local\bin\buf") back to a Unix path
+        // ("/usr/local/bin/buf") so that wsl.exe executes the correct binary inside WSL.
+        // Using absolutePath here would resolve the path against the current Windows drive
+        // (e.g. "D:\usr\local\bin\buf"), which WSL cannot find.
+        val wslExecutablePath = bufExecutable.path.replace('\\', '/')
+        val cmd = GeneralCommandLine(wslExecutablePath)
+        cmd.addParameters(arguments)
+        val options = WSLCommandLineOptions()
+        // Use the distro's own getWslPath to translate the Windows working directory
+        // (e.g. C:\Work) to its WSL mount path (e.g. /mnt/c/Work). This respects any
+        // custom mount root configured in /etc/wsl.conf, unlike a hardcoded /mnt/ prefix.
+        options.setRemoteWorkingDirectory(distro.getWslPath(workingDirectory))
+        distro.patchCommandLine(cmd, null, options)
+        return OSProcessHandler(cmd)
+    }
+
+    // Returns the first installed WSL distribution when the buf executable is a Linux-style
+    // path (indicating it lives inside WSL). Returns null on non-Windows hosts (where
+    // installedDistributions is always empty) and for native Windows/macOS/Linux executables.
+    internal fun findWslDistro(bufExecutable: File): WSLDistribution? {
+        // A Linux-style path like "/usr/local/bin/buf" signals that buf lives in WSL.
+        // On Windows, java.io.File normalizes "/" to "\" so the path becomes "\usr\local\bin\buf".
+        // We therefore accept both "/" and "\" as the first character; native Windows paths
+        // always begin with a drive letter (e.g. "C:\...") so they are excluded correctly.
+        val path = bufExecutable.path
+        if (!path.startsWith("/") && !path.startsWith("\\")) return null
+        return WslDistributionManager.getInstance().installedDistributions.firstOrNull()
     }
 
     private val externalLinterLazyResultCache =

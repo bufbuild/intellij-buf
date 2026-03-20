@@ -15,9 +15,11 @@
 package build.buf.intellij.lsp
 
 import build.buf.intellij.BufBundle
+import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.wsl.WSLCommandLineOptions
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -71,10 +73,18 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
             ?: throw IllegalStateException(BufBundle.message("lsp.cli.not.found"))
 
         val cmd = GeneralCommandLine()
-        cmd.exePath = bufExe.absolutePath
         cmd.addParameter("lsp")
         cmd.addParameter("serve")
         cmd.addParameter("--log-format=text")
+
+        val distro = BufAnalyzeUtils.findWslDistro(bufExe)
+        if (distro != null) {
+            // buf lives inside WSL; route via wsl.exe so the process is created inside WSL.
+            cmd.exePath = bufExe.path.replace('\\', '/')
+            distro.patchCommandLine(cmd, project, WSLCommandLineOptions())
+        } else {
+            cmd.exePath = bufExe.absolutePath
+        }
 
         log.info("Starting buf lsp serve")
         return cmd
