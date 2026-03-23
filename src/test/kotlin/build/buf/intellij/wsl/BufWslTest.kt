@@ -53,6 +53,18 @@ class BufWslTest : BufTestBase() {
     // test task via build.gradle.kts; this flag is a secondary guard for accidental local runs.
     private val isWindows = System.getProperty("os.name", "").startsWith("Windows")
 
+    override fun tearDown() {
+        if (isWindows) {
+            // Stop any LSP servers started during the test before the framework's thread-leak
+            // check fires. On Windows the buf lsp serve process runs via wsl.exe; its bridge
+            // threads outlive the process kill and are detected as leaks if we don't stop
+            // the server explicitly before super.tearDown() disposes the project.
+            LspServerManager.getInstance(project).stopServers(BufLspServerSupportProvider::class.java)
+            UIUtil.dispatchAllInvocationEvents()
+        }
+        super.tearDown()
+    }
+
     override fun setUp() {
         if (!isWindows) return
 
