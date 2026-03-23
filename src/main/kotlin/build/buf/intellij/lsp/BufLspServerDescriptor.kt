@@ -80,8 +80,11 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         val distro = BufAnalyzeUtils.findWslDistro(bufExe)
         if (distro != null) {
             // buf lives inside WSL; route via wsl.exe so the process is created inside WSL.
+            // Pass null for project to bypass IJent routing — same as BufAnalyzeUtils.createProcessHandler.
+            // Using a non-null project causes IntelliJ to route through IJent, which fails for
+            // WSL processes (the same regression as https://github.com/bufbuild/intellij-buf/issues/288).
             cmd.exePath = BufAnalyzeUtils.getWslLinuxPath(bufExe)
-            distro.patchCommandLine(cmd, project, WSLCommandLineOptions())
+            distro.patchCommandLine(cmd, null, WSLCommandLineOptions())
         } else {
             cmd.exePath = bufExe.absolutePath
         }

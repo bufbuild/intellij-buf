@@ -252,43 +252,46 @@ object BufAnalyzeUtils {
         return OSProcessHandler(cmd)
     }
 
+    // Matches UNC WSL paths: \\wsl.localhost\<distro>\... or \\wsl$\<distro>\...
+    // On Windows, File normalizes "/" to "\" but preserves the "\\" UNC prefix.
+    // Group 1: distro name (e.g. "Ubuntu-24.04"), Group 2: Linux path (e.g. "\usr\local\bin\buf")
+    private val WSL_UNC_PATH_REGEX = Regex("""^\\\\(?:wsl\.localhost|wsl\$)\\([^\\]+)(\\.*)?$""")
+
     // Returns the WSL distribution for the given buf executable, or null if the executable
     // is not a WSL path. Handles both Linux-style paths ("/usr/local/bin/buf", normalized
     // to "\usr\local\bin\buf" by Java on Windows) and UNC WSL paths
-    // ("\\wsl.localhost\Ubuntu\usr\local\bin\buf" or "\\wsl$\Ubuntu\...").
-    // For UNC paths, finds the named distro by checking each distro's UNCRootPath.
+    // ("\\wsl.localhost\Ubuntu-24.04\usr\local\bin\buf" or "\\wsl$\Ubuntu\...").
+    // For UNC paths, finds the named distro rather than just the first installed one.
     // Returns null on non-Windows hosts (where installedDistributions is always empty)
     // and for native Windows/macOS/Linux executables.
     internal fun findWslDistro(bufExecutable: File): WSLDistribution? {
-        val installedDistros = WslDistributionManager.getInstance().installedDistributions
-        // UNC WSL path: check if the path starts with any distro's UNC root
-        // (e.g. "\\wsl.localhost\Ubuntu" or "\\wsl$\Ubuntu"). This uses the platform API
-        // so we handle any UNC format IntelliJ supports without hardcoding strings.
-        val uncDistro = installedDistros.firstOrNull {
-            bufExecutable.path.startsWith(it.getUNCRootPath().toString(), ignoreCase = true)
+        val path = bufExecutable.path
+        // UNC WSL path: \\wsl.localhost\<distro>\... or \\wsl$\<distro>\...
+        val uncMatch = WSL_UNC_PATH_REGEX.find(path)
+        if (uncMatch != null) {
+            val distroName = uncMatch.groupValues[1]
+            val installedDistros = WslDistributionManager.getInstance().installedDistributions
+            return installedDistros.firstOrNull { it.msId.equals(distroName, ignoreCase = true) }
+                ?: installedDistros.firstOrNull()
         }
-        if (uncDistro != null) return uncDistro
         // Linux-style path: "/usr/local/bin/buf" → Java normalizes to "\usr\local\bin\buf" on Windows.
         // We accept both "/" and "\" as the first character; native Windows paths always begin
-        // with a drive letter (e.g. "C:\...") and UNC paths begin with "\\" (both chars "\\").
-        val path = bufExecutable.path
+        // with a drive letter (e.g. "C:\...") and UNC paths begin with "\\" (two chars).
         if (!path.startsWith("/") && !path.startsWith("\\")) return null
-        return installedDistros.firstOrNull()
+        return WslDistributionManager.getInstance().installedDistributions.firstOrNull()
     }
 
     // Returns the Linux-style path for a WSL buf executable.
-    // For UNC paths like "\\wsl.localhost\Ubuntu\usr\local\bin\buf", extracts "/usr/local/bin/buf"
-    // by stripping the distro's UNC root prefix.
+    // For UNC paths like "\\wsl.localhost\Ubuntu-24.04\usr\local\bin\buf", strips the
+    // UNC server+share prefix (\\wsl.localhost\Ubuntu-24.04) to yield "/usr/local/bin/buf".
     // For Linux-style paths already normalized by Java (e.g. "\usr\local\bin\buf"), just
     // replaces backslashes with forward slashes.
     internal fun getWslLinuxPath(bufExecutable: File): String {
         val path = bufExecutable.path
-        val uncDistro = WslDistributionManager.getInstance().installedDistributions.firstOrNull {
-            path.startsWith(it.getUNCRootPath().toString(), ignoreCase = true)
-        }
-        if (uncDistro != null) {
-            val linuxPart = path.substring(uncDistro.getUNCRootPath().toString().length).replace('\\', '/')
-            return linuxPart.ifEmpty { "/" }
+        val uncMatch = WSL_UNC_PATH_REGEX.find(path)
+        if (uncMatch != null) {
+            val linuxPart = uncMatch.groupValues[2]
+            return if (linuxPart.isEmpty()) "/" else linuxPart.replace('\\', '/')
         }
         return path.replace('\\', '/')
     }

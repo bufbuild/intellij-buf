@@ -100,6 +100,8 @@ class BufWslTest : BufTestBase() {
         if (installedDistros.isEmpty()) return
 
         val distro = installedDistros.first()
+        // Build the UNC path using wsl.localhost (the format Windows Explorer shows and users
+        // typically copy from the address bar). Both wsl.localhost and wsl$ are valid UNC roots.
         val uncPath = File("\\\\wsl.localhost\\${distro.msId}\\usr\\local\\bin\\buf")
 
         assertThat(BufAnalyzeUtils.findWslDistro(uncPath))
