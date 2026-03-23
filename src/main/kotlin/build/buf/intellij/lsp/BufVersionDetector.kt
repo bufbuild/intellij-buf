@@ -104,7 +104,7 @@ object BufVersionDetector {
             val distro = BufAnalyzeUtils.findWslDistro(bufExecutable)
             val handler =
                 if (distro != null) {
-                    val wslPath = bufExecutable.path.replace('\\', '/')
+                    val wslPath = BufAnalyzeUtils.getWslLinuxPath(bufExecutable)
                     val cmd = GeneralCommandLine(wslPath, "--version")
                     distro.patchCommandLine(cmd, null, WSLCommandLineOptions())
                     OSProcessHandler(cmd)

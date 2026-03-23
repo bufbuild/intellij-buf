@@ -240,7 +240,7 @@ object BufAnalyzeUtils {
         // ("/usr/local/bin/buf") so that wsl.exe executes the correct binary inside WSL.
         // Using absolutePath here would resolve the path against the current Windows drive
         // (e.g. "D:\usr\local\bin\buf"), which WSL cannot find.
-        val wslExecutablePath = bufExecutable.path.replace('\\', '/')
+        val wslExecutablePath = getWslLinuxPath(bufExecutable)
         val cmd = GeneralCommandLine(wslExecutablePath)
         cmd.addParameters(arguments)
         val options = WSLCommandLineOptions()
@@ -252,17 +252,45 @@ object BufAnalyzeUtils {
         return OSProcessHandler(cmd)
     }
 
-    // Returns the first installed WSL distribution when the buf executable is a Linux-style
-    // path (indicating it lives inside WSL). Returns null on non-Windows hosts (where
-    // installedDistributions is always empty) and for native Windows/macOS/Linux executables.
+    // Returns the WSL distribution for the given buf executable, or null if the executable
+    // is not a WSL path. Handles both Linux-style paths ("/usr/local/bin/buf", normalized
+    // to "\usr\local\bin\buf" by Java on Windows) and UNC WSL paths
+    // ("\\wsl.localhost\Ubuntu\usr\local\bin\buf" or "\\wsl$\Ubuntu\...").
+    // For UNC paths, finds the named distro by checking each distro's UNCRootPath.
+    // Returns null on non-Windows hosts (where installedDistributions is always empty)
+    // and for native Windows/macOS/Linux executables.
     internal fun findWslDistro(bufExecutable: File): WSLDistribution? {
-        // A Linux-style path like "/usr/local/bin/buf" signals that buf lives in WSL.
-        // On Windows, java.io.File normalizes "/" to "\" so the path becomes "\usr\local\bin\buf".
-        // We therefore accept both "/" and "\" as the first character; native Windows paths
-        // always begin with a drive letter (e.g. "C:\...") so they are excluded correctly.
+        val installedDistros = WslDistributionManager.getInstance().installedDistributions
+        // UNC WSL path: check if the path starts with any distro's UNC root
+        // (e.g. "\\wsl.localhost\Ubuntu" or "\\wsl$\Ubuntu"). This uses the platform API
+        // so we handle any UNC format IntelliJ supports without hardcoding strings.
+        val uncDistro = installedDistros.firstOrNull {
+            bufExecutable.path.startsWith(it.getUNCRootPath().toString(), ignoreCase = true)
+        }
+        if (uncDistro != null) return uncDistro
+        // Linux-style path: "/usr/local/bin/buf" → Java normalizes to "\usr\local\bin\buf" on Windows.
+        // We accept both "/" and "\" as the first character; native Windows paths always begin
+        // with a drive letter (e.g. "C:\...") and UNC paths begin with "\\" (both chars "\\").
         val path = bufExecutable.path
         if (!path.startsWith("/") && !path.startsWith("\\")) return null
-        return WslDistributionManager.getInstance().installedDistributions.firstOrNull()
+        return installedDistros.firstOrNull()
+    }
+
+    // Returns the Linux-style path for a WSL buf executable.
+    // For UNC paths like "\\wsl.localhost\Ubuntu\usr\local\bin\buf", extracts "/usr/local/bin/buf"
+    // by stripping the distro's UNC root prefix.
+    // For Linux-style paths already normalized by Java (e.g. "\usr\local\bin\buf"), just
+    // replaces backslashes with forward slashes.
+    internal fun getWslLinuxPath(bufExecutable: File): String {
+        val path = bufExecutable.path
+        val uncDistro = WslDistributionManager.getInstance().installedDistributions.firstOrNull {
+            path.startsWith(it.getUNCRootPath().toString(), ignoreCase = true)
+        }
+        if (uncDistro != null) {
+            val linuxPart = path.substring(uncDistro.getUNCRootPath().toString().length).replace('\\', '/')
+            return linuxPart.ifEmpty { "/" }
+        }
+        return path.replace('\\', '/')
     }
 
     private val externalLinterLazyResultCache =

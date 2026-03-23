@@ -16,12 +16,24 @@ package build.buf.intellij.wsl
 
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.base.BufTestBase
+import build.buf.intellij.lsp.BufLspServerSupportProvider
+import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.settings.bufSettings
+import com.intellij.codeInsight.actions.ReformatCodeProcessor
 import com.intellij.execution.wsl.WslDistributionManager
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.platform.lsp.api.LspServer
+import com.intellij.platform.lsp.api.LspServerManager
+import com.intellij.platform.lsp.api.LspServerState
+import com.intellij.psi.codeStyle.CodeStyleManager
+import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.util.ui.UIUtil
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import java.io.File
 import java.nio.file.Paths
+import kotlin.io.path.readText
 
 /**
  * Integration tests for Buf plugin behavior in a WSL (Windows Subsystem for Linux) environment.
@@ -76,6 +88,104 @@ class BufWslTest : BufTestBase() {
     }
 
     /**
+     * Verifies that findWslDistro returns the correct named distro for a UNC WSL path
+     * (\\wsl.localhost\<distro>\...), and that getWslLinuxPath strips the UNC prefix.
+     * Covers https://github.com/bufbuild/intellij-buf/issues/288 where users configure
+     * the path in "\\wsl.localhost\Ubuntu\usr\local\bin\buf" format.
+     */
+    fun testFindWslDistroAndLinuxPathForUncPath() {
+        if (!isWindows) return
+
+        val installedDistros = WslDistributionManager.getInstance().installedDistributions
+        if (installedDistros.isEmpty()) return
+
+        val distro = installedDistros.first()
+        val uncPath = File("\\\\wsl.localhost\\${distro.msId}\\usr\\local\\bin\\buf")
+
+        assertThat(BufAnalyzeUtils.findWslDistro(uncPath))
+            .isNotNull()
+            .extracting { it!!.msId }
+            .isEqualTo(distro.msId)
+
+        assertThat(BufAnalyzeUtils.getWslLinuxPath(uncPath)).isEqualTo("/usr/local/bin/buf")
+    }
+
+    /**
+     * End-to-end test: runs `buf lint` using a UNC WSL path for the buf executable.
+     * Covers the case where users configure the path as "\\wsl.localhost\Ubuntu\usr\local\bin\buf"
+     * instead of the Linux-style "/usr/local/bin/buf".
+     */
+    fun testRunBufCommandWithUncWslPath() {
+        if (!isWindows) return
+
+        val installedDistros = WslDistributionManager.getInstance().installedDistributions
+        if (installedDistros.isEmpty()) return
+
+        val distro = installedDistros.first()
+        project.bufSettings.state = project.bufSettings.state.copy(
+            bufCLIPath = "\\\\wsl.localhost\\${distro.msId}\\usr\\local\\bin\\buf",
+        )
+
+        configureByFolder("configuration", "test.proto")
+
+        val workingDirectory = Paths.get(myFixture.file.virtualFile.parent.path)
+
+        val result = runBlocking {
+            BufAnalyzeUtils.runBufCommand(
+                project,
+                testRootDisposable,
+                workingDirectory,
+                listOf("lint", "--error-format=json"),
+            )
+        }
+
+        assertThat(result.exitCode)
+            .withFailMessage(
+                "buf lint did not run via UNC WSL path (exit ${result.exitCode}).\n" +
+                    "workingDirectory=$workingDirectory\n" +
+                    "stderr: ${result.stderr}",
+            )
+            .isIn(0, 100)
+    }
+
+    /**
+     * End-to-end test: runs `buf lsp serve` via WSL and formats a .proto file through the
+     * LSP server. Verifies that the full LSP stack — version detection, server launch, and
+     * textDocument/formatting — works when buf lives inside WSL.
+     */
+    fun testLspFormattingWithWslBuf() {
+        if (!isWindows) return
+
+        if (WslDistributionManager.getInstance().installedDistributions.isEmpty()) return
+
+        // Pre-cache buf version so that fileOpened() takes the synchronous EDT path
+        // (calling ensureServerStarted directly) rather than the async pooled-thread path.
+        // The async path calls ensureServerStarted from a background thread, which creates
+        // the server object but never triggers the actual process launch.
+        BufVersionDetector.getVersionInfo(project, checkIfMissing = true)
+        System.setProperty("buf.test.disableLsp", "false")
+
+        configureByFolder("formatting", "largeprotofile.proto")
+
+        val lspServer = waitForLspServer()
+        assertThat(lspServer).isNotNull()
+
+        val expected = findTestDataFolder().resolve("formatting-expected/largeprotofile.proto").readText()
+
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not produce expected formatting within 30 seconds",
+            {
+                WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
+                    CodeStyleManager.getInstance(project).reformat(myFixture.file)
+                })
+                myFixture.file.text == expected
+            },
+            30,
+        )
+        myFixture.checkResult(expected)
+    }
+
+    /**
      * End-to-end test: runs `buf lint` with a WSL buf executable via `wsl.exe`. Covers the
      * regression in https://github.com/bufbuild/intellij-buf/issues/288 where a Windows working
      * directory caused `ProcessNotCreatedException`.
@@ -115,5 +225,32 @@ class BufWslTest : BufTestBase() {
                     "stderr: ${result.stderr}",
             )
             .isIn(0, 100)
+    }
+
+    private fun waitForLspServer(): LspServer? {
+        var lspServer: LspServer? = null
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not reach Running state within 30 seconds",
+            {
+                val server = ApplicationManager.getApplication().runReadAction<LspServer?> {
+                    LspServerManager.getInstance(project)
+                        .getServersForProvider(BufLspServerSupportProvider::class.java)
+                        .firstOrNull()
+                }
+                if (server?.state == LspServerState.Running) {
+                    lspServer = server
+                    true
+                } else {
+                    false
+                }
+            },
+            30,
+        )
+        // Flush any pending EDT events queued when the server reached Running state.
+        // IntelliJ schedules textDocument/didOpen for already-open files at that point;
+        // this ensures those notifications are sent before the caller triggers any LSP
+        // requests (e.g. textDocument/formatting).
+        UIUtil.dispatchAllInvocationEvents()
+        return lspServer
     }
 }

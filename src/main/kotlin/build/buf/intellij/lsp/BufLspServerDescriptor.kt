@@ -80,7 +80,7 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         val distro = BufAnalyzeUtils.findWslDistro(bufExe)
         if (distro != null) {
             // buf lives inside WSL; route via wsl.exe so the process is created inside WSL.
-            cmd.exePath = bufExe.path.replace('\\', '/')
+            cmd.exePath = BufAnalyzeUtils.getWslLinuxPath(bufExe)
             distro.patchCommandLine(cmd, project, WSLCommandLineOptions())
         } else {
             cmd.exePath = bufExe.absolutePath
