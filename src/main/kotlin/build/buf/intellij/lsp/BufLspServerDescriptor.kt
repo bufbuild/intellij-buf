@@ -83,8 +83,13 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
             // Pass null for project to bypass IJent routing — same as BufAnalyzeUtils.createProcessHandler.
             // Using a non-null project causes IntelliJ to route through IJent, which fails for
             // WSL processes (the same regression as https://github.com/bufbuild/intellij-buf/issues/288).
+            //
+            // Disable the shell wrapper (setExecuteCommandInShell(false)) so buf lsp serve is
+            // exec'd directly rather than wrapped in "bash -l -c '...'". The bash login shell
+            // can emit output to stdout before the command runs, corrupting the LSP JSON-RPC
+            // stream. Direct exec keeps stdin/stdout clean for LSP communication.
             cmd.exePath = BufAnalyzeUtils.getWslLinuxPath(bufExe)
-            distro.patchCommandLine(cmd, null, WSLCommandLineOptions())
+            distro.patchCommandLine(cmd, null, WSLCommandLineOptions().setExecuteCommandInShell(false))
         } else {
             cmd.exePath = bufExe.absolutePath
         }

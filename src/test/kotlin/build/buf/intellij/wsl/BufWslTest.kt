@@ -16,12 +16,24 @@ package build.buf.intellij.wsl
 
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.base.BufTestBase
+import build.buf.intellij.lsp.BufLspServerSupportProvider
+import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.settings.bufSettings
+import com.intellij.codeInsight.actions.ReformatCodeProcessor
 import com.intellij.execution.wsl.WslDistributionManager
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.platform.lsp.api.LspServer
+import com.intellij.platform.lsp.api.LspServerManager
+import com.intellij.platform.lsp.api.LspServerState
+import com.intellij.psi.codeStyle.CodeStyleManager
+import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.util.ui.UIUtil
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import java.io.File
 import java.nio.file.Paths
+import kotlin.io.path.readText
 
 /**
  * Integration tests for Buf plugin behavior in a WSL (Windows Subsystem for Linux) environment.
@@ -139,6 +151,52 @@ class BufWslTest : BufTestBase() {
     }
 
     /**
+     * End-to-end test: runs `buf lsp serve` via WSL and formats a .proto file through the
+     * LSP server. Verifies that the full LSP stack — version detection, server launch, and
+     * textDocument/formatting — works when buf lives inside WSL. Covers the user-reported
+     * regression in https://github.com/bufbuild/intellij-buf/issues/288 where
+     * "Code -> Reformat Code" stopped working.
+     */
+    fun testLspFormattingWithWslBuf() {
+        if (!isWindows) return
+
+        if (WslDistributionManager.getInstance().installedDistributions.isEmpty()) return
+
+        // Pre-cache buf version so that fileOpened() takes the synchronous EDT path
+        // (calling ensureServerStarted directly) rather than the async pooled-thread path.
+        // The async path calls ensureServerStarted from a background thread, which creates
+        // the server object but never triggers the actual process launch.
+        val versionInfo = BufVersionDetector.getVersionInfo(project, checkIfMissing = true)
+        assertThat(versionInfo)
+            .withFailMessage("buf --version failed via WSL; check that buf is installed at /usr/local/bin/buf")
+            .isNotNull()
+        assertThat(versionInfo!!.supportsLsp)
+            .withFailMessage("buf ${versionInfo.version} does not support LSP (requires 1.59.0+)")
+            .isTrue()
+
+        System.setProperty("buf.test.disableLsp", "false")
+
+        configureByFolder("formatting", "largeprotofile.proto")
+
+        val lspServer = waitForLspServer()
+        assertThat(lspServer).isNotNull()
+
+        val expected = findTestDataFolder().resolve("formatting-expected/largeprotofile.proto").readText()
+
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not produce expected formatting within 30 seconds",
+            {
+                WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
+                    CodeStyleManager.getInstance(project).reformat(myFixture.file)
+                })
+                myFixture.file.text == expected
+            },
+            30,
+        )
+        myFixture.checkResult(expected)
+    }
+
+    /**
      * End-to-end test: runs `buf lint` with a WSL buf executable via `wsl.exe`. Covers the
      * regression in https://github.com/bufbuild/intellij-buf/issues/288 where a Windows working
      * directory caused `ProcessNotCreatedException`.
@@ -178,5 +236,29 @@ class BufWslTest : BufTestBase() {
                     "stderr: ${result.stderr}",
             )
             .isIn(0, 100)
+    }
+
+    private fun waitForLspServer(): LspServer? {
+        var lspServer: LspServer? = null
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not reach Running state within 30 seconds",
+            {
+                val server = ApplicationManager.getApplication().runReadAction<LspServer?> {
+                    LspServerManager.getInstance(project)
+                        .getServersForProvider(BufLspServerSupportProvider::class.java)
+                        .firstOrNull()
+                }
+                if (server?.state == LspServerState.Running) {
+                    lspServer = server
+                    true
+                } else {
+                    false
+                }
+            },
+            30,
+        )
+        // Flush any pending EDT events queued when the server reached Running state.
+        UIUtil.dispatchAllInvocationEvents()
+        return lspServer
     }
 }
