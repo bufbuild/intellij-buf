@@ -21,7 +21,8 @@ import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.settings.bufSettings
 import com.intellij.execution.wsl.WslDistributionManager
 import com.intellij.platform.lsp.api.LspServerManager
-import com.intellij.util.ui.UIUtil
+import com.intellij.platform.lsp.api.LspServerState
+import com.intellij.testFramework.PlatformTestUtil
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import java.io.File
@@ -51,12 +52,20 @@ class BufWslTest : BufTestBase() {
 
     override fun tearDown() {
         if (isWindows) {
-            // Stop any LSP servers started during the test before the framework's thread-leak
-            // check fires. On Windows the buf lsp serve process runs via wsl.exe; its bridge
-            // threads outlive the process kill and are detected as leaks if we don't stop
-            // the server explicitly before super.tearDown() disposes the project.
+            // Stop LSP servers and wait for them to fully terminate before the framework's
+            // thread-leak check fires. On Windows, buf lsp serve runs via wsl.exe; the
+            // Windows-to-WSL bridge threads outlive the process kill and trigger ThreadLeakTracker
+            // unless we wait for the servers to reach a non-Running state here.
             LspServerManager.getInstance(project).stopServers(BufLspServerSupportProvider::class.java)
-            UIUtil.dispatchAllInvocationEvents()
+            PlatformTestUtil.waitWithEventsDispatching(
+                "LSP servers did not stop within 15 seconds",
+                {
+                    LspServerManager.getInstance(project)
+                        .getServersForProvider(BufLspServerSupportProvider::class.java)
+                        .none { it.state == LspServerState.Running }
+                },
+                15,
+            )
         }
         super.tearDown()
     }
