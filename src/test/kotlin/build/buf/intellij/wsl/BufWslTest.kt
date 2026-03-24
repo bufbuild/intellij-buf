@@ -146,9 +146,13 @@ class BufWslTest : BufTestBase() {
                 testRootDisposable,
                 workingDirectory,
                 listOf("lint", "--error-format=json"),
+                expectedExitCodes = setOf(0, 100),
             )
         }
 
+        // Exit 0: no lint issues. Exit 100: lint issues found (BUF_EXIT_CODE_FILE_ANNOTATION).
+        // Either means buf executed successfully via WSL. Exit -1 means process creation failed
+        // (the regression from https://github.com/bufbuild/intellij-buf/issues/288).
         assertThat(result.exitCode)
             .withFailMessage(
                 "buf lint did not run via UNC WSL path (exit ${result.exitCode}).\n" +
@@ -226,6 +230,7 @@ class BufWslTest : BufTestBase() {
                 testRootDisposable,
                 workingDirectory,
                 listOf("lint", "--error-format=json"),
+                expectedExitCodes = setOf(0, 100),
             )
         }
 
