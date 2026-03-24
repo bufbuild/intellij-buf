@@ -20,11 +20,7 @@ import build.buf.intellij.lsp.BufLspServerSupportProvider
 import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.settings.bufSettings
 import com.intellij.execution.wsl.WslDistributionManager
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.platform.lsp.api.LspServer
 import com.intellij.platform.lsp.api.LspServerManager
-import com.intellij.platform.lsp.api.LspServerState
-import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.util.ui.UIUtil
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -172,7 +168,7 @@ class BufWslTest : BufTestBase() {
      * that it cannot resolve to WSL mount paths. The formatting path is tested in
      * BufLspServerTest.testLspFormatting (non-WSL).
      */
-    fun testLspFormattingWithWslBuf() {
+    fun testLspServerStartsWithWslBuf() {
         if (!isWindows) return
 
         if (WslDistributionManager.getInstance().installedDistributions.isEmpty()) return
@@ -239,29 +235,5 @@ class BufWslTest : BufTestBase() {
                     "stderr: ${result.stderr}",
             )
             .isNotEqualTo(-1)
-    }
-
-    private fun waitForLspServer(): LspServer? {
-        var lspServer: LspServer? = null
-        PlatformTestUtil.waitWithEventsDispatching(
-            "Buf LSP server did not reach Running state within 30 seconds",
-            {
-                val server = ApplicationManager.getApplication().runReadAction<LspServer?> {
-                    LspServerManager.getInstance(project)
-                        .getServersForProvider(BufLspServerSupportProvider::class.java)
-                        .firstOrNull()
-                }
-                if (server?.state == LspServerState.Running) {
-                    lspServer = server
-                    true
-                } else {
-                    false
-                }
-            },
-            30,
-        )
-        // Flush any pending EDT events queued when the server reached Running state.
-        UIUtil.dispatchAllInvocationEvents()
-        return lspServer
     }
 }
