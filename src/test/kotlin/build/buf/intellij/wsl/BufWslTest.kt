@@ -19,14 +19,18 @@ import build.buf.intellij.base.BufTestBase
 import build.buf.intellij.lsp.BufLspServerSupportProvider
 import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.settings.bufSettings
+import com.intellij.codeInsight.actions.ReformatCodeProcessor
 import com.intellij.execution.wsl.WslDistributionManager
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.platform.lsp.api.LspServerManager
 import com.intellij.platform.lsp.api.LspServerState
+import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.testFramework.PlatformTestUtil
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import java.io.File
 import java.nio.file.Paths
+import kotlin.io.path.readText
 
 /**
  * Integration tests for Buf plugin behavior in a WSL (Windows Subsystem for Linux) environment.
@@ -167,17 +171,17 @@ class BufWslTest : BufTestBase() {
     }
 
     /**
-     * End-to-end test: verifies that `buf lsp serve` starts successfully via WSL. Covers the
-     * user-reported regression in https://github.com/bufbuild/intellij-buf/issues/288 where
-     * "Code -> Reformat Code" stopped working because the LSP server failed to start.
+     * End-to-end test: runs `buf lsp serve` via WSL and formats a .proto file through the
+     * LSP server. Verifies that the full LSP stack — version detection, server launch, and
+     * textDocument/formatting — works when buf lives inside WSL. Covers the user-reported
+     * regression in https://github.com/bufbuild/intellij-buf/issues/288 where
+     * "Code -> Reformat Code" stopped working.
      *
-     * Note: We verify the server reaches Running state but do not test full formatting
-     * round-trip here. In CI the test fixture creates files at Windows temp paths
-     * (e.g. C:\Users\runneradmin\...), and buf-in-WSL receives file:///c%3A/... URIs
-     * that it cannot resolve to WSL mount paths. The formatting path is tested in
-     * BufLspServerTest.testLspFormatting (non-WSL).
+     * Path translation: BufLspServerDescriptor overrides getFilePath/findLocalFileByPath to
+     * convert Windows paths (C:/...) to WSL mount paths (/mnt/c/...) and back, so that
+     * buf lsp serve (running inside WSL) can resolve file URIs for files on the Windows filesystem.
      */
-    fun testLspServerStartsWithWslBuf() {
+    fun testLspFormattingWithWslBuf() {
         if (!isWindows) return
 
         if (WslDistributionManager.getInstance().installedDistributions.isEmpty()) return
@@ -202,6 +206,20 @@ class BufWslTest : BufTestBase() {
         assertThat(lspServer)
             .withFailMessage("buf LSP server did not reach Running state via WSL")
             .isNotNull()
+
+        val expected = findTestDataFolder().resolve("formatting-expected/largeprotofile.proto").readText()
+
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not produce expected formatting within 30 seconds",
+            {
+                WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
+                    CodeStyleManager.getInstance(project).reformat(myFixture.file)
+                })
+                myFixture.file.text == expected
+            },
+            30,
+        )
+        myFixture.checkResult(expected)
     }
 
     /**
