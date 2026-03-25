@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-03-25
+
+This release contains further fixes for running intellij-buf within WSL.
+
+- Fix handling of WSL paths by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/453
+
 ## [0.7.4] - 2026-03-20
 
 This release fixes some issues running intellij-buf under WSL.
