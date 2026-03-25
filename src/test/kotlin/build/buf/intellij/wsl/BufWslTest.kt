@@ -16,12 +16,21 @@ package build.buf.intellij.wsl
 
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.base.BufTestBase
+import build.buf.intellij.lsp.BufLspServerSupportProvider
+import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.settings.bufSettings
+import com.intellij.codeInsight.actions.ReformatCodeProcessor
 import com.intellij.execution.wsl.WslDistributionManager
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.platform.lsp.api.LspServerManager
+import com.intellij.platform.lsp.api.LspServerState
+import com.intellij.psi.codeStyle.CodeStyleManager
+import com.intellij.testFramework.PlatformTestUtil
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import java.io.File
 import java.nio.file.Paths
+import kotlin.io.path.readText
 
 /**
  * Integration tests for Buf plugin behavior in a WSL (Windows Subsystem for Linux) environment.
@@ -44,6 +53,26 @@ class BufWslTest : BufTestBase() {
     // Whether this test is running on a Windows host. WSL tests are excluded from the regular
     // test task via build.gradle.kts; this flag is a secondary guard for accidental local runs.
     private val isWindows = System.getProperty("os.name", "").startsWith("Windows")
+
+    override fun tearDown() {
+        if (isWindows) {
+            // Stop LSP servers and wait for them to fully terminate before the framework's
+            // thread-leak check fires. On Windows, buf lsp serve runs via wsl.exe; the
+            // Windows-to-WSL bridge threads outlive the process kill and trigger ThreadLeakTracker
+            // unless we wait for the servers to reach a non-Running state here.
+            LspServerManager.getInstance(project).stopServers(BufLspServerSupportProvider::class.java)
+            PlatformTestUtil.waitWithEventsDispatching(
+                "LSP servers did not stop within 15 seconds",
+                {
+                    LspServerManager.getInstance(project)
+                        .getServersForProvider(BufLspServerSupportProvider::class.java)
+                        .none { it.state == LspServerState.Running }
+                },
+                15,
+            )
+        }
+        super.tearDown()
+    }
 
     override fun setUp() {
         if (!isWindows) return
@@ -73,6 +102,128 @@ class BufWslTest : BufTestBase() {
 
         assertThat(BufAnalyzeUtils.findWslDistro(File("/usr/local/bin/buf"))).isNotNull()
         assertThat(BufAnalyzeUtils.findWslDistro(File("C:\\Program Files\\buf\\buf.exe"))).isNull()
+    }
+
+    /**
+     * Verifies that findWslDistro returns the correct named distro for a UNC WSL path
+     * (\\wsl.localhost\<distro>\...), and that getWslLinuxPath strips the UNC prefix.
+     * Covers https://github.com/bufbuild/intellij-buf/issues/288 where users configure
+     * the path in "\\wsl.localhost\Ubuntu\usr\local\bin\buf" format.
+     */
+    fun testFindWslDistroAndLinuxPathForUncPath() {
+        if (!isWindows) return
+
+        val installedDistros = WslDistributionManager.getInstance().installedDistributions
+        if (installedDistros.isEmpty()) return
+
+        val distro = installedDistros.first()
+        // Build the UNC path using wsl.localhost (the format Windows Explorer shows and users
+        // typically copy from the address bar). Both wsl.localhost and wsl$ are valid UNC roots.
+        val uncPath = File("\\\\wsl.localhost\\${distro.msId}\\usr\\local\\bin\\buf")
+
+        assertThat(BufAnalyzeUtils.findWslDistro(uncPath))
+            .isNotNull()
+            .extracting { it!!.msId }
+            .isEqualTo(distro.msId)
+
+        assertThat(BufAnalyzeUtils.getWslLinuxPath(uncPath)).isEqualTo("/usr/local/bin/buf")
+    }
+
+    /**
+     * End-to-end test: runs `buf lint` using a UNC WSL path for the buf executable.
+     * Covers the case where users configure the path as "\\wsl.localhost\Ubuntu\usr\local\bin\buf"
+     * instead of the Linux-style "/usr/local/bin/buf".
+     */
+    fun testRunBufCommandWithUncWslPath() {
+        if (!isWindows) return
+
+        val installedDistros = WslDistributionManager.getInstance().installedDistributions
+        if (installedDistros.isEmpty()) return
+
+        val distro = installedDistros.first()
+        project.bufSettings.state = project.bufSettings.state.copy(
+            bufCLIPath = "\\\\wsl.localhost\\${distro.msId}\\usr\\local\\bin\\buf",
+        )
+
+        configureByFolder("configuration", "test.proto")
+
+        val workingDirectory = Paths.get(myFixture.file.virtualFile.parent.path)
+
+        val result = runBlocking {
+            BufAnalyzeUtils.runBufCommand(
+                project,
+                testRootDisposable,
+                workingDirectory,
+                listOf("lint", "--error-format=json"),
+            )
+        }
+
+        // Exit -1 means the process could not be created (the regression from
+        // https://github.com/bufbuild/intellij-buf/issues/288). Any other exit code
+        // means buf launched successfully via WSL.
+        assertThat(result.exitCode)
+            .withFailMessage(
+                "buf lint did not run via UNC WSL path (exit ${result.exitCode}).\n" +
+                    "workingDirectory=$workingDirectory\n" +
+                    "stderr: ${result.stderr}",
+            )
+            .isNotEqualTo(-1)
+    }
+
+    /**
+     * End-to-end test: runs `buf lsp serve` via WSL and formats a .proto file through the
+     * LSP server. Verifies that the full LSP stack — version detection, server launch, and
+     * textDocument/formatting — works when buf lives inside WSL. Covers the user-reported
+     * regression in https://github.com/bufbuild/intellij-buf/issues/288 where
+     * "Code -> Reformat Code" stopped working.
+     *
+     * Path translation: BufLspServerDescriptor overrides getFilePath/findLocalFileByPath to
+     * convert Windows paths (C:/...) to WSL mount paths (/mnt/c/...) and back, so that
+     * buf lsp serve (running inside WSL) can resolve file URIs for files on the Windows filesystem.
+     */
+    fun testLspFormattingWithWslBuf() {
+        if (!isWindows) return
+
+        if (WslDistributionManager.getInstance().installedDistributions.isEmpty()) return
+
+        // Pre-cache buf version so that fileOpened() takes the synchronous EDT path
+        // (calling ensureServerStarted directly) rather than the async pooled-thread path.
+        // The async path calls ensureServerStarted from a background thread, which creates
+        // the server object but never triggers the actual process launch.
+        val versionInfo = BufVersionDetector.getVersionInfo(project, checkIfMissing = true)
+        assertThat(versionInfo)
+            .withFailMessage("buf --version failed via WSL; check that buf is installed at /usr/local/bin/buf")
+            .isNotNull()
+        assertThat(versionInfo!!.supportsLsp)
+            .withFailMessage("buf ${versionInfo.version} does not support LSP (requires 1.59.0+)")
+            .isTrue()
+
+        System.setProperty("buf.test.disableLsp", "false")
+
+        configureByFolder("formatting", "largeprotofile.proto")
+
+        val lspServer = waitForLspServer()
+        assertThat(lspServer)
+            .withFailMessage("buf LSP server did not reach Running state via WSL")
+            .isNotNull()
+
+        // Normalize line endings: on Windows, git core.autocrlf=true checks out files with
+        // CRLF, but buf lsp serve (running inside WSL/Linux) formats with LF. Without
+        // normalization the strings never match and the test times out.
+        val expected = findTestDataFolder().resolve("formatting-expected/largeprotofile.proto").readText()
+            .replace("\r\n", "\n")
+
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not produce expected formatting within 30 seconds",
+            {
+                WriteCommandAction.runWriteCommandAction(project, ReformatCodeProcessor.getCommandName(), null, {
+                    CodeStyleManager.getInstance(project).reformat(myFixture.file)
+                })
+                myFixture.file.text == expected
+            },
+            30,
+        )
+        myFixture.checkResult(expected)
     }
 
     /**
@@ -114,6 +265,6 @@ class BufWslTest : BufTestBase() {
                     "workingDirectory=$workingDirectory\n" +
                     "stderr: ${result.stderr}",
             )
-            .isIn(0, 100)
+            .isNotEqualTo(-1)
     }
 }

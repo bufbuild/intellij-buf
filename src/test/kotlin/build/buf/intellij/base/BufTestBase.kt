@@ -14,10 +14,17 @@
 
 package build.buf.intellij.base
 
+import build.buf.intellij.lsp.BufLspServerSupportProvider
 import build.buf.intellij.settings.bufSettings
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.platform.lsp.api.LspServer
+import com.intellij.platform.lsp.api.LspServerManager
+import com.intellij.platform.lsp.api.LspServerState
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightFixtureTestCase
+import com.intellij.util.ui.UIUtil
 import org.assertj.core.api.Assertions
 import java.io.File
 import java.nio.file.Path
@@ -58,6 +65,33 @@ abstract class BufTestBase : CodeInsightFixtureTestCase<ModuleFixtureBuilder<*>>
             .resolve(basePath)
         Assertions.assertThat(result).isNotNull()
         return result
+    }
+
+    protected fun waitForLspServer(): LspServer? {
+        var lspServer: LspServer? = null
+        PlatformTestUtil.waitWithEventsDispatching(
+            "Buf LSP server did not reach Running state within 30 seconds",
+            {
+                val server = ApplicationManager.getApplication().runReadAction<LspServer?> {
+                    LspServerManager.getInstance(project)
+                        .getServersForProvider(BufLspServerSupportProvider::class.java)
+                        .firstOrNull()
+                }
+                if (server?.state == LspServerState.Running) {
+                    lspServer = server
+                    true
+                } else {
+                    false
+                }
+            },
+            30,
+        )
+        // Flush any pending EDT events queued when the server reached Running state.
+        // IntelliJ schedules textDocument/didOpen for already-open files at that point;
+        // this ensures those notifications are sent before the caller triggers any LSP
+        // requests (e.g. textDocument/formatting).
+        UIUtil.dispatchAllInvocationEvents()
+        return lspServer
     }
 
     private fun addChildrenRecursively(root: File, file: File) {

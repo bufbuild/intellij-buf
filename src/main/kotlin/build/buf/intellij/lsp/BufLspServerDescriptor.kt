@@ -20,12 +20,15 @@ import build.buf.intellij.config.BufConfig
 import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.wsl.WSLCommandLineOptions
+import com.intellij.execution.wsl.WSLDistribution
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
 import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
+import java.net.URI
+import java.nio.file.Path
 
 /**
  * LSP server descriptor for the Buf Language Server.
@@ -34,6 +37,11 @@ import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
  */
 class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(project, "Buf") {
     private val log = logger<BufLspServerDescriptor>()
+
+    // Set in createCommandLine(); non-null when buf is running inside WSL.
+    // Used by getFileUri/findLocalFileByPath to translate between Windows and WSL paths.
+    @Volatile
+    private var wslDistro: WSLDistribution? = null
 
     // Allow the bundled Protocol Buffers plugin to supply go-to--definition support;
     // if we don't do this, Go-to-definition does not work properly with local definitions.
@@ -78,16 +86,57 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         cmd.addParameter("--log-format=text")
 
         val distro = BufAnalyzeUtils.findWslDistro(bufExe)
+        wslDistro = distro
         if (distro != null) {
             // buf lives inside WSL; route via wsl.exe so the process is created inside WSL.
-            cmd.exePath = bufExe.path.replace('\\', '/')
-            distro.patchCommandLine(cmd, project, WSLCommandLineOptions())
+            // Pass null for project to bypass IJent routing — same as BufAnalyzeUtils.createProcessHandler.
+            // Using a non-null project causes IntelliJ to route through IJent, which fails for
+            // WSL processes (the same regression as https://github.com/bufbuild/intellij-buf/issues/288).
+            //
+            // Disable the shell wrapper (setExecuteCommandInShell(false)) so buf lsp serve is
+            // exec'd directly rather than wrapped in "bash -l -c '...'". The bash login shell
+            // can emit output to stdout before the command runs, corrupting the LSP JSON-RPC
+            // stream. Direct exec keeps stdin/stdout clean for LSP communication.
+            cmd.exePath = BufAnalyzeUtils.getWslLinuxPath(bufExe)
+            distro.patchCommandLine(cmd, null, WSLCommandLineOptions().setExecuteCommandInShell(false))
         } else {
             cmd.exePath = bufExe.absolutePath
         }
 
         log.info("Starting buf lsp serve")
         return cmd
+    }
+
+    // Builds a file URI for use in outgoing LSP messages (textDocument/didOpen etc.).
+    // When buf runs inside WSL, we must send file:///mnt/c/... URIs rather than the
+    // default file:///c%3A/... Windows-style URIs, because buf (running in Linux) cannot
+    // resolve Windows drive-letter paths.
+    //
+    // We override getFileUri rather than getFilePath because getFilePath feeds into
+    // VirtualFileManager.constructUrl which prepends "file://" — yielding four slashes
+    // (file:////mnt/c/...) for a path that already begins with "/".  Overriding getFileUri
+    // lets us construct the URI directly with the correct form.
+    //
+    // Uses WSLDistribution.getWslPath so the mount root from /etc/wsl.conf is respected
+    // (e.g. a custom "root = /windows" config maps C:\ to /windows/c/ instead of /mnt/c/).
+    override fun getFileUri(file: VirtualFile): String {
+        val distro = wslDistro ?: return super.getFileUri(file)
+        val wslPath = distro.getWslPath(Path.of(file.path)) ?: return super.getFileUri(file)
+        // URI(scheme, authority, path, query, fragment) with empty authority produces
+        // the triple-slash form: file:///mnt/c/...
+        return URI("file", "", wslPath, null, null).toString()
+    }
+
+    // Translates WSL Linux paths arriving from the LSP server back to Windows paths so that
+    // IntelliJ can locate the corresponding VirtualFile. buf lsp serve sends back /mnt/c/...
+    // style paths in diagnostics, go-to-definition, and other responses.
+    override fun findLocalFileByPath(path: String): VirtualFile? {
+        wslDistro ?: return super.findLocalFileByPath(path)
+        // /mnt/<drive>/<rest> → <DRIVE>:/<rest>  (standard WSL mount layout)
+        val windowsPath = WSL_MOUNT_PATH_REGEX.find(path)?.let { m ->
+            "${m.groupValues[1].uppercase()}:/${m.groupValues[2]}"
+        } ?: return super.findLocalFileByPath(path)
+        return super.findLocalFileByPath(windowsPath)
     }
 
     /**
@@ -110,5 +159,11 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
             current = current.parent
         }
         return null
+    }
+
+    companion object {
+        // Matches standard WSL mount paths: /mnt/<drive>/<rest>
+        // Used in findLocalFileByPath to translate paths from the LSP server back to Windows paths.
+        private val WSL_MOUNT_PATH_REGEX = Regex("^/mnt/([a-z])/(.+)$")
     }
 }

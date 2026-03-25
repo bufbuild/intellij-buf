@@ -240,7 +240,7 @@ object BufAnalyzeUtils {
         // ("/usr/local/bin/buf") so that wsl.exe executes the correct binary inside WSL.
         // Using absolutePath here would resolve the path against the current Windows drive
         // (e.g. "D:\usr\local\bin\buf"), which WSL cannot find.
-        val wslExecutablePath = bufExecutable.path.replace('\\', '/')
+        val wslExecutablePath = getWslLinuxPath(bufExecutable)
         val cmd = GeneralCommandLine(wslExecutablePath)
         cmd.addParameters(arguments)
         val options = WSLCommandLineOptions()
@@ -252,17 +252,48 @@ object BufAnalyzeUtils {
         return OSProcessHandler(cmd)
     }
 
-    // Returns the first installed WSL distribution when the buf executable is a Linux-style
-    // path (indicating it lives inside WSL). Returns null on non-Windows hosts (where
-    // installedDistributions is always empty) and for native Windows/macOS/Linux executables.
+    // Matches UNC WSL paths: \\wsl.localhost\<distro>\... or \\wsl$\<distro>\...
+    // On Windows, File normalizes "/" to "\" but preserves the "\\" UNC prefix.
+    // Group 1: distro name (e.g. "Ubuntu-24.04"), Group 2: Linux path (e.g. "\usr\local\bin\buf")
+    private val WSL_UNC_PATH_REGEX = Regex("""^\\\\(?:wsl\.localhost|wsl\$)\\([^\\]+)(\\.*)?$""")
+
+    // Returns the WSL distribution for the given buf executable, or null if the executable
+    // is not a WSL path. Handles both Linux-style paths ("/usr/local/bin/buf", normalized
+    // to "\usr\local\bin\buf" by Java on Windows) and UNC WSL paths
+    // ("\\wsl.localhost\Ubuntu-24.04\usr\local\bin\buf" or "\\wsl$\Ubuntu\...").
+    // For UNC paths, finds the named distro rather than just the first installed one.
+    // Returns null on non-Windows hosts (where installedDistributions is always empty)
+    // and for native Windows/macOS/Linux executables.
     internal fun findWslDistro(bufExecutable: File): WSLDistribution? {
-        // A Linux-style path like "/usr/local/bin/buf" signals that buf lives in WSL.
-        // On Windows, java.io.File normalizes "/" to "\" so the path becomes "\usr\local\bin\buf".
-        // We therefore accept both "/" and "\" as the first character; native Windows paths
-        // always begin with a drive letter (e.g. "C:\...") so they are excluded correctly.
         val path = bufExecutable.path
+        // UNC WSL path: \\wsl.localhost\<distro>\... or \\wsl$\<distro>\...
+        val uncMatch = WSL_UNC_PATH_REGEX.find(path)
+        if (uncMatch != null) {
+            val distroName = uncMatch.groupValues[1]
+            val installedDistros = WslDistributionManager.getInstance().installedDistributions
+            return installedDistros.firstOrNull { it.msId.equals(distroName, ignoreCase = true) }
+                ?: installedDistros.firstOrNull()
+        }
+        // Linux-style path: "/usr/local/bin/buf" → Java normalizes to "\usr\local\bin\buf" on Windows.
+        // We accept both "/" and "\" as the first character; native Windows paths always begin
+        // with a drive letter (e.g. "C:\...") and UNC paths begin with "\\" (two chars).
         if (!path.startsWith("/") && !path.startsWith("\\")) return null
         return WslDistributionManager.getInstance().installedDistributions.firstOrNull()
+    }
+
+    // Returns the Linux-style path for a WSL buf executable.
+    // For UNC paths like "\\wsl.localhost\Ubuntu-24.04\usr\local\bin\buf", strips the
+    // UNC server+share prefix (\\wsl.localhost\Ubuntu-24.04) to yield "/usr/local/bin/buf".
+    // For Linux-style paths already normalized by Java (e.g. "\usr\local\bin\buf"), just
+    // replaces backslashes with forward slashes.
+    internal fun getWslLinuxPath(bufExecutable: File): String {
+        val path = bufExecutable.path
+        val uncMatch = WSL_UNC_PATH_REGEX.find(path)
+        if (uncMatch != null) {
+            val linuxPart = uncMatch.groupValues[2]
+            return if (linuxPart.isEmpty()) "/" else linuxPart.replace('\\', '/')
+        }
+        return path.replace('\\', '/')
     }
 
     private val externalLinterLazyResultCache =
