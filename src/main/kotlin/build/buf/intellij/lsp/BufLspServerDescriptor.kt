@@ -27,6 +27,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
 import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
+import java.net.URI
 import java.nio.file.Path
 
 /**
@@ -105,16 +106,24 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         return cmd
     }
 
-    // Translates the Windows VirtualFile path to a WSL Linux path so that IntelliJ sends
-    // file:///mnt/c/... URIs (instead of file:///c%3A/...) in textDocument/didOpen and
-    // other outgoing LSP messages. Without this, buf lsp serve (running inside WSL) receives
-    // Windows-style URIs it cannot resolve on the Linux filesystem.
+    // Builds a file URI for use in outgoing LSP messages (textDocument/didOpen etc.).
+    // When buf runs inside WSL, we must send file:///mnt/c/... URIs rather than the
+    // default file:///c%3A/... Windows-style URIs, because buf (running in Linux) cannot
+    // resolve Windows drive-letter paths.
+    //
+    // We override getFileUri rather than getFilePath because getFilePath feeds into
+    // VirtualFileManager.constructUrl which prepends "file://" — yielding four slashes
+    // (file:////mnt/c/...) for a path that already begins with "/".  Overriding getFileUri
+    // lets us construct the URI directly with the correct form.
     //
     // Uses WSLDistribution.getWslPath so the mount root from /etc/wsl.conf is respected
     // (e.g. a custom "root = /windows" config maps C:\ to /windows/c/ instead of /mnt/c/).
-    override fun getFilePath(file: VirtualFile): String {
-        val distro = wslDistro ?: return super.getFilePath(file)
-        return distro.getWslPath(Path.of(file.path)) ?: super.getFilePath(file)
+    override fun getFileUri(file: VirtualFile): String {
+        val distro = wslDistro ?: return super.getFileUri(file)
+        val wslPath = distro.getWslPath(Path.of(file.path)) ?: return super.getFileUri(file)
+        // URI(scheme, authority, path, query, fragment) with empty authority produces
+        // the triple-slash form: file:///mnt/c/...
+        return URI("file", "", wslPath, null, null).toString()
     }
 
     // Translates WSL Linux paths arriving from the LSP server back to Windows paths so that
