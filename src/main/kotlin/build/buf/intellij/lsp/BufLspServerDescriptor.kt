@@ -39,7 +39,8 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
     private val log = logger<BufLspServerDescriptor>()
 
     // Set in createCommandLine(); non-null when buf is running inside WSL.
-    // Used by getFilePath/findLocalFileByPath to translate between Windows and WSL paths.
+    // Used by getFileUri/findLocalFileByPath to translate between Windows and WSL paths.
+    @Volatile
     private var wslDistro: WSLDistribution? = null
 
     // Allow the bundled Protocol Buffers plugin to supply go-to--definition support;
@@ -132,7 +133,7 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
     override fun findLocalFileByPath(path: String): VirtualFile? {
         wslDistro ?: return super.findLocalFileByPath(path)
         // /mnt/<drive>/<rest> → <DRIVE>:/<rest>  (standard WSL mount layout)
-        val windowsPath = Regex("^/mnt/([a-z])/(.+)$").find(path)?.let { m ->
+        val windowsPath = WSL_MOUNT_PATH_REGEX.find(path)?.let { m ->
             "${m.groupValues[1].uppercase()}:/${m.groupValues[2]}"
         } ?: return super.findLocalFileByPath(path)
         return super.findLocalFileByPath(windowsPath)
@@ -158,5 +159,11 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
             current = current.parent
         }
         return null
+    }
+
+    companion object {
+        // Matches standard WSL mount paths: /mnt/<drive>/<rest>
+        // Used in findLocalFileByPath to translate paths from the LSP server back to Windows paths.
+        private val WSL_MOUNT_PATH_REGEX = Regex("^/mnt/([a-z])/(.+)$")
     }
 }
