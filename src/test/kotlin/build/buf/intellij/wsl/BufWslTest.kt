@@ -207,7 +207,11 @@ class BufWslTest : BufTestBase() {
             .withFailMessage("buf LSP server did not reach Running state via WSL")
             .isNotNull()
 
+        // Normalize line endings: on Windows, git core.autocrlf=true checks out files with
+        // CRLF, but buf lsp serve (running inside WSL/Linux) formats with LF. Without
+        // normalization the strings never match and the test times out.
         val expected = findTestDataFolder().resolve("formatting-expected/largeprotofile.proto").readText()
+            .replace("\r\n", "\n")
 
         PlatformTestUtil.waitWithEventsDispatching(
             "Buf LSP server did not produce expected formatting within 30 seconds",
