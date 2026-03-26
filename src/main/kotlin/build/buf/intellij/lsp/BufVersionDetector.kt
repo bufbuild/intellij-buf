@@ -16,13 +16,10 @@ package build.buf.intellij.lsp
 
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.settings.BufCLIUtils
-import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputType
-import com.intellij.execution.process.ScriptRunnerUtil
-import com.intellij.execution.wsl.WSLCommandLineOptions
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -101,21 +98,9 @@ object BufVersionDetector {
         val exitCode = AtomicInteger(-1)
 
         try {
-            val distro = BufAnalyzeUtils.findWslDistro(bufExecutable)
-            val handler =
-                if (distro != null) {
-                    val wslPath = BufAnalyzeUtils.getWslLinuxPath(bufExecutable)
-                    val cmd = GeneralCommandLine(wslPath, "--version")
-                    distro.patchCommandLine(cmd, null, WSLCommandLineOptions())
-                    OSProcessHandler(cmd)
-                } else {
-                    ScriptRunnerUtil.execute(
-                        bufExecutable.absolutePath,
-                        null, // working directory
-                        null, // environment variables
-                        arrayOf("--version"),
-                    )
-                }
+            val handler = OSProcessHandler(
+                BufAnalyzeUtils.createBufCommandLine(bufExecutable, listOf("--version")),
+            )
 
             handler.addProcessListener(object : ProcessAdapter() {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {

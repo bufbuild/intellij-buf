@@ -28,6 +28,7 @@ import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.testFramework.PlatformTestUtil
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assume.assumeTrue
 import java.io.File
 import java.nio.file.Paths
 import kotlin.io.path.readText
@@ -96,7 +97,7 @@ class BufWslTest : BufTestBase() {
      * and null for a Windows-style path. This ensures the WSL detection logic is correct.
      */
     fun testFindWslDistro() {
-        if (!isWindows) return
+        assumeTrue(isWindows)
 
         if (WslDistributionManager.getInstance().installedDistributions.isEmpty()) return
 
@@ -111,7 +112,7 @@ class BufWslTest : BufTestBase() {
      * the path in "\\wsl.localhost\Ubuntu\usr\local\bin\buf" format.
      */
     fun testFindWslDistroAndLinuxPathForUncPath() {
-        if (!isWindows) return
+        assumeTrue(isWindows)
 
         val installedDistros = WslDistributionManager.getInstance().installedDistributions
         if (installedDistros.isEmpty()) return
@@ -135,7 +136,7 @@ class BufWslTest : BufTestBase() {
      * instead of the Linux-style "/usr/local/bin/buf".
      */
     fun testRunBufCommandWithUncWslPath() {
-        if (!isWindows) return
+        assumeTrue(isWindows)
 
         val installedDistros = WslDistributionManager.getInstance().installedDistributions
         if (installedDistros.isEmpty()) return
@@ -182,7 +183,7 @@ class BufWslTest : BufTestBase() {
      * buf lsp serve (running inside WSL) can resolve file URIs for files on the Windows filesystem.
      */
     fun testLspFormattingWithWslBuf() {
-        if (!isWindows) return
+        assumeTrue(isWindows)
 
         if (WslDistributionManager.getInstance().installedDistributions.isEmpty()) return
 
@@ -236,7 +237,7 @@ class BufWslTest : BufTestBase() {
      * of `ScriptRunnerUtil.execute`, bypassing IJent entirely.
      */
     fun testRunBufCommandWithWslBuf() {
-        if (!isWindows) return
+        assumeTrue(isWindows)
 
         if (WslDistributionManager.getInstance().installedDistributions.isEmpty()) return
 
@@ -266,5 +267,51 @@ class BufWslTest : BufTestBase() {
                     "stderr: ${result.stderr}",
             )
             .isNotEqualTo(-1)
+    }
+
+    /**
+     * Verifies that getWslLinuxPath converts Java-normalized backslashes back to forward slashes.
+     * On Windows, Java's File normalizes "/" separators to "\", so a Linux-style path configured
+     * as "/usr/local/bin/buf" becomes "\usr\local\bin\buf" internally. getWslLinuxPath must
+     * restore the forward slashes before passing the path to wsl.exe.
+     *
+     * This test is platform-independent: the path string manipulation does not require WSL.
+     */
+    fun testGetWslLinuxPath_nonUncPath() {
+        // Simulate the Windows-normalized form of "/usr/local/bin/buf"
+        assertThat(BufAnalyzeUtils.getWslLinuxPath(File("\\usr\\local\\bin\\buf")))
+            .isEqualTo("/usr/local/bin/buf")
+    }
+
+    /**
+     * Verifies that getWslLinuxPath strips the UNC prefix for wsl$ paths (older Windows builds).
+     * Both \\wsl.localhost\<distro>\... and \\wsl$\<distro>\... are valid UNC roots for WSL;
+     * the path component after the distro name must be extracted and converted to a Linux path.
+     *
+     * This test is platform-independent: the regex and string manipulation do not require WSL.
+     */
+    fun testGetWslLinuxPath_wslDollarUncPath() {
+        val file = File("""\\wsl${'$'}\Ubuntu\usr\local\bin\buf""")
+        assertThat(BufAnalyzeUtils.getWslLinuxPath(file)).isEqualTo("/usr/local/bin/buf")
+    }
+
+    /**
+     * Verifies that findWslDistro resolves the correct named distro from a wsl$ UNC path.
+     * The wsl$ share (used by older Windows builds) is equivalent to wsl.localhost and
+     * must be handled by the same UNC detection logic.
+     */
+    fun testFindWslDistroForWslDollarUncPath() {
+        assumeTrue(isWindows)
+
+        val installedDistros = WslDistributionManager.getInstance().installedDistributions
+        if (installedDistros.isEmpty()) return
+
+        val distro = installedDistros.first()
+        val uncPath = File("""\\wsl${'$'}\${distro.msId}\usr\local\bin\buf""")
+
+        assertThat(BufAnalyzeUtils.findWslDistro(uncPath))
+            .isNotNull()
+            .extracting { it!!.msId }
+            .isEqualTo(distro.msId)
     }
 }

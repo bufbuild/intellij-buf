@@ -26,7 +26,6 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputType
-import com.intellij.execution.process.ScriptRunnerUtil
 import com.intellij.execution.wsl.WSLCommandLineOptions
 import com.intellij.execution.wsl.WSLDistribution
 import com.intellij.execution.wsl.WslDistributionManager
@@ -219,38 +218,11 @@ object BufAnalyzeUtils {
         BufCmdResult(exitCode = exitCode.get(), stdout = stdout, stderr = stderr.toString())
     }
 
-    // Creates the appropriate process handler for buf. When buf is a Linux-style path
-    // (e.g. /usr/local/bin/buf on a Windows host with WSL), we cannot pass the command
-    // directly to ProcessBuilder — it requires the process to run inside WSL. We use
-    // WslDistribution.patchCommandLine to convert the command to run via wsl.exe, with
-    // the working directory translated to its WSL mount path. For native buf executables
-    // (Windows .exe or macOS/Linux binary) we fall back to ScriptRunnerUtil.execute.
     private fun createProcessHandler(
         bufExecutable: File,
         workingDirectory: Path,
         arguments: List<String>,
-    ): ProcessHandler {
-        val distro = findWslDistro(bufExecutable) ?: return ScriptRunnerUtil.execute(
-            bufExecutable.absolutePath,
-            workingDirectory.toString(),
-            null,
-            arguments.toTypedArray(),
-        )
-        // Convert the Windows-normalized path ("\usr\local\bin\buf") back to a Unix path
-        // ("/usr/local/bin/buf") so that wsl.exe executes the correct binary inside WSL.
-        // Using absolutePath here would resolve the path against the current Windows drive
-        // (e.g. "D:\usr\local\bin\buf"), which WSL cannot find.
-        val wslExecutablePath = getWslLinuxPath(bufExecutable)
-        val cmd = GeneralCommandLine(wslExecutablePath)
-        cmd.addParameters(arguments)
-        val options = WSLCommandLineOptions()
-        // Use the distro's own getWslPath to translate the Windows working directory
-        // (e.g. C:\Work) to its WSL mount path (e.g. /mnt/c/Work). This respects any
-        // custom mount root configured in /etc/wsl.conf, unlike a hardcoded /mnt/ prefix.
-        options.setRemoteWorkingDirectory(distro.getWslPath(workingDirectory))
-        distro.patchCommandLine(cmd, null, options)
-        return OSProcessHandler(cmd)
-    }
+    ): ProcessHandler = OSProcessHandler(createBufCommandLine(bufExecutable, arguments, workingDirectory))
 
     // Matches UNC WSL paths: \\wsl.localhost\<distro>\... or \\wsl$\<distro>\...
     // On Windows, File normalizes "/" to "\" but preserves the "\\" UNC prefix.
@@ -272,7 +244,10 @@ object BufAnalyzeUtils {
             val distroName = uncMatch.groupValues[1]
             val installedDistros = WslDistributionManager.getInstance().installedDistributions
             return installedDistros.firstOrNull { it.msId.equals(distroName, ignoreCase = true) }
-                ?: installedDistros.firstOrNull()
+                ?: run {
+                    LOG.warn("WSL distro '$distroName' not found in installed distributions; falling back to first available")
+                    installedDistros.firstOrNull()
+                }
         }
         // Linux-style path: "/usr/local/bin/buf" → Java normalizes to "\usr\local\bin\buf" on Windows.
         // We accept both "/" and "\" as the first character; native Windows paths always begin
@@ -294,6 +269,37 @@ object BufAnalyzeUtils {
             return if (linuxPart.isEmpty()) "/" else linuxPart.replace('\\', '/')
         }
         return path.replace('\\', '/')
+    }
+
+    // Creates a GeneralCommandLine for invoking buf with the given arguments and optional
+    // working directory. When buf is a WSL executable, patches the command to run via wsl.exe
+    // with executeInShell=false to prevent bash login-shell output from polluting buf's stdout.
+    // Working directory is translated from a Windows path to its WSL mount path when provided.
+    // For native executables (Windows .exe or macOS/Linux binary), sets exe path and working
+    // directory directly on the command line.
+    internal fun createBufCommandLine(
+        bufExecutable: File,
+        arguments: List<String>,
+        workingDirectory: Path? = null,
+    ): GeneralCommandLine {
+        val distro = findWslDistro(bufExecutable)
+        val cmd = GeneralCommandLine()
+        cmd.addParameters(arguments)
+        if (distro != null) {
+            cmd.exePath = getWslLinuxPath(bufExecutable)
+            val options = WSLCommandLineOptions()
+            options.setExecuteCommandInShell(false)
+            if (workingDirectory != null) {
+                options.setRemoteWorkingDirectory(distro.getWslPath(workingDirectory))
+            }
+            distro.patchCommandLine(cmd, null, options)
+        } else {
+            cmd.exePath = bufExecutable.absolutePath
+            if (workingDirectory != null) {
+                cmd.withWorkDirectory(workingDirectory.toString())
+            }
+        }
+        return cmd
     }
 
     private val externalLinterLazyResultCache =

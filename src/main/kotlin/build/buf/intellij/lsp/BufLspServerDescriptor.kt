@@ -19,7 +19,6 @@ import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.wsl.WSLCommandLineOptions
 import com.intellij.execution.wsl.WSLDistribution
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
@@ -80,31 +79,12 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         val bufExe = BufCLIUtils.getConfiguredBufExecutable(project)
             ?: throw IllegalStateException(BufBundle.message("lsp.cli.not.found"))
 
-        val cmd = GeneralCommandLine()
-        cmd.addParameter("lsp")
-        cmd.addParameter("serve")
-        cmd.addParameter("--log-format=text")
-
-        val distro = BufAnalyzeUtils.findWslDistro(bufExe)
-        wslDistro = distro
-        if (distro != null) {
-            // buf lives inside WSL; route via wsl.exe so the process is created inside WSL.
-            // Pass null for project to bypass IJent routing — same as BufAnalyzeUtils.createProcessHandler.
-            // Using a non-null project causes IntelliJ to route through IJent, which fails for
-            // WSL processes (the same regression as https://github.com/bufbuild/intellij-buf/issues/288).
-            //
-            // Disable the shell wrapper (setExecuteCommandInShell(false)) so buf lsp serve is
-            // exec'd directly rather than wrapped in "bash -l -c '...'". The bash login shell
-            // can emit output to stdout before the command runs, corrupting the LSP JSON-RPC
-            // stream. Direct exec keeps stdin/stdout clean for LSP communication.
-            cmd.exePath = BufAnalyzeUtils.getWslLinuxPath(bufExe)
-            distro.patchCommandLine(cmd, null, WSLCommandLineOptions().setExecuteCommandInShell(false))
-        } else {
-            cmd.exePath = bufExe.absolutePath
-        }
+        // Store wslDistro before building the command line so that getFileUri and
+        // findLocalFileByPath can translate paths as soon as the server starts.
+        wslDistro = BufAnalyzeUtils.findWslDistro(bufExe)
 
         log.info("Starting buf lsp serve")
-        return cmd
+        return BufAnalyzeUtils.createBufCommandLine(bufExe, listOf("lsp", "serve", "--log-format=text"))
     }
 
     // Builds a file URI for use in outgoing LSP messages (textDocument/didOpen etc.).
@@ -128,15 +108,13 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
     }
 
     // Translates WSL Linux paths arriving from the LSP server back to Windows paths so that
-    // IntelliJ can locate the corresponding VirtualFile. buf lsp serve sends back /mnt/c/...
-    // style paths in diagnostics, go-to-definition, and other responses.
+    // IntelliJ can locate the corresponding VirtualFile. buf lsp serve sends back paths in
+    // the mount layout configured by /etc/wsl.conf (e.g. /mnt/c/... or /c/... depending on
+    // the mount root). WSLDistribution.getWindowsPath respects the same wsl.conf settings
+    // as getWslPath, ensuring symmetry with getFileUri.
     override fun findLocalFileByPath(path: String): VirtualFile? {
-        wslDistro ?: return super.findLocalFileByPath(path)
-        // /mnt/<drive>/<rest> → <DRIVE>:/<rest>  (standard WSL mount layout)
-        val windowsPath = WSL_MOUNT_PATH_REGEX.find(path)?.let { m ->
-            "${m.groupValues[1].uppercase()}:/${m.groupValues[2]}"
-        } ?: return super.findLocalFileByPath(path)
-        return super.findLocalFileByPath(windowsPath)
+        val distro = wslDistro ?: return super.findLocalFileByPath(path)
+        return super.findLocalFileByPath(distro.getWindowsPath(path))
     }
 
     /**
@@ -159,11 +137,5 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
             current = current.parent
         }
         return null
-    }
-
-    companion object {
-        // Matches standard WSL mount paths: /mnt/<drive>/<rest>
-        // Used in findLocalFileByPath to translate paths from the LSP server back to Windows paths.
-        private val WSL_MOUNT_PATH_REGEX = Regex("^/mnt/([a-z])/(.+)$")
     }
 }
