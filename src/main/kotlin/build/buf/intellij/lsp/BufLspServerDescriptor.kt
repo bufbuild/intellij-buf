@@ -83,6 +83,14 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         // findLocalFileByPath can translate paths as soon as the server starts.
         wslDistro = BufAnalyzeUtils.findWslDistro(bufExe)
 
+        // Prime the WSL mount root cache here, outside any ReadAction. getWslPath() and
+        // getWindowsPath() (used in getFileUri/findLocalFileByPath) lazily compute the mnt
+        // root by running "wsl.exe --exec pwd" the first time they're called. The LSP
+        // framework calls getFileUri under a ReadAction, where blocking I/O is forbidden
+        // and OSProcessHandler.waitFor() logs an error. Calling getMntRoot() now ensures the
+        // value is cached before the first ReadAction-scoped path translation occurs.
+        wslDistro?.getMntRoot()
+
         log.info("Starting buf lsp serve")
         return BufAnalyzeUtils.createBufCommandLine(bufExe, listOf("lsp", "serve", "--log-format=text"))
     }
