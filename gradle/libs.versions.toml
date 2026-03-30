@@ -9,7 +9,6 @@ kotlin = "2.1.0"
 changelog = "2.5.0"
 intelliJPlatform = "2.13.1"
 qodana = "2025.3.2"
-kover = "0.9.8"
 osdetector = "1.7.3"
 spotless = "8.4.0"
 
@@ -22,7 +21,6 @@ junit = { module = "junit:junit", version.ref = "junit" }
 changelog = { id = "org.jetbrains.changelog", version.ref = "changelog" }
 intelliJPlatform = { id = "org.jetbrains.intellij.platform", version.ref = "intelliJPlatform" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 qodana = { id = "org.jetbrains.qodana", version.ref = "qodana" }
 osdetector = { id = "com.google.osdetector", version.ref = "osdetector" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
