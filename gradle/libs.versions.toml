@@ -9,7 +9,7 @@ kotlin = "2.1.0"
 changelog = "2.5.0"
 intelliJPlatform = "2.13.1"
 qodana = "2025.3.2"
-kover = "0.9.7"
+kover = "0.9.8"
 osdetector = "1.7.3"
 spotless = "8.4.0"
 
