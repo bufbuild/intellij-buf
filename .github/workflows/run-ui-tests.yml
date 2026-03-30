@@ -52,7 +52,7 @@ jobs:
 
       # Wait for IDEA to be started
       - name: Health Check
-        uses: jtalk/url-health-check-action@b716ccb6645355dd9fcce8002ce460e5474f7f00 # v4
+        uses: jtalk/url-health-check-action@e7d5ebdc9027fbf494d2d034f3e8fc78f8b7a2b9 # v5
         with:
           url: http://127.0.0.1:8082
           max-attempts: 15
