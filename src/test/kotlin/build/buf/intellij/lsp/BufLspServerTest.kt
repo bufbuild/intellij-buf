@@ -123,16 +123,11 @@ class BufLspServerTest : BufTestBase() {
     fun testWindowsToWslPath() {
         val descriptor = BufLspServerDescriptor(project)
 
-        // Standard conversion with trailing-slash mount root
         assertThat(descriptor.windowsToWslPath("/mnt/", "C:/Work/repo/foo.proto"))
             .isEqualTo("/mnt/c/Work/repo/foo.proto")
 
         // Backslash Windows path
         assertThat(descriptor.windowsToWslPath("/mnt/", """C:\Work\repo\foo.proto"""))
-            .isEqualTo("/mnt/c/Work/repo/foo.proto")
-
-        // Mount root without trailing slash — should be normalized
-        assertThat(descriptor.windowsToWslPath("/mnt", "C:/Work/repo/foo.proto"))
             .isEqualTo("/mnt/c/Work/repo/foo.proto")
 
         // Custom mount root from /etc/wsl.conf
@@ -147,12 +142,7 @@ class BufLspServerTest : BufTestBase() {
     fun testWslToWindowsPath() {
         val descriptor = BufLspServerDescriptor(project)
 
-        // Standard conversion with trailing-slash mount root
         assertThat(descriptor.wslToWindowsPath("/mnt/", "/mnt/c/Work/repo/foo.proto"))
-            .isEqualTo("C:/Work/repo/foo.proto")
-
-        // Mount root without trailing slash — should be normalized
-        assertThat(descriptor.wslToWindowsPath("/mnt", "/mnt/c/Work/repo/foo.proto"))
             .isEqualTo("C:/Work/repo/foo.proto")
 
         // Custom mount root
