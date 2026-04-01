@@ -119,4 +119,47 @@ class BufLspServerTest : BufTestBase() {
         assertThat(formattingSupport).isNotNull()
         assertThat(formattingSupport.shouldFormatThisFileExclusivelyByServer(protoFile, ideCanFormatThisFileItself = true, serverExplicitlyWantsToFormatThisFile = false)).isTrue()
     }
+
+    fun testWindowsToWslPath() {
+        val descriptor = BufLspServerDescriptor(project)
+
+        // Standard conversion with trailing-slash mount root
+        assertThat(descriptor.windowsToWslPath("/mnt/", "C:/Work/repo/foo.proto"))
+            .isEqualTo("/mnt/c/Work/repo/foo.proto")
+
+        // Backslash Windows path
+        assertThat(descriptor.windowsToWslPath("/mnt/", """C:\Work\repo\foo.proto"""))
+            .isEqualTo("/mnt/c/Work/repo/foo.proto")
+
+        // Mount root without trailing slash — should be normalized
+        assertThat(descriptor.windowsToWslPath("/mnt", "C:/Work/repo/foo.proto"))
+            .isEqualTo("/mnt/c/Work/repo/foo.proto")
+
+        // Custom mount root from /etc/wsl.conf
+        assertThat(descriptor.windowsToWslPath("/windows/", "D:/data/file.proto"))
+            .isEqualTo("/windows/d/data/file.proto")
+
+        // Non-Windows path returns null
+        assertThat(descriptor.windowsToWslPath("/mnt/", "/usr/local/bin/buf")).isNull()
+        assertThat(descriptor.windowsToWslPath("/mnt/", "relative/path")).isNull()
+    }
+
+    fun testWslToWindowsPath() {
+        val descriptor = BufLspServerDescriptor(project)
+
+        // Standard conversion with trailing-slash mount root
+        assertThat(descriptor.wslToWindowsPath("/mnt/", "/mnt/c/Work/repo/foo.proto"))
+            .isEqualTo("C:/Work/repo/foo.proto")
+
+        // Mount root without trailing slash — should be normalized
+        assertThat(descriptor.wslToWindowsPath("/mnt", "/mnt/c/Work/repo/foo.proto"))
+            .isEqualTo("C:/Work/repo/foo.proto")
+
+        // Custom mount root
+        assertThat(descriptor.wslToWindowsPath("/windows/", "/windows/d/data/file.proto"))
+            .isEqualTo("D:/data/file.proto")
+
+        // Path not under mount root returns null
+        assertThat(descriptor.wslToWindowsPath("/mnt/", "/usr/local/bin/buf")).isNull()
+    }
 }
