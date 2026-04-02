@@ -19,7 +19,6 @@ import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.wsl.WSLDistribution
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -27,7 +26,6 @@ import com.intellij.platform.lsp.api.ProjectWideLspServerDescriptor
 import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import java.net.URI
-import java.nio.file.Path
 
 /**
  * LSP server descriptor for the Buf Language Server.
@@ -37,10 +35,12 @@ import java.nio.file.Path
 class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(project, "Buf") {
     private val log = logger<BufLspServerDescriptor>()
 
-    // Set in createCommandLine(); non-null when buf is running inside WSL.
-    // Used by getFileUri/findLocalFileByPath to translate between Windows and WSL paths.
+    // Cached WSL mount root (e.g. "/mnt/"), set in createCommandLine() outside any ReadAction.
+    // Non-null only when buf runs inside WSL. Used by getFileUri and findLocalFileByPath to
+    // translate paths without calling WSLDistribution.getWslPath/getWindowsPath, which lazily
+    // invoke getMntRoot() by running "wsl.exe --exec pwd" — forbidden under ReadAction.
     @Volatile
-    private var wslDistro: WSLDistribution? = null
+    private var cachedMntRoot: String? = null
 
     // Allow the bundled Protocol Buffers plugin to supply go-to--definition support;
     // if we don't do this, Go-to-definition does not work properly with local definitions.
@@ -79,17 +79,15 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         val bufExe = BufCLIUtils.getConfiguredBufExecutable(project)
             ?: throw IllegalStateException(BufBundle.message("lsp.cli.not.found"))
 
-        // Store wslDistro before building the command line so that getFileUri and
-        // findLocalFileByPath can translate paths as soon as the server starts.
-        wslDistro = BufAnalyzeUtils.findWslDistro(bufExe)
-
-        // Prime the WSL mount root cache here, outside any ReadAction. getWslPath() and
-        // getWindowsPath() (used in getFileUri/findLocalFileByPath) lazily compute the mnt
-        // root by running "wsl.exe --exec pwd" the first time they're called. The LSP
-        // framework calls getFileUri under a ReadAction, where blocking I/O is forbidden
-        // and OSProcessHandler.waitFor() logs an error. Calling getMntRoot() now ensures the
-        // value is cached before the first ReadAction-scoped path translation occurs.
-        wslDistro?.getMntRoot()
+        // Cache the WSL mount root here, outside any ReadAction. getMntRoot() runs
+        // "wsl.exe --exec pwd" to determine the root configured in /etc/wsl.conf (e.g.
+        // "/mnt/" by default). We store the result ourselves rather than relying on
+        // WSLDistribution's internal ClearableLazyValue, which can be invalidated after
+        // createCommandLine() returns. getFileUri and findLocalFileByPath use this cached
+        // value to translate paths without triggering blocking I/O under ReadAction.
+        cachedMntRoot = BufAnalyzeUtils.findWslDistro(bufExe)?.getMntRoot()?.let {
+            if (it.endsWith('/')) it else "$it/"
+        }
 
         log.info("Starting buf lsp serve")
         return BufAnalyzeUtils.createBufCommandLine(bufExe, listOf("lsp", "serve", "--log-format=text"))
@@ -105,11 +103,13 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
     // (file:////mnt/c/...) for a path that already begins with "/".  Overriding getFileUri
     // lets us construct the URI directly with the correct form.
     //
-    // Uses WSLDistribution.getWslPath so the mount root from /etc/wsl.conf is respected
-    // (e.g. a custom "root = /windows" config maps C:\ to /windows/c/ instead of /mnt/c/).
+    // Uses cachedMntRoot (set in createCommandLine) rather than WSLDistribution.getWslPath,
+    // which internally calls getMntRoot() lazily. getMntRoot() runs "wsl.exe --exec pwd"
+    // synchronously and cannot be called under ReadAction; getFileUri is invoked under
+    // ReadAction by the LSP framework (e.g. for intention action availability checks).
     override fun getFileUri(file: VirtualFile): String {
-        val distro = wslDistro ?: return super.getFileUri(file)
-        val wslPath = distro.getWslPath(Path.of(file.path)) ?: return super.getFileUri(file)
+        val mntRoot = cachedMntRoot ?: return super.getFileUri(file)
+        val wslPath = windowsToWslPath(mntRoot, file.path) ?: return super.getFileUri(file)
         // URI(scheme, authority, path, query, fragment) with empty authority produces
         // the triple-slash form: file:///mnt/c/...
         return URI("file", "", wslPath, null, null).toString()
@@ -118,11 +118,34 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
     // Translates WSL Linux paths arriving from the LSP server back to Windows paths so that
     // IntelliJ can locate the corresponding VirtualFile. buf lsp serve sends back paths in
     // the mount layout configured by /etc/wsl.conf (e.g. /mnt/c/... or /c/... depending on
-    // the mount root). WSLDistribution.getWindowsPath respects the same wsl.conf settings
-    // as getWslPath, ensuring symmetry with getFileUri.
+    // the mount root). Uses cachedMntRoot for symmetry with getFileUri.
     override fun findLocalFileByPath(path: String): VirtualFile? {
-        val distro = wslDistro ?: return super.findLocalFileByPath(path)
-        return super.findLocalFileByPath(distro.getWindowsPath(path))
+        val mntRoot = cachedMntRoot ?: return super.findLocalFileByPath(path)
+        val windowsPath = wslToWindowsPath(mntRoot, path) ?: return super.findLocalFileByPath(path)
+        return super.findLocalFileByPath(windowsPath)
+    }
+
+    // Converts a Windows drive-letter path to a WSL mount path using the given mount root.
+    // mntRoot must end with '/'. Example: "C:/Work/repo/foo.proto" + "/mnt/" → "/mnt/c/Work/repo/foo.proto"
+    // Returns null if the input is not a Windows drive-letter path.
+    internal fun windowsToWslPath(mntRoot: String, windowsPath: String): String? {
+        val normalized = windowsPath.replace('\\', '/')
+        if (normalized.length < 2 || normalized[1] != ':') return null
+        val driveLetter = normalized[0].lowercaseChar()
+        val rest = normalized.substring(2)
+        return "$mntRoot$driveLetter$rest"
+    }
+
+    // Converts a WSL mount path back to a Windows drive-letter path.
+    // mntRoot must end with '/'. Example: "/mnt/c/Work/repo/foo.proto" + "/mnt/" → "C:/Work/repo/foo.proto"
+    // Returns null if the path does not start with the mount root.
+    internal fun wslToWindowsPath(mntRoot: String, wslPath: String): String? {
+        if (!wslPath.startsWith(mntRoot)) return null
+        val afterRoot = wslPath.removePrefix(mntRoot)
+        if (afterRoot.isEmpty()) return null
+        val driveLetter = afterRoot[0].uppercaseChar()
+        val rest = afterRoot.substring(1)
+        return "$driveLetter:$rest"
     }
 
     /**
