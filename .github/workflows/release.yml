@@ -16,7 +16,6 @@ jobs:
     environment: production
     permissions:
       contents: write
-      pull-requests: write
     steps:
 
       # Check out the current repository
@@ -79,17 +78,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload ${{ github.event.release.tag_name }} ./build/distributions/*
 
+      # Generate a token using the GitHub App
+      - name: Generate App Token
+        id: app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: 3254841
+          private-key: ${{ secrets.APP_TOKEN_INTELLIJ_BUF }}
+          permission-contents: write
+          permission-pull-requests: write
+
       # Create a pull request
       - name: Create Pull Request
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           VERSION="${{ github.event.release.tag_name }}"
           BRANCH="changelog-update-$VERSION"
           LABEL="release changelog"
 
-          git config user.email "action@github.com"
-          git config user.name "GitHub Action"
+          git config user.email "273189346+app-token-intellij-buf[bot]@users.noreply.github.com"
+          git config user.name "app-token-intellij-buf[bot]"
 
           git checkout -b $BRANCH
           git commit -am "Changelog update - $VERSION"
