@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.7.7] - 2026-04-02
+
+This release contains one more fix for WSL users.
+
+- Fix WSL ReadAction violation in BufLspServerDescriptor path translation by @stefanvanburen in https://github.com/bufbuild/intellij-buf/pull/463
+
 ## [0.7.6] - 2026-03-27
 
 This release contains another fix for WSL users.
@@ -128,7 +134,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.7.6...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.7.7...HEAD
+[0.7.7]: https://github.com/bufbuild/intellij-buf/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/bufbuild/intellij-buf/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/bufbuild/intellij-buf/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/bufbuild/intellij-buf/compare/v0.7.3...v0.7.4
