@@ -16,7 +16,6 @@ jobs:
     environment: production
     permissions:
       contents: write
-      pull-requests: write
     steps:
 
       # Check out the current repository
