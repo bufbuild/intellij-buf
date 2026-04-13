@@ -30,7 +30,7 @@ jobs:
       # Set up WSL with Ubuntu 24.04. Generates a `wsl-bash` shell wrapper for
       # subsequent steps that need to run commands inside WSL.
       - name: Set up WSL (Ubuntu 24.04)
-        uses: Vampire/setup-wsl@6a8db447be7ed35f2f499c02c6e60ff77ef11278 # v6.0.0
+        uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
         with:
           distribution: Ubuntu-24.04
 
