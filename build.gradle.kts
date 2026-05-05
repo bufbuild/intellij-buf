@@ -181,6 +181,10 @@ tasks {
             providers.gradleProperty("buf.license.header.range").get(),
             "--ignore",
             "/testData/cache",
+            "--ignore",
+            "\\.yaml$",
+            "--ignore",
+            "\\.yml$",
         )
     }
 
@@ -197,6 +201,10 @@ tasks {
             providers.gradleProperty("buf.license.header.range").get(),
             "--ignore",
             "/testData/cache",
+            "--ignore",
+            "\\.yaml$",
+            "--ignore",
+            "\\.yml$",
             "--diff",
             "--exit-code",
         )
