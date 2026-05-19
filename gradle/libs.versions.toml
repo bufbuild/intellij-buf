@@ -10,7 +10,7 @@ changelog = "2.5.0"
 intelliJPlatform = "2.16.0"
 qodana = "2026.1.0"
 osdetector = "1.7.3"
-spotless = "8.4.0"
+spotless = "8.5.1"
 
 [libraries]
 assertj = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
