@@ -30,7 +30,6 @@ import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.codeInsight.daemon.impl.HighlightInfoProcessor
 import com.intellij.codeInsight.daemon.impl.HighlightInfoType
 import com.intellij.codeInsight.daemon.impl.UpdateHighlightersUtil
-import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -139,7 +138,7 @@ class BufAnalyzePass(
             }
         }
 
-        if (isUnitTestMode) {
+        if (ApplicationManager.getApplication().isUnitTestMode) {
             update.run()
         } else {
             factory.scheduleExternalActivity(update)

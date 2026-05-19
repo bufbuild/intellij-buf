@@ -29,7 +29,6 @@ import com.intellij.execution.process.ProcessOutputType
 import com.intellij.execution.wsl.WSLCommandLineOptions
 import com.intellij.execution.wsl.WSLDistribution
 import com.intellij.execution.wsl.WslDistributionManager
-import com.intellij.ide.plugins.PluginManagerCore.isUnitTestMode
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.WriteAction
@@ -77,7 +76,7 @@ object BufAnalyzeUtils {
         return externalLinterLazyResultCache.getOrPut(project, workingDirectory) {
             lazy {
                 // This code will be executed out of read action in background thread
-                if (!isUnitTestMode) check(!ApplicationManager.getApplication().isReadAccessAllowed)
+                if (!ApplicationManager.getApplication().isUnitTestMode) check(!ApplicationManager.getApplication().isReadAccessAllowed)
                 check(project, owner, workingDirectory)
             }
         }
