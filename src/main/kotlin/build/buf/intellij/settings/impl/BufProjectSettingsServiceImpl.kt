@@ -46,7 +46,7 @@ class BufProjectSettingsServiceImpl(
         set(newState) {
             if (_state != newState) {
                 _state = newState.copy()
-                DaemonCodeAnalyzer.getInstance(project).restart()
+                DaemonCodeAnalyzer.getInstance(project).restart("Buf settings changed")
             }
         }
 

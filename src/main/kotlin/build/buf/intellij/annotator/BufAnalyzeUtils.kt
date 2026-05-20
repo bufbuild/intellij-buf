@@ -22,9 +22,9 @@ import build.buf.intellij.settings.bufSettings
 import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.OSProcessHandler
-import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessListener
 import com.intellij.execution.process.ProcessOutputType
 import com.intellij.execution.wsl.WSLCommandLineOptions
 import com.intellij.execution.wsl.WSLDistribution
@@ -183,7 +183,7 @@ object BufAnalyzeUtils {
         }
         try {
             handler.addProcessListener(
-                object : ProcessAdapter() {
+                object : ProcessListener {
                     override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
                         when (outputType) {
                             ProcessOutputType.SYSTEM -> cmd.set(event.text.trimEnd())
