@@ -216,7 +216,7 @@ class BufAnalyzePassFactory(
         if (!shouldRunPass(file)) {
             return null
         }
-        FileStatusMap.getDirtyTextRange(editor, passId) ?: return null
+        FileStatusMap.getDirtyTextRange(editor.document, file, passId) ?: return null
         return BufAnalyzePass(this, file, editor.document)
     }
 

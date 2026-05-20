@@ -17,8 +17,8 @@ package build.buf.intellij.lsp
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.process.OSProcessHandler
-import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessListener
 import com.intellij.execution.process.ProcessOutputType
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
@@ -102,7 +102,7 @@ object BufVersionDetector {
                 BufAnalyzeUtils.createBufCommandLine(bufExecutable, listOf("--version")),
             )
 
-            handler.addProcessListener(object : ProcessAdapter() {
+            handler.addProcessListener(object : ProcessListener {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
                     if (outputType == ProcessOutputType.STDOUT) {
                         stdout.set(event.text.trim())
