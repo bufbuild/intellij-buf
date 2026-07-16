@@ -26,8 +26,8 @@ val bufLicenseHeaderCLIPath: String = bufLicenseHeaderCLIFile.absolutePath
 kotlin {
     jvmToolchain(21)
     compilerOptions {
-        apiVersion.set(KotlinVersion.KOTLIN_1_9)
-        languageVersion.set(KotlinVersion.KOTLIN_1_9)
+        apiVersion.set(KotlinVersion.KOTLIN_2_2)
+        languageVersion.set(KotlinVersion.KOTLIN_2_2)
     }
 }
 
@@ -55,9 +55,6 @@ dependencies {
 
         // Plugin Dependencies. Uses `platformBundledPlugins` property from the gradle.properties file for bundled IntelliJ Platform plugins.
         bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
-
-        // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
-        plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
 
         pluginVerifier()
         zipSigner()
@@ -234,14 +231,10 @@ tasks {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
 
-    prepareSandbox {
-        // Kanro plugin conflicts with Protocol Buffers plugin - disable it while running the IDE.
-        disabledPlugins = listOf("io.kanro.idea.plugin.protobuf")
-    }
-
     prepareTestSandbox {
-        // Kanro plugin conflicts with Protocol Buffers plugin - disable it while testing.
-        disabledPlugins = listOf("io.kanro.idea.plugin.protobuf")
+        // IntelliJ plugin 2.18.0+ causes test failures with the Vue plugin.
+        // Ref: https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/2183
+        disabledPlugins = listOf("org.jetbrains.plugins.vue")
     }
 
     publishPlugin {
@@ -265,7 +258,6 @@ intellijPlatformTesting {
 
             plugins {
                 robotServerPlugin()
-                disablePlugins("io.kanro.idea.plugin.protobuf")
             }
         }
     }

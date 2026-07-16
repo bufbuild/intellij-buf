@@ -32,13 +32,11 @@ import com.intellij.psi.util.PsiModificationTracker
  */
 @Service(Service.Level.PROJECT)
 class BufAnalyzeModificationTracker(private val project: Project) : ModificationTracker {
-    private val protoModificationTracker = protobufLanguage()?.let {
-        PsiModificationTracker.getInstance(project).forLanguage(it)
-    }
+    private val protoModificationTracker =
+        PsiModificationTracker.getInstance(project).forLanguage(protobufLanguage())
 
     override fun getModificationCount(): Long {
-        var modificationCount: Long =
-            protoModificationTracker?.modificationCount ?: 0
+        var modificationCount: Long = protoModificationTracker.modificationCount
         runReadAction {
             for (configFile in BufConfig.CONFIG_FILES) {
                 FilenameIndex.getVirtualFilesByName(configFile, GlobalSearchScope.projectScope(project)).forEach {
