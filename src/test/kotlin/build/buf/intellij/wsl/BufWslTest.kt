@@ -22,6 +22,7 @@ import build.buf.intellij.settings.bufSettings
 import com.intellij.codeInsight.actions.ReformatCodeProcessor
 import com.intellij.execution.wsl.WslDistributionManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.platform.lsp.api.LspServerManager
 import com.intellij.platform.lsp.api.LspServerState
 import com.intellij.psi.codeStyle.CodeStyleManager
@@ -79,6 +80,11 @@ class BufWslTest : BufTestBase() {
         if (!isWindows) return
 
         super.setUp()
+
+        // BufAnalyzeUtils launches buf via wsl.exe, not IJent. Since IntelliJ Platform 2.18.x the
+        // bundled ijent module routes WSL launches through IJent, whose test support class
+        // (TestIjentExecFileProvider) is absent in plugin tests and breaks process creation.
+        Registry.get("wsl.use.remote.agent.for.launch.processes").setValue(false, testRootDisposable)
 
         // project.basePath is used as the working directory in the test. IntelliJ creates
         // this path lazily; GeneralCommandLine validates it exists before launching, so we

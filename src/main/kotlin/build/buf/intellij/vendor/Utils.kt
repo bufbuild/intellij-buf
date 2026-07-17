@@ -15,42 +15,10 @@
 package build.buf.intellij.vendor
 
 import com.intellij.lang.Language
+import com.intellij.protobuf.lang.PbLanguage
+import com.intellij.protobuf.lang.psi.PbFile
 import com.intellij.psi.PsiFile
 
-private val officialProtobufFile by lazy {
-    try {
-        Class.forName("com.intellij.protobuf.lang.psi.PbFile")
-    } catch (e: ClassNotFoundException) {
-        null
-    }
-}
+fun PsiFile.isProtobufFile(): Boolean = this is PbFile
 
-private val officialProtobufLanguage: Language? by lazy {
-    try {
-        val clazz = Class.forName("com.intellij.protobuf.lang.PbLanguage")
-        clazz.getField("INSTANCE").get(null) as Language
-    } catch (e: ClassNotFoundException) {
-        null
-    }
-}
-
-private val kanroProtobufFile by lazy {
-    try {
-        Class.forName("io.kanro.idea.plugin.protobuf.lang.psi.ProtobufFile")
-    } catch (e: ClassNotFoundException) {
-        null
-    }
-}
-
-private val kanroProtobufLanguage: Language? by lazy {
-    try {
-        val clazz = Class.forName("io.kanro.idea.plugin.protobuf.lang.ProtobufLanguage")
-        clazz.kotlin.objectInstance as Language
-    } catch (e: ClassNotFoundException) {
-        null
-    }
-}
-
-fun PsiFile.isProtobufFile(): Boolean = ((officialProtobufFile?.isInstance(this) ?: false || kanroProtobufFile?.isInstance(this) ?: false))
-
-fun protobufLanguage(): Language? = officialProtobufLanguage ?: kanroProtobufLanguage
+fun protobufLanguage(): Language = PbLanguage.INSTANCE
