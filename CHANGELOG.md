@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-09
+
+- Remove Kanro plugin support by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/506
+- Fix deadlock with inspect code by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/535
+
 ## [0.7.7] - 2026-04-02
 
 This release contains one more fix for WSL users.
@@ -134,7 +139,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.7.7...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/bufbuild/intellij-buf/compare/v0.7.7...v0.8.0
 [0.7.7]: https://github.com/bufbuild/intellij-buf/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/bufbuild/intellij-buf/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/bufbuild/intellij-buf/compare/v0.7.4...v0.7.5
