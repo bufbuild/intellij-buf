@@ -5,10 +5,10 @@
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/com.github.bufbuild.intellij.svg)](https://plugins.jetbrains.com/plugin/com.github.bufbuild.intellij)
 
 <!-- Plugin description -->
-This plugin extends Protocol Buffer support in the IDE by integrating with [Buf](https://buf.build).
+This plugin extends Protocol Buffers (protobuf) support in the IDE by integrating with [Buf](https://buf.build).
 It provides fast diagnostics, go-to-definition, code completion, hover documentation, and find references
 through the [Buf Language Server](https://buf.build/docs/cli/editors-lsp/)
-(requires buf CLI v1.59.0+ and IntelliJ 2025.1+).
+(requires buf CLI v1.59.0+).
 The plugin automatically falls back to CLI-based diagnostics when the language server is unavailable or if using an older version of buf.
 
 The plugin also supports code formatting with `buf format`,
