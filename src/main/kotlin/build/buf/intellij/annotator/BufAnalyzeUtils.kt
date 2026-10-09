@@ -19,7 +19,7 @@ import build.buf.intellij.config.BufConfig
 import build.buf.intellij.model.BufIssue
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
-import build.buf.intellij.vendor.isProtobufFile
+import build.buf.intellij.vendor.protobufLanguage
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessEvent
@@ -36,11 +36,13 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
-import com.intellij.psi.PsiDocumentManager
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.util.PsiModificationTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -88,10 +90,15 @@ object BufAnalyzeUtils {
         workingDirectory: Path,
     ): BufAnalyzeResult {
         ProgressManager.checkCanceled()
-        WriteAction.computeAndWait<Unit, Throwable> {
-            FileDocumentManager.getInstance().saveDocuments { document ->
-                val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@saveDocuments false
-                psiFile.isProtobufFile() || BufConfig.CONFIG_FILES.contains(psiFile.name)
+        // Saving needs a write action, so callers must not hold a read lock or
+        // wait on this from a thread that does. Skipping the write action when
+        // nothing relevant is unsaved keeps headless runs, which may hold a
+        // global read lock, from deadlocking.
+        val fileDocumentManager = FileDocumentManager.getInstance()
+        val isBufDocument = { document: Document -> fileDocumentManager.getFile(document)?.isBufFile() == true }
+        if (fileDocumentManager.unsavedDocuments.any(isBufDocument)) {
+            WriteAction.computeAndWait<Unit, Throwable> {
+                fileDocumentManager.saveDocuments(isBufDocument)
             }
         }
         val started = Instant.now()
@@ -140,6 +147,8 @@ object BufAnalyzeUtils {
         project.putUserData(BufAnalyzePassFactory.LAST_ANALYZE_MOD_COUNT, analyzeModTracker.modificationCount)
         return BufAnalyzeResult(workingDirectory, issues)
     }
+
+    private fun VirtualFile.isBufFile(): Boolean = (fileType as? LanguageFileType)?.language == protobufLanguage() || name in BufConfig.CONFIG_FILES
 
     private fun findBreakingArguments(workingDirectory: Path, gitRepoRoot: Path): List<String> {
         if (gitRepoRoot == workingDirectory) {
