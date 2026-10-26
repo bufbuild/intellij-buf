@@ -31,4 +31,36 @@ class BufAnalyzeBreakingTest : BufTestBase() {
         configureByFolder("breaking/type/after", "foo.proto")
         myFixture.checkHighlighting()
     }
+    fun testNestedWorkspaceBreakingType() {
+        project.bufSettings.state = project.bufSettings.state.copy(
+            backgroundLintingEnabled = false,
+            backgroundBreakingEnabled = true,
+            breakingArgumentsOverride = listOf(
+                "--against",
+                findTestDataFolder().resolve("breaking/type/before").toString(),
+            ),
+        )
+        myFixture.addFileToProject(
+            "service/buf.yaml",
+            """
+            version: v2
+            modules:
+              - path: proto
+            """.trimIndent(),
+        )
+        myFixture.addFileToProject("service/proto/common.proto", "syntax = \"proto3\"; message Common {}")
+        myFixture.addFileToProject(
+            "service/proto/foo.proto",
+            """
+            syntax = "proto3";
+            import "common.proto";
+            message Foo {
+              <warning descr="Field \"1\" with name \"bar\" on message \"Foo\" changed type from \"int64\" to \"string\".">string</warning> bar = 1;
+              Common common = 2;
+            }
+            """.trimIndent(),
+        )
+        myFixture.configureByFile("service/proto/foo.proto")
+        myFixture.checkHighlighting()
+    }
 }

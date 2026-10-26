@@ -20,6 +20,7 @@ import build.buf.intellij.annotator.BufAnalyzeResult
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.annotator.addHighlightsForFile
 import build.buf.intellij.annotator.createDisposableOnAnyPsiChange
+import build.buf.intellij.config.findBufWorkingDirectory
 import build.buf.intellij.vendor.isProtobufFile
 import build.buf.intellij.vendor.protobufLanguage
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
@@ -34,7 +35,6 @@ import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.util.ProgressIndicatorUtils
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiFile
@@ -86,9 +86,8 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
             val disposable = project.messageBus.createDisposableOnAnyPsiChange()
                 .also { Disposer.register(appService, it) }
             val lazyResults = runReadAction {
-                val fileIndex = ProjectFileIndex.getInstance(project)
                 analyzedFiles.filter { it.isValid }
-                    .mapNotNull { fileIndex.getContentRootForFile(it.virtualFile) }
+                    .mapNotNull { findBufWorkingDirectory(it) }
                     .distinct()
                     .map { BufAnalyzeUtils.checkLazily(project, disposable, it.toNioPath()) }
             }

@@ -25,7 +25,7 @@ object BufConfig {
     const val BUF_YAML = "buf.yaml"
 
     /** The workspace configuration file */
-    private const val BUF_WORK_YAML = "buf.work.yaml"
+    const val BUF_WORK_YAML = "buf.work.yaml"
 
     /** All configuration files used by the Buf CLI */
     val CONFIG_FILES = setOf(BUF_LOCK, BUF_YAML, BUF_WORK_YAML)

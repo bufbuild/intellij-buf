@@ -30,4 +30,81 @@ class BufAnalyzeAnnotationTest : BufTestBase() {
         )
         myFixture.checkHighlighting()
     }
+    fun testNestedV2Workspace() {
+        myFixture.addFileToProject(
+            "service/buf.yaml",
+            """
+            version: v2
+            modules:
+              - path: proto
+            lint:
+              use:
+                - FIELD_LOWER_SNAKE_CASE
+            """.trimIndent(),
+        )
+        myFixture.addFileToProject("unrelated/broken.proto", "not a proto file")
+        myFixture.addFileToProject(
+            "service/proto/common.proto",
+            """
+            syntax = "proto3";
+            message Common {}
+            """.trimIndent(),
+        )
+        myFixture.addFileToProject(
+            "service/proto/test.proto",
+            """
+            syntax = "proto3";
+            import "common.proto";
+            message Test {
+              Common value = 1;
+              string <warning descr="Field name \"BadName\" should be lower_snake_case, such as \"bad_name\".">BadName</warning> = 2;
+            }
+            """.trimIndent(),
+        )
+        myFixture.configureByFile("service/proto/test.proto")
+        myFixture.checkHighlighting()
+    }
+
+    fun testNestedLegacyWorkspace() {
+        myFixture.addFileToProject(
+            "service/buf.work.yaml",
+            """
+            version: v1
+            directories:
+              - api
+              - common
+            """.trimIndent(),
+        )
+        for (module in listOf("api", "common")) {
+            myFixture.addFileToProject(
+                "service/$module/buf.yaml",
+                """
+                version: v1
+                lint:
+                  use:
+                    - FIELD_LOWER_SNAKE_CASE
+                """.trimIndent(),
+            )
+        }
+        myFixture.addFileToProject(
+            "service/common/common.proto",
+            """
+            syntax = "proto3";
+            message Common {}
+            """.trimIndent(),
+        )
+        myFixture.addFileToProject(
+            "service/api/test.proto",
+            """
+            syntax = "proto3";
+            import "common.proto";
+            message Test {
+              Common value = 1;
+              string <warning descr="Field name \"BadName\" should be lower_snake_case, such as \"bad_name\".">BadName</warning> = 2;
+            }
+            """.trimIndent(),
+        )
+        myFixture.configureByFile("service/api/test.proto")
+        myFixture.checkHighlighting()
+    }
 }

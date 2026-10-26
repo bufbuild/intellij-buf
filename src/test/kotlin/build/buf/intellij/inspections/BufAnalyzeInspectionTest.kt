@@ -58,4 +58,39 @@ class BufAnalyzeInspectionTest : BufTestBase() {
             findTestDataFolder().resolve("unsavedDocument").toString(),
         )
     }
+    fun testNestedWorkspaces() {
+        for ((directory, rule) in listOf("first" to "FIELD_LOWER_SNAKE_CASE", "second" to "MESSAGE_PASCAL_CASE")) {
+            myFixture.addFileToProject(
+                "$directory/buf.yaml",
+                """
+                version: v2
+                modules:
+                  - path: proto
+                lint:
+                  use:
+                    - $rule
+                """.trimIndent(),
+            )
+            myFixture.addFileToProject(
+                "$directory/proto/$directory.proto",
+                """
+                syntax = "proto3";
+                message foo {
+                  string Bar = 1;
+                }
+                """.trimIndent(),
+            )
+        }
+        myFixture.configureByFiles("first/proto/first.proto", "second/proto/second.proto")
+        val toolWrapper = GlobalInspectionToolWrapper(BufAnalyzeInspection())
+        val scope = AnalysisScope(project)
+        val globalContext = createGlobalContextForTool(scope, project, listOf(toolWrapper))
+        InspectionTestUtil.runTool(toolWrapper, scope, globalContext)
+        InspectionTestUtil.compareToolResults(
+            globalContext,
+            toolWrapper,
+            false,
+            findTestDataFolder().resolve("nestedWorkspaces").toString(),
+        )
+    }
 }
