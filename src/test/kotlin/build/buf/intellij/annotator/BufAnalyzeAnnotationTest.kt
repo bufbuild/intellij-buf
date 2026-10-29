@@ -30,6 +30,7 @@ class BufAnalyzeAnnotationTest : BufTestBase() {
         )
         myFixture.checkHighlighting()
     }
+
     fun testNestedV2Workspace() {
         myFixture.addFileToProject(
             "service/buf.yaml",
@@ -42,6 +43,7 @@ class BufAnalyzeAnnotationTest : BufTestBase() {
                 - FIELD_LOWER_SNAKE_CASE
             """.trimIndent(),
         )
+        // Fails the build if buf runs from the content root instead of service/.
         myFixture.addFileToProject("unrelated/broken.proto", "not a proto file")
         myFixture.addFileToProject(
             "service/proto/common.proto",
@@ -105,6 +107,42 @@ class BufAnalyzeAnnotationTest : BufTestBase() {
             """.trimIndent(),
         )
         myFixture.configureByFile("service/api/test.proto")
+        myFixture.checkHighlighting()
+    }
+
+    // other/ is a v1 module that buf.work.yaml does not list, so buf must run
+    // from other/. Running from the root only lints api/ and reports nothing.
+    fun testModuleOutsideLegacyWorkspace() {
+        myFixture.addFileToProject(
+            "buf.work.yaml",
+            """
+            version: v1
+            directories:
+              - api
+            """.trimIndent(),
+        )
+        for (module in listOf("api", "other")) {
+            myFixture.addFileToProject(
+                "$module/buf.yaml",
+                """
+                version: v1
+                lint:
+                  use:
+                    - FIELD_LOWER_SNAKE_CASE
+                """.trimIndent(),
+            )
+        }
+        myFixture.addFileToProject("api/api.proto", "syntax = \"proto3\";")
+        myFixture.addFileToProject(
+            "other/test.proto",
+            """
+            syntax = "proto3";
+            message Test {
+              string <warning descr="Field name \"BadName\" should be lower_snake_case, such as \"bad_name\".">BadName</warning> = 1;
+            }
+            """.trimIndent(),
+        )
+        myFixture.configureByFile("other/test.proto")
         myFixture.checkHighlighting()
     }
 }

@@ -120,6 +120,27 @@ class BufLspServerTest : BufTestBase() {
         assertThat(formattingSupport.shouldFormatThisFileExclusivelyByServer(protoFile, ideCanFormatThisFileItself = true, serverExplicitlyWantsToFormatThisFile = false)).isTrue()
     }
 
+    // Files under a Buf configuration are supported even outside the configured
+    // modules, since the LSP resolves workspace membership itself.
+    fun testSupportedFiles() {
+        myFixture.addFileToProject(
+            "service/buf.yaml",
+            """
+            version: v2
+            modules:
+              - path: proto
+            """.trimIndent(),
+        )
+        val inModule = myFixture.addFileToProject("service/proto/a.proto", "syntax = \"proto3\";")
+        val outsideModules = myFixture.addFileToProject("service/other/b.proto", "syntax = \"proto3\";")
+        val unconfigured = myFixture.addFileToProject("loose/c.proto", "syntax = \"proto3\";")
+
+        val descriptor = BufLspServerDescriptor(project)
+        assertThat(descriptor.isSupportedFile(inModule.virtualFile)).isTrue()
+        assertThat(descriptor.isSupportedFile(outsideModules.virtualFile)).isTrue()
+        assertThat(descriptor.isSupportedFile(unconfigured.virtualFile)).isFalse()
+    }
+
     fun testWindowsToWslPath() {
         val descriptor = BufLspServerDescriptor(project)
 

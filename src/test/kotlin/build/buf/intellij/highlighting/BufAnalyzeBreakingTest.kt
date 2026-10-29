@@ -31,6 +31,7 @@ class BufAnalyzeBreakingTest : BufTestBase() {
         configureByFolder("breaking/type/after", "foo.proto")
         myFixture.checkHighlighting()
     }
+
     fun testNestedWorkspaceBreakingType() {
         project.bufSettings.state = project.bufSettings.state.copy(
             backgroundLintingEnabled = false,
