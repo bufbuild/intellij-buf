@@ -16,7 +16,7 @@ package build.buf.intellij.lsp
 
 import build.buf.intellij.BufBundle
 import build.buf.intellij.annotator.BufAnalyzeUtils
-import build.buf.intellij.config.BufConfig
+import build.buf.intellij.config.hasBufConfigAncestor
 import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.diagnostic.logger
@@ -72,7 +72,9 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         // and isInContent triggers a slow workspace index update that is prohibited on EDT.
         // The buf workspace check is sufficient: files outside the project won't have a
         // buf.yaml ancestor, and the LSP server is project-scoped regardless.
-        return findBufWorkspaceRoot(file) != null
+        // This deliberately skips module membership: the LSP resolves workspaces itself,
+        // and parsing configuration here would put that work on the EDT.
+        return hasBufConfigAncestor(file)
     }
 
     override fun createCommandLine(): GeneralCommandLine {
@@ -146,27 +148,5 @@ class BufLspServerDescriptor(project: Project) : ProjectWideLspServerDescriptor(
         val driveLetter = afterRoot[0].uppercaseChar()
         val rest = afterRoot.substring(1)
         return "$driveLetter:$rest"
-    }
-
-    /**
-     * Finds the buf workspace root for a given file by searching up the directory tree
-     * for buf.work.yaml or buf.yaml.
-     *
-     * Returns the directory containing the config file, or null if not found.
-     */
-    private fun findBufWorkspaceRoot(file: VirtualFile): VirtualFile? {
-        var current = file.parent
-        while (current != null) {
-            // Check for workspace config first (takes precedence)
-            if (current.findChild("buf.work.yaml") != null) {
-                return current
-            }
-            // Check for module config
-            if (current.findChild(BufConfig.BUF_YAML) != null) {
-                return current
-            }
-            current = current.parent
-        }
-        return null
     }
 }

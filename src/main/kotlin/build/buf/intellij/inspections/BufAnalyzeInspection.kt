@@ -20,6 +20,7 @@ import build.buf.intellij.annotator.BufAnalyzeResult
 import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.annotator.addHighlightsForFile
 import build.buf.intellij.annotator.createDisposableOnAnyPsiChange
+import build.buf.intellij.config.findBufWorkingDirectory
 import build.buf.intellij.vendor.isProtobufFile
 import build.buf.intellij.vendor.protobufLanguage
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
@@ -34,7 +35,6 @@ import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.util.ProgressIndicatorUtils
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiFile
@@ -85,17 +85,18 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
             val modificationCount = protoModificationTracker.modificationCount
             val disposable = project.messageBus.createDisposableOnAnyPsiChange()
                 .also { Disposer.register(appService, it) }
-            val lazyResults = runReadAction {
-                val fileIndex = ProjectFileIndex.getInstance(project)
-                analyzedFiles.filter { it.isValid }
-                    .mapNotNull { fileIndex.getContentRootForFile(it.virtualFile) }
-                    .distinct()
-                    .map { BufAnalyzeUtils.checkLazily(project, disposable, it.toNioPath()) }
+            val (workingDirectories, lazyResults) = runReadAction {
+                val workingDirectories = analyzedFiles.filter { it.isValid }
+                    .mapNotNull { file -> findBufWorkingDirectory(file)?.let { file to it } }
+                    .toMap()
+                val lazyResults = workingDirectories.values.distinct()
+                    .associateWith { BufAnalyzeUtils.checkLazily(project, disposable, it.toNioPath()) }
+                workingDirectories to lazyResults
             }
-            val futures = lazyResults.map { lazyResult ->
+            val futures = lazyResults.mapValues { (_, lazyResult) ->
                 ApplicationManager.getApplication().executeOnPooledThread<BufAnalyzeResult?> { lazyResult.value }
             }
-            val results = futures.mapNotNull { ProgressIndicatorUtils.awaitWithCheckCanceled(it) }
+            val results = futures.mapValues { (_, future) -> ProgressIndicatorUtils.awaitWithCheckCanceled(future) }
             val reported = runReadAction {
                 // Proto PSI changed while buf was running, so offsets may no longer
                 // line up. Retry, but report on the last attempt rather than looping
@@ -104,11 +105,10 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
                 if (!isLastAttempt && protoModificationTracker.modificationCount != modificationCount) {
                     return@runReadAction false
                 }
-                for (file in analyzedFiles) {
+                for ((file, workingDirectory) in workingDirectories) {
                     if (!file.isValid) continue
-                    for (result in results) {
-                        reportProblems(file, result, globalContext, problemDescriptionsProcessor)
-                    }
+                    val result = results[workingDirectory] ?: continue
+                    reportProblems(file, result, globalContext, problemDescriptionsProcessor)
                 }
                 true
             }

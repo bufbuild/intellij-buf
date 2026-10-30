@@ -15,6 +15,7 @@
 package build.buf.intellij.annotator
 
 import build.buf.intellij.BufPluginService
+import build.buf.intellij.config.findBufWorkingDirectory
 import build.buf.intellij.fixes.IgnoreBufIssueQuickFix
 import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.model.BufIssue
@@ -46,7 +47,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.util.BackgroundTaskUtil
 import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.TextRange
@@ -87,13 +87,12 @@ class BufAnalyzePass(
 
         if (!myProject.bufSettings.state.backgroundLintingEnabled && !myProject.bufSettings.state.backgroundBreakingEnabled) return
 
-        val contentRootForFile = ProjectFileIndex.getInstance(myProject)
-            .getContentRootForFile(file.virtualFile) ?: return
+        val workingDirectory = findBufWorkingDirectory(file) ?: return
 
         disposable = myProject.messageBus.createDisposableOnAnyPsiChange()
             .also { Disposer.register(appService, it) }
 
-        annotationInfo = BufAnalyzeUtils.checkLazily(myProject, disposable, contentRootForFile.toNioPath())
+        annotationInfo = BufAnalyzeUtils.checkLazily(myProject, disposable, workingDirectory.toNioPath())
     }
 
     override fun getInfos(): List<HighlightInfo> {

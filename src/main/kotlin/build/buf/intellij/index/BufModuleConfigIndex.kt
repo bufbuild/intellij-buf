@@ -40,7 +40,7 @@ class BufModuleConfigIndex : ScalarIndexExtension<BufModuleConfig>() {
 
     override fun dependsOnFileContent(): Boolean = true
 
-    override fun getVersion(): Int = 1
+    override fun getVersion(): Int = 2
 
     override fun getInputFilter(): FileBasedIndex.InputFilter = FileBasedIndex.InputFilter { file ->
         file.name == BufConfig.BUF_YAML
@@ -75,7 +75,7 @@ class BufModuleConfigIndex : ScalarIndexExtension<BufModuleConfig>() {
                             val moduleItem = module.keysValues.filter { it.value is YAMLScalar }
                                 .associate { it.keyText to it.valueText }
                             val moduleName = moduleItem["name"]?.let { ModuleFullName.parse(it).getOrNull() }
-                            val path = moduleItem["path"] ?: return@DataIndexer emptyMap()
+                            val path = moduleItem["path"] ?: "."
                             val v2ModulePath = modulePath.findFileByRelativePath(path) ?: return@DataIndexer emptyMap()
                             result.add(BufModuleConfig(bufYamlFile.url, v2ModulePath.url, moduleFullName = moduleName))
                         }
