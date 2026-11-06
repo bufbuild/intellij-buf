@@ -272,22 +272,20 @@ fun MutableList<HighlightInfo>.addHighlightsForFile(
 ) {
     val doc = file.viewProvider.document
         ?: error("Can't find document for $file")
+    addHighlightsForIssues(doc, annotationResult.issuesForFile(file))
+}
 
-    val wd = annotationResult.workingDirectory
-    val filteredIssues = annotationResult.issue
-        .filter { it.path == file.virtualFile.toNioPath().relativeToOrNull(wd)?.toString() }
-    for (issue in filteredIssues) {
-        val severity = if (issue.isCompileError) HighlightSeverity.ERROR else HighlightSeverity.WARNING
-        val type = if (severity == HighlightSeverity.ERROR) HighlightInfoType.ERROR else HighlightInfoType.WARNING
-        val range = issue.toTextRange(doc) ?: continue
+fun MutableList<HighlightInfo>.addHighlightsForIssues(document: Document, issues: List<BufIssue>) {
+    for (issue in issues) {
+        val type = if (issue.severity == HighlightSeverity.ERROR) HighlightInfoType.ERROR else HighlightInfoType.WARNING
+        val range = issue.toTextRange(document) ?: continue
         val highlightBuilder = HighlightInfo.newHighlightInfo(type)
-            .severity(severity)
+            .severity(issue.severity)
             .descriptionAndTooltip(issue.message)
             .problemGroup { issue.type }
-        // buf reports file-level issues (e.g. PACKAGE_DEFINED) with a
-        // zero-width range. Comment ignores don't apply to them, so no fix.
+        // Comment ignores don't apply to file-level issues, so no fix.
         if (range.isEmpty) {
-            highlightBuilder.range(0, doc.textLength).fileLevelAnnotation()
+            highlightBuilder.range(0, document.textLength).fileLevelAnnotation()
         } else {
             highlightBuilder.range(range)
                 .registerFix(IgnoreBufIssueQuickFix(issue.type), null, null, null, null)
@@ -295,6 +293,17 @@ fun MutableList<HighlightInfo>.addHighlightsForFile(
         highlightBuilder.create()?.let(::add)
     }
 }
+
+fun BufAnalyzeResult.issuesForFile(file: PsiFile): List<BufIssue> {
+    val relativePath = file.virtualFile.toNioPath().relativeToOrNull(workingDirectory)?.toString()
+    return issue.filter { it.path == relativePath }
+}
+
+val BufIssue.severity: HighlightSeverity
+    get() = if (isCompileError) HighlightSeverity.ERROR else HighlightSeverity.WARNING
+
+// buf reports file-level issues (e.g. PACKAGE_DEFINED) with a zero-width range.
+fun BufIssue.isFileLevel(document: Document): Boolean = toTextRange(document)?.isEmpty == true
 
 fun BufIssue.toTextRange(document: Document): TextRange? {
     val startOffset = toOffset(document, this.startLine, this.startColumn)

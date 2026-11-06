@@ -18,8 +18,11 @@ import build.buf.intellij.BufBundle
 import build.buf.intellij.BufPluginService
 import build.buf.intellij.annotator.BufAnalyzeResult
 import build.buf.intellij.annotator.BufAnalyzeUtils
-import build.buf.intellij.annotator.addHighlightsForFile
+import build.buf.intellij.annotator.addHighlightsForIssues
 import build.buf.intellij.annotator.createDisposableOnAnyPsiChange
+import build.buf.intellij.annotator.isFileLevel
+import build.buf.intellij.annotator.issuesForFile
+import build.buf.intellij.annotator.severity
 import build.buf.intellij.config.findBufWorkingDirectory
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.vendor.isProtobufFile
@@ -126,22 +129,21 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
         globalContext: GlobalInspectionContext,
         problemDescriptionsProcessor: ProblemDescriptionsProcessor,
     ) {
+        val document = file.viewProvider.document ?: return
+        val (fileLevelIssues, issues) = result.issuesForFile(file).partition { it.isFileLevel(document) }
         val highlightInfos = mutableListOf<HighlightInfo>()
-        highlightInfos.addHighlightsForFile(file, result)
+        highlightInfos.addHighlightsForIssues(document, issues)
 
-        val problemDescriptors = highlightInfos.mapNotNull { info ->
-            if (info.isFileLevelAnnotation) {
+        val problemDescriptors = highlightInfos.mapNotNull { ProblemDescriptorUtil.toProblemDescriptor(file, it) } +
+            fileLevelIssues.map { issue ->
                 manager.createProblemDescriptor(
                     file,
-                    info.description,
+                    issue.message,
                     false,
                     LocalQuickFix.EMPTY_ARRAY,
-                    HighlightInfo.convertSeverityToProblemHighlight(info.severity),
+                    HighlightInfo.convertSeverityToProblemHighlight(issue.severity),
                 )
-            } else {
-                ProblemDescriptorUtil.toProblemDescriptor(file, info)
             }
-        }
         for (descriptor in problemDescriptors) {
             val element = descriptor.psiElement ?: continue
             val refElement =
