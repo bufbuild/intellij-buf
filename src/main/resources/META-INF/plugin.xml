@@ -43,6 +43,11 @@
         <dependencySupport kind="java" coordinate="com.google.protobuf:protobuf-java"/>
     </extensions>
 
+    <applicationListeners>
+        <listener class="build.buf.intellij.BufTrustedProjectsListener"
+                  topic="com.intellij.ide.trustedProjects.TrustedProjectsListener"/>
+    </applicationListeners>
+
     <extensions defaultExtensionNs="com.intellij.platform.lsp">
         <serverSupportProvider implementation="build.buf.intellij.lsp.BufLspServerSupportProvider"/>
     </extensions>

@@ -17,6 +17,7 @@ package build.buf.intellij.lsp
 import build.buf.intellij.BufBundle
 import build.buf.intellij.configurable.BufConfigurable
 import build.buf.intellij.icons.BufIcons
+import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
@@ -48,6 +49,10 @@ class BufLspServerSupportProvider : LspServerSupportProvider {
 
         // Only handle .proto files
         if (file.extension != "proto") {
+            return
+        }
+
+        if (!BufCLIUtils.isExecutionAllowed(project)) {
             return
         }
 

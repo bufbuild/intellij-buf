@@ -18,6 +18,7 @@ import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.config.BufConfig
 import build.buf.intellij.index.BufIndexes
 import build.buf.intellij.module.ModuleKey
+import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.smartReadAction
 import com.intellij.openapi.diagnostic.logger
@@ -53,17 +54,23 @@ class RefreshAdditionalBufRoots : ProjectActivity {
                         }
                     }
                     if (bufLockChanged) {
-                        updateUserRoots(project, false)
+                        BufModuleRoots.updateUserRoots(project, false)
                     }
                 }
             },
         )
-        updateUserRoots(project, true)
+        BufModuleRoots.updateUserRoots(project, true)
     }
+}
 
-    private fun updateUserRoots(project: Project, initial: Boolean) {
+internal object BufModuleRoots {
+    private val LOG = logger<BufModuleRoots>()
+
+    // forceRootsChange covers a build that filled the module cache for keys
+    // that were already recorded, which leaves the key set unchanged.
+    fun updateUserRoots(project: Project, initial: Boolean, forceRootsChange: Boolean = false) {
         ApplicationManager.getApplication().executeOnPooledThread {
-            if (initial) {
+            if (initial && BufCLIUtils.isExecutionAllowed(project)) {
                 // Trigger initial 'buf build' on all modules to trigger download of dependencies
                 buildAllModules(project)
             }
@@ -78,7 +85,7 @@ class RefreshAdditionalBufRoots : ProjectActivity {
                 }
             }
             newModuleKeys.addAll(projectModuleKeys)
-            if (existingModuleKeys != newModuleKeys) {
+            if (existingModuleKeys != newModuleKeys || (forceRootsChange && newModuleKeys.isNotEmpty())) {
                 project.putUserData(BufModuleKeysUserData.KEY, BufModuleKeysUserData(newModuleKeys))
                 ApplicationManager.getApplication().invokeLater {
                     ApplicationManager.getApplication().runWriteAction {
@@ -133,9 +140,5 @@ class RefreshAdditionalBufRoots : ProjectActivity {
                 }
             }
         }
-    }
-
-    companion object {
-        private val LOG = logger<RefreshAdditionalBufRoots>()
     }
 }

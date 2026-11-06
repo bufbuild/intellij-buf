@@ -15,17 +15,18 @@
 package build.buf.intellij.settings
 
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
+import com.intellij.ide.trustedProjects.TrustedProjects
 import com.intellij.openapi.project.Project
 import java.io.File
 
 object BufCLIUtils {
     private fun findBufExecutable() = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("buf")
 
-    fun getConfiguredBufExecutable(project: Project): File? = project.bufSettings.state.bufCLIPath.let {
-        if (it.isNotEmpty()) {
-            File(it)
-        } else {
-            findBufExecutable()
-        }
+    fun isExecutionAllowed(project: Project): Boolean = TrustedProjects.isProjectTrusted(project)
+
+    fun getConfiguredBufExecutable(project: Project): File? {
+        if (!isExecutionAllowed(project)) return null
+        val bufCLIPath = project.bufSettings.state.bufCLIPath
+        return if (bufCLIPath.isNotEmpty()) File(bufCLIPath) else findBufExecutable()
     }
 }
