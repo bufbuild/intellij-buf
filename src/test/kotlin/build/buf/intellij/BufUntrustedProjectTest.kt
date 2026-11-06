@@ -18,6 +18,8 @@ import build.buf.intellij.base.BufTestBase
 import build.buf.intellij.inspections.BufNotInstalledInspection
 import build.buf.intellij.resolve.BufModuleKeysUserData
 import build.buf.intellij.resolve.BufModuleRoots
+import com.intellij.codeHighlighting.Pass
+import com.intellij.codeInsight.daemon.impl.FileStatusMap
 import com.intellij.ide.trustedProjects.TrustedProjects
 import com.intellij.openapi.roots.ModuleRootEvent
 import com.intellij.openapi.roots.ModuleRootListener
@@ -74,15 +76,15 @@ class BufUntrustedProjectTest : BufTestBase() {
         assertEmpty(untrustedHighlights.filter { it.description == notInstalled })
 
         TrustedProjects.setProjectTrusted(project, true)
-
+        // Highlighting before the listener's async restart races with it.
         PlatformTestUtil.waitWithEventsDispatching(
-            "buf did not run after the project was trusted",
-            {
-                myFixture.doHighlighting()
-                Files.exists(marker)
-            },
+            "highlighting was not restarted after the project was trusted",
+            { FileStatusMap.getDirtyTextRange(myFixture.editor, Pass.UPDATE_ALL) != null },
             30,
         )
+        myFixture.doHighlighting()
+
+        assertTrue("buf did not run after the project was trusted", Files.exists(marker))
     }
 
     fun testTrustingProjectRefreshesModuleRoots() {
