@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-06
+
+- Resolve nested Buf workspaces for CLI checks by @zepatrik in https://github.com/bufbuild/intellij-buf/pull/548
+- Only run buf CLI in trusted projects by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/552
+- Report file level annotations from code inspection by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/553
+- @zepatrik made their first contribution in https://github.com/bufbuild/intellij-buf/pull/548
+
 ## [0.8.0] - 2026-10-09
 
 - Remove Kanro plugin support by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/506
@@ -139,7 +146,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/bufbuild/intellij-buf/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/bufbuild/intellij-buf/compare/v0.7.7...v0.8.0
 [0.7.7]: https://github.com/bufbuild/intellij-buf/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/bufbuild/intellij-buf/compare/v0.7.5...v0.7.6
