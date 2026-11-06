@@ -1,6 +1,11 @@
 <problems>
   <problem>
     <file>loose.proto</file>
+    <line>1</line>
+    <description>Files must have a package defined.</description>
+  </problem>
+  <problem>
+    <file>loose.proto</file>
     <line>2</line>
     <description>Message name "loose" should be PascalCase, such as "Loose".</description>
   </problem>

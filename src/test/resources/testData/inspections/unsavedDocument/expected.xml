@@ -1,6 +1,11 @@
 <problems>
   <problem>
     <file>snake_case.proto</file>
+    <line>1</line>
+    <description>Files must have a package defined.</description>
+  </problem>
+  <problem>
+    <file>snake_case.proto</file>
     <line>4</line>
     <description>Field name "Bar" should be lower_snake_case, such as "bar".</description>
   </problem>

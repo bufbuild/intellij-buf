@@ -279,13 +279,19 @@ fun MutableList<HighlightInfo>.addHighlightsForFile(
     for (issue in filteredIssues) {
         val severity = if (issue.isCompileError) HighlightSeverity.ERROR else HighlightSeverity.WARNING
         val type = if (severity == HighlightSeverity.ERROR) HighlightInfoType.ERROR else HighlightInfoType.WARNING
+        val range = issue.toTextRange(doc) ?: continue
         val highlightBuilder = HighlightInfo.newHighlightInfo(type)
             .severity(severity)
             .descriptionAndTooltip(issue.message)
-            // TODO: Should handle file-level lint warnings here: https://github.com/bufbuild/intellij-buf/issues/215
-            .range(issue.toTextRange(doc) ?: continue)
             .problemGroup { issue.type }
-            .registerFix(IgnoreBufIssueQuickFix(issue.type), null, null, null, null)
+        // buf reports file-level issues (e.g. PACKAGE_DEFINED) with a
+        // zero-width range. Comment ignores don't apply to them, so no fix.
+        if (range.isEmpty) {
+            highlightBuilder.range(0, doc.textLength).fileLevelAnnotation()
+        } else {
+            highlightBuilder.range(range)
+                .registerFix(IgnoreBufIssueQuickFix(issue.type), null, null, null, null)
+        }
         highlightBuilder.create()?.let(::add)
     }
 }
@@ -293,7 +299,7 @@ fun MutableList<HighlightInfo>.addHighlightsForFile(
 fun BufIssue.toTextRange(document: Document): TextRange? {
     val startOffset = toOffset(document, this.startLine, this.startColumn)
     val endOffset = toOffset(document, this.endLine, this.endColumn)
-    return if (startOffset != null && endOffset != null && startOffset < endOffset) {
+    return if (startOffset != null && endOffset != null && startOffset <= endOffset) {
         TextRange(startOffset, endOffset)
     } else {
         null
