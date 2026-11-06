@@ -1,0 +1,22 @@
+<problems>
+  <problem>
+    <file>a.proto</file>
+    <line>1</line>
+    <description>Files must have a package defined.</description>
+  </problem>
+  <problem>
+    <file>a.proto</file>
+    <line>1</line>
+    <description>Multiple directories "a,b" contain files with package "".</description>
+  </problem>
+  <problem>
+    <file>b.proto</file>
+    <line>1</line>
+    <description>Files must have a package defined.</description>
+  </problem>
+  <problem>
+    <file>b.proto</file>
+    <line>1</line>
+    <description>Multiple directories "a,b" contain files with package "".</description>
+  </problem>
+</problems>

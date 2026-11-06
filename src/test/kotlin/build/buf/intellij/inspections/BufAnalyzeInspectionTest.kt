@@ -95,6 +95,23 @@ class BufAnalyzeInspectionTest : BufTestBase() {
         )
     }
 
+    fun testFileLevelIssues() {
+        myFixture.addFileToProject("buf.yaml", "version: v2")
+        myFixture.addFileToProject("a/a.proto", "syntax = \"proto3\";\nmessage A {}")
+        myFixture.addFileToProject("b/b.proto", "syntax = \"proto3\";\nmessage B {}")
+        myFixture.configureByFiles("a/a.proto", "b/b.proto")
+        val toolWrapper = GlobalInspectionToolWrapper(BufAnalyzeInspection())
+        val scope = AnalysisScope(project)
+        val globalContext = createGlobalContextForTool(scope, project, listOf(toolWrapper))
+        InspectionTestUtil.runTool(toolWrapper, scope, globalContext)
+        InspectionTestUtil.compareToolResults(
+            globalContext,
+            toolWrapper,
+            false,
+            findTestDataFolder().resolve("fileLevelIssues").toString(),
+        )
+    }
+
     // loose.proto has no configuration, so buf runs from the content root and
     // lints the whole tree with default rules, including service/proto/x.proto.
     // Those results must not be reported for x.proto, which belongs to the

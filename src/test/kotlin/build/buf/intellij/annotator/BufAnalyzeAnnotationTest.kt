@@ -21,14 +21,37 @@ class BufAnalyzeAnnotationTest : BufTestBase() {
         myFixture.configureByText(
             "snake_case.proto",
             """
-            syntax = "proto3";
+            <warning descr="Files must have a package defined.">syntax = "proto3";
 
             message Foo {
               string <warning descr="Field name \"Bar\" should be lower_snake_case, such as \"bar\".">Bar</warning> = 1;
-            }
+            }</warning>
             """.trimIndent(),
         )
         myFixture.checkHighlighting()
+    }
+
+    fun testFileLevelIssue() {
+        myFixture.addFileToProject(
+            "buf.yaml",
+            """
+            version: v2
+            lint:
+              use:
+                - PACKAGE_DEFINED
+            """.trimIndent(),
+        )
+        myFixture.configureByText(
+            "file_level.proto",
+            """
+            <warning descr="Files must have a package defined.">syntax = "proto3";
+            message Foo {}</warning>
+            """.trimIndent(),
+        )
+        myFixture.checkHighlighting()
+        val info = myFixture.doHighlighting().single { it.description == "Files must have a package defined." }
+        assertTrue(info.isFileLevelAnnotation)
+        assertNull(info.findRegisteredQuickFix { _, _ -> true })
     }
 
     fun testNestedV2Workspace() {

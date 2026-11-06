@@ -18,8 +18,11 @@ import build.buf.intellij.BufBundle
 import build.buf.intellij.BufPluginService
 import build.buf.intellij.annotator.BufAnalyzeResult
 import build.buf.intellij.annotator.BufAnalyzeUtils
-import build.buf.intellij.annotator.addHighlightsForFile
+import build.buf.intellij.annotator.addHighlightsForIssues
 import build.buf.intellij.annotator.createDisposableOnAnyPsiChange
+import build.buf.intellij.annotator.isFileLevel
+import build.buf.intellij.annotator.issuesForFile
+import build.buf.intellij.annotator.severity
 import build.buf.intellij.config.findBufWorkingDirectory
 import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.vendor.isProtobufFile
@@ -28,6 +31,7 @@ import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.codeInspection.GlobalInspectionContext
 import com.intellij.codeInspection.GlobalSimpleInspectionTool
 import com.intellij.codeInspection.InspectionManager
+import com.intellij.codeInspection.LocalQuickFix
 import com.intellij.codeInspection.ProblemDescriptionsProcessor
 import com.intellij.codeInspection.ProblemDescriptorUtil
 import com.intellij.codeInspection.ProblemsHolder
@@ -110,7 +114,7 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
                 for ((file, workingDirectory) in workingDirectories) {
                     if (!file.isValid) continue
                     val result = results[workingDirectory] ?: continue
-                    reportProblems(file, result, globalContext, problemDescriptionsProcessor)
+                    reportProblems(file, result, manager, globalContext, problemDescriptionsProcessor)
                 }
                 true
             }
@@ -121,13 +125,25 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
     private fun reportProblems(
         file: PsiFile,
         result: BufAnalyzeResult,
+        manager: InspectionManager,
         globalContext: GlobalInspectionContext,
         problemDescriptionsProcessor: ProblemDescriptionsProcessor,
     ) {
+        val document = file.viewProvider.document ?: return
+        val (fileLevelIssues, issues) = result.issuesForFile(file).partition { it.isFileLevel(document) }
         val highlightInfos = mutableListOf<HighlightInfo>()
-        highlightInfos.addHighlightsForFile(file, result)
+        highlightInfos.addHighlightsForIssues(document, issues)
 
-        val problemDescriptors = highlightInfos.mapNotNull { ProblemDescriptorUtil.toProblemDescriptor(file, it) }
+        val problemDescriptors = highlightInfos.mapNotNull { ProblemDescriptorUtil.toProblemDescriptor(file, it) } +
+            fileLevelIssues.map { issue ->
+                manager.createProblemDescriptor(
+                    file,
+                    issue.message,
+                    false,
+                    LocalQuickFix.EMPTY_ARRAY,
+                    HighlightInfo.convertSeverityToProblemHighlight(issue.severity),
+                )
+            }
         for (descriptor in problemDescriptors) {
             val element = descriptor.psiElement ?: continue
             val refElement =
