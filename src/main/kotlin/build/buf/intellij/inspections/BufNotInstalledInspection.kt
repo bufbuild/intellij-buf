@@ -36,6 +36,7 @@ class BufNotInstalledInspection : LocalInspectionTool() {
 
     override fun checkFile(file: PsiFile, manager: InspectionManager, isOnTheFly: Boolean): Array<ProblemDescriptor>? {
         if (!file.isProtobufFile()) return null
+        if (!BufCLIUtils.isExecutionAllowed(file.project)) return null
         val bufExecutable = BufCLIUtils.getConfiguredBufExecutable(file.project)
         if (bufExecutable != null) return null
         return arrayOf(

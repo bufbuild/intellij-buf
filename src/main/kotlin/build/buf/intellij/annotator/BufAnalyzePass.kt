@@ -19,6 +19,7 @@ import build.buf.intellij.config.findBufWorkingDirectory
 import build.buf.intellij.fixes.IgnoreBufIssueQuickFix
 import build.buf.intellij.lsp.BufVersionDetector
 import build.buf.intellij.model.BufIssue
+import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.settings.bufSettings
 import build.buf.intellij.vendor.isProtobufFile
 import com.intellij.codeHighlighting.DirtyScopeTrackingHighlightingPassFactory
@@ -78,6 +79,8 @@ class BufAnalyzePass(
     override fun doCollectInformation(progress: ProgressIndicator) {
         highlights.clear()
         if (!file.isProtobufFile()) return
+
+        if (!BufCLIUtils.isExecutionAllowed(myProject)) return
 
         // Check if LSP is handling diagnostics
         if (BufVersionDetector.isLspActive(myProject)) {

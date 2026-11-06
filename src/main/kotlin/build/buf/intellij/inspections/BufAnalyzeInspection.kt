@@ -21,6 +21,7 @@ import build.buf.intellij.annotator.BufAnalyzeUtils
 import build.buf.intellij.annotator.addHighlightsForFile
 import build.buf.intellij.annotator.createDisposableOnAnyPsiChange
 import build.buf.intellij.config.findBufWorkingDirectory
+import build.buf.intellij.settings.BufCLIUtils
 import build.buf.intellij.vendor.isProtobufFile
 import build.buf.intellij.vendor.protobufLanguage
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
@@ -79,6 +80,7 @@ class BufAnalyzeInspection : GlobalSimpleInspectionTool() {
         globalContext.putUserData(ANALYZED_FILES, null)
         if (analyzedFiles.isEmpty()) return
         val project = manager.project
+        if (!BufCLIUtils.isExecutionAllowed(project)) return
         val protoModificationTracker = PsiModificationTracker.getInstance(project).forLanguage(protobufLanguage())
         repeat(MAX_ANALYZE_ATTEMPTS) { attempt ->
             ProgressManager.checkCanceled()

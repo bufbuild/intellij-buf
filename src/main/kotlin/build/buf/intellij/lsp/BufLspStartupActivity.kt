@@ -14,6 +14,7 @@
 
 package build.buf.intellij.lsp
 
+import build.buf.intellij.settings.BufCLIUtils
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -26,6 +27,7 @@ class BufLspStartupActivity : ProjectActivity {
     private val log = logger<BufLspStartupActivity>()
 
     override suspend fun execute(project: Project) {
+        if (!BufCLIUtils.isExecutionAllowed(project)) return
         try {
             val versionInfo = BufVersionDetector.getVersionInfo(project, checkIfMissing = true)
             if (versionInfo != null) {
