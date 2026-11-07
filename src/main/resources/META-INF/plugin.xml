@@ -7,7 +7,7 @@
     <depends>com.intellij.modules.lsp</depends>
     <depends>com.intellij.modules.platform</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
-    <depends config-file="official-protobuf-plugin-support.xml">idea.plugin.protoeditor</depends>
+    <depends>idea.plugin.protoeditor</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <notificationGroup id="Buf" displayType="BALLOON"/>
@@ -50,5 +50,9 @@
 
     <extensions defaultExtensionNs="com.intellij.platform.lsp">
         <serverSupportProvider implementation="build.buf.intellij.lsp.BufLspServerSupportProvider"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij.protobuf">
+        <fileResolveProvider implementation="build.buf.intellij.vendor.jetbrains.BufProtoFileResolver"/>
     </extensions>
 </idea-plugin>
