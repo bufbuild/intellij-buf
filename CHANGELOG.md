@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-09
+
+- Add support for IDEA 2026.3 release by @pkwarren in https://github.com/bufbuild/intellij-buf/pull/555
+
 ## [0.9.0] - 2026-11-06
 
 - Resolve nested Buf workspaces for CLI checks by @zepatrik in https://github.com/bufbuild/intellij-buf/pull/548
@@ -146,7 +150,8 @@ Update to support IntelliJ Platform 221.*
 
 Update to support IntelliJ Platform 222.*
 
-[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/bufbuild/intellij-buf/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/bufbuild/intellij-buf/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/bufbuild/intellij-buf/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/bufbuild/intellij-buf/compare/v0.7.7...v0.8.0
 [0.7.7]: https://github.com/bufbuild/intellij-buf/compare/v0.7.6...v0.7.7
