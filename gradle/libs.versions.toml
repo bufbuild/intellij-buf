@@ -8,7 +8,7 @@ junit = "4.13.2"
 kotlin = "2.4.21"
 changelog = "2.5.0"
 intelliJPlatform = "2.20.0"
-qodana = "2026.2.2"
+qodana = "2026.3.1"
 osdetector = "1.7.3"
 spotless = "8.11.0"
 
